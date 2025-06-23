@@ -1,20 +1,14 @@
 package com.plopp.pipecraft.Blocks;
 
-import com.google.common.base.Function;
 import com.google.common.base.Supplier;
 import com.plopp.pipecraft.PipeCraftIndex;
 import com.plopp.pipecraft.Blocks.Viaduct.BlockViaduct;
-
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.material.MapColor;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredBlock;
-import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 public class BlockRegister {
@@ -23,10 +17,9 @@ public class BlockRegister {
 	        DeferredRegister.createBlocks(PipeCraftIndex.MODID);
     public static final DeferredRegister.Items ITEMS =
             DeferredRegister.createItems(PipeCraftIndex.MODID);
-	
-   
     
-    public static final DeferredBlock<Block> VIADUCT = registerBlock("viaduct_connectet_long",
+
+  public static final DeferredBlock<Block> VIADUCT = registerBlock("viaduct_connectet_long",
             () -> new BlockViaduct(BlockBehaviour.Properties.of()
                     .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS).noOcclusion()));
     
