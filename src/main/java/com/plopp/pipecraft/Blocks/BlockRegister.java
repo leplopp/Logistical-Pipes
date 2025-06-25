@@ -3,6 +3,7 @@ package com.plopp.pipecraft.Blocks;
 import com.google.common.base.Supplier;
 import com.plopp.pipecraft.PipeCraftIndex;
 import com.plopp.pipecraft.Blocks.Viaduct.BlockViaduct;
+import com.plopp.pipecraft.Blocks.Viaduct.BlockViaductAdvanced;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
@@ -19,11 +20,13 @@ public class BlockRegister {
             DeferredRegister.createItems(PipeCraftIndex.MODID);
     
 
-  public static final DeferredBlock<Block> VIADUCT = registerBlock("viaduct_connectet_long",
+  public static final DeferredBlock<Block> VIADUCT = registerBlock("viaduct",
             () -> new BlockViaduct(BlockBehaviour.Properties.of()
                     .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS).noOcclusion()));
     
-    
+  public static final DeferredBlock<Block> VIADUCTADVANCED = registerBlock("viaduct_advanced",
+          () -> new BlockViaductAdvanced(BlockBehaviour.Properties.of()
+                  .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS).noOcclusion()));
     
     private static <T extends Block> DeferredBlock<T> registerBlock(String name, Supplier<T> block) {
         DeferredBlock<T> toReturn = (DeferredBlock<T>) BLOCKS.register(name, block);

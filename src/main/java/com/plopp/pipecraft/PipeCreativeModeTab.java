@@ -15,14 +15,15 @@ public class PipeCreativeModeTab {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, PipeCraftIndex.MODID);
 	    
-    public static final Supplier<CreativeModeTab> BISMUTH_BLOCK_TABS =
+    public static final Supplier<CreativeModeTab> PIPECRAFT_TAB =
     	    CREATIVE_MODE_TABS.register("bismuth_blocks_tab",
     	        () -> CreativeModeTab.builder()
     	            .icon(() -> new ItemStack(BlockRegister.VIADUCT))
-    	            .withTabsBefore(ResourceLocation.fromNamespaceAndPath(PipeCraftIndex.MODID, "bismuth_items_tab"))
-    	            .title(Component.translatable("creativetab.tutorialmod.bismuth_blocks"))
+    	            .withTabsBefore(ResourceLocation.fromNamespaceAndPath(PipeCraftIndex.MODID, "pipecraft_tab"))
+    	            .title(Component.translatable("creativetab.logisticpipes.pipecraft_blocks"))
     	            .displayItems((itemDisplayParameters, output) -> {
     	                output.accept(BlockRegister.VIADUCT.get().asItem());
+    	                output.accept(BlockRegister.VIADUCTADVANCED.get().asItem());
     	            })
     	            .build()
     	    );

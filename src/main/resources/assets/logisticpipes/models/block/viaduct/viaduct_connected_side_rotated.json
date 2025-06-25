@@ -1,0 +1,8 @@
+{
+  "loader": "neoforge:obj",
+  "model": "logisticpipes:models/block/viaduct/viaduct_connected_side_rotated.obj",
+  "flip-v": true,
+  "textures": {
+    "particle": "minecraft:block/glass"
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "parent": "logisticpipes:block/viaduct_connectet_long",
+  "parent": "logisticpipes:block/viaduct/viaduct",
   
   
   "display": {

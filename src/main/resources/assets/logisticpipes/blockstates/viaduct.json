@@ -1,0 +1,333 @@
+{
+  "multipart": [
+    {
+      "when": {
+		"connected_up": false,
+		"connected_down": false,
+        "corner": true,
+        "connected_north": true,
+        "connected_east": true,
+		"connected_south": false,
+		"connected_west": false
+      },
+      "apply": {
+        "model": "logisticpipes:block/viaduct/viaduct_connected_corner",
+        "y": 90,
+		"x": 90
+		
+      }
+    },
+    {
+      "when": {
+		"connected_up": false,
+		"connected_down": false,
+        "corner": true,
+        "connected_east": true,
+        "connected_south": true,
+		"connected_north": false,
+		"connected_west": false
+      },
+      "apply": {
+        "model": "logisticpipes:block/viaduct/viaduct_connected_corner",
+        "y": 180,
+		"x": 90
+      }
+    },
+    {
+      "when": {
+		"connected_up": false,
+		"connected_down": false,
+        "corner": true,
+		"connected_south": true,
+		"connected_west": true,
+		"connected_north": false,
+		"connected_east": false
+      },
+      "apply": {
+        "model": "logisticpipes:block/viaduct/viaduct_connected_corner",
+        "y": -90,
+		"x": 90
+		
+      }
+    },
+    {
+      "when": {
+		"connected_up": false,
+		"connected_down": false,
+        "corner": true,
+		"connected_west": true,
+		"connected_north": true,
+		"connected_south": false,
+		"connected_east": false
+      },
+      "apply": {
+        "model": "logisticpipes:block/viaduct/viaduct_connected_corner",
+        "y": 0,
+		"x": 90
+      }
+    },
+	{
+	  "when": {
+	    "connected_up": false,
+	    "connected_down": true,
+	    "connected_north": true,
+	    "connected_south": false,
+	    "connected_east": false,
+	    "connected_west": false
+	  },
+	  "apply": {
+	    "model": "logisticpipes:block/viaduct/viaduct_connected_corner",
+	    "y": 90,
+		"x": 180
+	  }
+	},
+	{
+	  "when": {
+	    "connected_up": false,
+	    "connected_down": true,
+	    "connected_east": true,
+	    "connected_north": false,
+	    "connected_south": false,
+	    "connected_west": false
+	  },
+	  "apply": {
+	    "model": "logisticpipes:block/viaduct/viaduct_connected_corner",
+	    "y": 180,
+		"x": 180
+	  }
+	},
+	{
+	  "when": {
+	    "connected_up": false,
+	    "connected_down": true,
+	    "connected_south": true,
+	    "connected_north": false,
+	    "connected_east": false,
+	    "connected_west": false
+	  },
+	  "apply": {
+	    "model": "logisticpipes:block/viaduct/viaduct_connected_corner",
+	    "y": -90,
+		"x": 180
+	  }
+	},
+	{
+	  "when": {
+	    "connected_up": false,
+	    "connected_down": true,
+	    "connected_west": true,
+	    "connected_north": false,
+	    "connected_south": false,
+	    "connected_east": false
+	  },
+	  "apply": {
+	    "model": "logisticpipes:block/viaduct/viaduct_connected_corner",
+	    "y": 0,
+		"x": 180
+	  }
+	},
+		  
+		  {
+		    "when": {
+		      "connected_up": true,
+		      "connected_down": false,
+		      "connected_north": true,
+		      "connected_south": false,
+		      "connected_east": false,
+		      "connected_west": false
+		    },
+		    "apply": {
+		      "model": "logisticpipes:block/viaduct/viaduct_connected_corner",
+		      "y": 90
+		    }
+		  },
+		  {
+		    "when": {
+		      "connected_up": true,
+		      "connected_down": false,
+		      "connected_east": true,
+		      "connected_north": false,
+		      "connected_south": false,
+		      "connected_west": false
+		    },
+		    "apply": {
+		      "model": "logisticpipes:block/viaduct/viaduct_connected_corner",
+		      "y": 180
+		    }
+		  },
+		  {
+		    "when": {
+		      "connected_up": true,
+		      "connected_down": false,
+		      "connected_south": true,
+		      "connected_north": false,
+		      "connected_east": false,
+		      "connected_west": false
+		    },
+		    "apply": {
+		      "model": "logisticpipes:block/viaduct/viaduct_connected_corner",
+		      "y": -90
+		    }
+		  },
+		  {
+		    "when": {
+		      "connected_up": true,
+		      "connected_down": false,
+		      "connected_west": true,
+		      "connected_north": false,
+		      "connected_south": false,
+		      "connected_east": false
+		    },
+		    "apply": {
+		      "model": "logisticpipes:block/viaduct/viaduct_connected_corner",
+		      "y": 0
+		    }
+		  },
+		  	
+		{
+      "when": {
+		"connected_up": false,
+		"connected_down": false,
+        "connected_north": true,
+        "connected_south": true,
+        "connected_east": false,
+        "connected_west": false
+      },
+ 
+      "apply": {
+        "model": "logisticpipes:block/viaduct/viaduct_connected_long",
+		"x": 90,
+        "y": 0
+      }
+    },
+    {
+      "when": {
+		"connected_up": false,
+		"connected_down": false,
+        "connected_east": true,
+        "connected_west": true,
+        "connected_north": false,
+        "connected_south": false
+      },
+      "apply": {
+        "model": "logisticpipes:block/viaduct/viaduct_connected_long",
+		"x": 90,
+        "y": 90
+      }
+    },
+	{
+	  "when": {
+	    "connected_up": true,
+	    "connected_down": true,
+	    "connected_north": false,
+	    "connected_south": false,
+	    "connected_east": false,
+	    "connected_west": false
+	  },
+	  "apply": {
+	    "model": "logisticpipes:block/viaduct/viaduct_connected_long"
+	  }
+	},
+    {
+      "when": {
+		"connected_up": false,
+		"connected_down": false,
+        "connected_north": true,
+        "connected_south": false,
+        "connected_east": false,
+        "connected_west": false
+      },
+      "apply": {
+        "model": "logisticpipes:block/viaduct/viaduct_connected",
+		"x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+		"connected_up": false,
+		"connected_down": false,
+        "connected_south": true,
+        "connected_north": false,
+        "connected_east": false,
+        "connected_west": false
+      },
+      "apply": {
+        "model": "logisticpipes:block/viaduct/viaduct_connected",
+		"x": 90,
+        "y": 0
+      }
+    },
+    {
+      "when": {
+		"connected_up": false,
+		"connected_down": false,
+        "connected_west": true,
+        "connected_east": false,
+        "connected_north": false,
+        "connected_south": false
+      },
+      "apply": {
+        "model": "logisticpipes:block/viaduct/viaduct_connected",
+		"x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+		"connected_up": false,
+		"connected_down": false,
+        "connected_east": true,
+        "connected_west": false,
+        "connected_north": false,
+        "connected_south": false
+      },
+      "apply": {
+        "model": "logisticpipes:block/viaduct/viaduct_connected",
+		"x": 90,
+        "y": -90
+      }
+    },
+	{
+	  "when": {
+		"connected_up": true,
+		"connected_down": false,
+	    "connected_east": false,
+	    "connected_west": false,
+	    "connected_north": false,
+	    "connected_south": false
+	  },
+	  "apply": {
+	    "model": "logisticpipes:block/viaduct/viaduct_connected",
+	    "x": 180
+	  }
+	},
+	{
+		  "when": {
+			"connected_up": false,
+			"connected_down": true,
+		    "connected_east": false,
+		    "connected_west": false,
+		    "connected_north": false,
+		    "connected_south": false
+		  },
+		  "apply": {
+		    "model": "logisticpipes:block/viaduct/viaduct_connected",
+		    "y": 0
+		  }
+		},
+    {
+      "when": {
+		"connected_up": false,
+		"connected_down": false,
+        "connected_north": false,
+        "connected_south": false,
+        "connected_east": false,
+        "connected_west": false
+      },
+      "apply": {
+        "model": "logisticpipes:block/viaduct/viaduct"
+      }
+    }
+  ]
+}
