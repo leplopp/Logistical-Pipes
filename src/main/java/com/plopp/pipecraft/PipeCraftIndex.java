@@ -38,12 +38,12 @@ public class PipeCraftIndex
 {
     public static final String MODID = "logisticpipes";
     private static final Logger LOGGER = LogUtils.getLogger();
+
     
     public PipeCraftIndex(IEventBus modEventBus, ModContainer modContainer)
     {
 
         NeoForge.EVENT_BUS.register(this);
-        
         BlockRegister.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         PipeCreativeModeTab.register(modEventBus);
@@ -64,54 +64,6 @@ public class PipeCraftIndex
     public void onServerStarting(ServerStartingEvent event)
     {
     }
-
-    @EventBusSubscriber(modid = MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
-    public static class ClientModEvents
-    {
-        @SubscribeEvent
-        public static void onClientSetup(FMLClientSetupEvent event) {
-             BlockViaductShapes.loadAll(BlockViaduct.objParser);
-             BlockViaductAdvancedShapes.loadAll(BlockViaductAdvanced.objParser);
-     
-        }
         
-        
-      /*  
-        @SubscribeEvent
-        public static void onModelBake(ModelEvent.ModifyBakingResult event) {
-            Map<String, BakedModel> partModels = new HashMap<>();
-
-            // Lade alle Teilmodelle, wie sie in deiner JSON verwendet werden:
-            String[] keys = {
-            		 "viaduct", "viaduct_connected", "viaduct_connected_corner", "viaduct_connected_long",
-            		    "viaduct_connected_side", "viaduct_connected_all_side", "viaduct_connected_cross"
-            };
-
-            for (String key : keys) {
-                ResourceLocation resLoc = ResourceLocation.tryBuild("logisticpipes", "block/viaduct/" + key);
-                if (resLoc != null) {
-                    ModelResourceLocation modelLoc = new ModelResourceLocation(resLoc, "normal");
-                    BakedModel model = event.getModels().get(modelLoc);
-                    if (model != null) {
-                        partModels.put(key, model);
-                    }
-                } else {
-                    System.err.println("Ungültige ResourceLocation für: " + key);
-                }
-            }
-
-            ResourceLocation baseResLoc = ResourceLocation.tryBuild("logisticpipes", "block/viaduct");
-            if (baseResLoc != null) {
-                ModelResourceLocation baseModelLoc = new ModelResourceLocation(baseResLoc, "normal");
-                BakedModel original = event.getModels().get(baseModelLoc);
-                if (original != null) {
-                    ViaductBakedModel customModel = new ViaductBakedModel(partModels, original);
-                    event.getModels().put(baseModelLoc, customModel);
-                }
-            } else {
-                System.err.println("Ungültige ResourceLocation für das Basismodell");
-            }
-        }*/
-
-    }
+    
 }

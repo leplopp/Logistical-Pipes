@@ -4,7 +4,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.plopp.pipecraft.ViaductTravel;
+import com.plopp.pipecraft.logic.ViaductTravel;
 import com.plopp.pipecraft.obj.BlockViaductShapes;
 import com.plopp.pipecraft.obj.Triangle;
 import com.plopp.pipecraft.obj.objParser;
@@ -87,6 +87,7 @@ public class BlockViaduct extends Block implements EntityBlock {
         super.onRemove(state, level, pos, newState, isMoving);
     }
 
+    
     public void updateConnections(Level level, BlockPos pos) {
         BlockState current = level.getBlockState(pos);
         if (!(current.getBlock() instanceof BlockViaduct)) return;
@@ -96,12 +97,12 @@ public class BlockViaduct extends Block implements EntityBlock {
             return;
         }
 
-        boolean north = isViaduct(level.getBlockState(pos.relative(Direction.NORTH))) && !isCrossing(level, pos.relative(Direction.NORTH));
-        boolean south = isViaduct(level.getBlockState(pos.relative(Direction.SOUTH))) && !isCrossing(level, pos.relative(Direction.SOUTH));
-        boolean east  = isViaduct(level.getBlockState(pos.relative(Direction.EAST)))  && !isCrossing(level, pos.relative(Direction.EAST));
-        boolean west  = isViaduct(level.getBlockState(pos.relative(Direction.WEST)))  && !isCrossing(level, pos.relative(Direction.WEST));
-        boolean up    = isViaduct(level.getBlockState(pos.relative(Direction.UP)))    && !isCrossing(level, pos.relative(Direction.UP));
-        boolean down  = isViaduct(level.getBlockState(pos.relative(Direction.DOWN)))  && !isCrossing(level, pos.relative(Direction.DOWN));
+        boolean north = isViaduct(level.getBlockState(pos.relative(Direction.NORTH)), level, pos.relative(Direction.NORTH), Direction.SOUTH) && !isCrossing(level, pos.relative(Direction.NORTH));
+        boolean south = isViaduct(level.getBlockState(pos.relative(Direction.SOUTH)), level, pos.relative(Direction.SOUTH), Direction.NORTH) && !isCrossing(level, pos.relative(Direction.SOUTH));
+        boolean east  = isViaduct(level.getBlockState(pos.relative(Direction.EAST)), level, pos.relative(Direction.EAST), Direction.WEST) && !isCrossing(level, pos.relative(Direction.EAST));
+        boolean west  = isViaduct(level.getBlockState(pos.relative(Direction.WEST)), level, pos.relative(Direction.WEST), Direction.EAST) && !isCrossing(level, pos.relative(Direction.WEST));
+        boolean up    = isViaduct(level.getBlockState(pos.relative(Direction.UP)), level, pos.relative(Direction.UP), Direction.DOWN) && !isCrossing(level, pos.relative(Direction.UP));
+        boolean down  = isViaduct(level.getBlockState(pos.relative(Direction.DOWN)), level, pos.relative(Direction.DOWN), Direction.UP) && !isCrossing(level, pos.relative(Direction.DOWN));
 
         int connectionCount = 0;
         if (north) connectionCount++;
@@ -172,11 +173,13 @@ public class BlockViaduct extends Block implements EntityBlock {
     private boolean isCrossing(Level level, BlockPos pos) {
         int count = 0;
         for (Direction dir : Direction.values()) {
-            if (isViaduct(level.getBlockState(pos.relative(dir)))) {
+            BlockPos neighborPos = pos.relative(dir);
+            BlockState neighborState = level.getBlockState(neighborPos);
+            if (isViaduct(neighborState, level, neighborPos, dir.getOpposite())) {
                 count++;
             }
         }
-        return count >= 3; 
+        return count >= 3;
     }
   
     public void updateAndPropagate(Level level, BlockPos pos, BlockState current, BlockState updated) {
@@ -193,15 +196,42 @@ public class BlockViaduct extends Block implements EntityBlock {
             }
         }
     }
-    
-    private boolean isViaduct(BlockState state) {
+    private boolean isViaduct(BlockState state, Level level, BlockPos neighborPos, Direction toDirection) {
         if (state == null) return false;
-        if (state.getBlock() instanceof BlockViaduct) return true;
-        if (state.is(Blocks.STONE)) return true;
-        if (state.is(Blocks.COBBLESTONE)) return true;
+
+        Block block = state.getBlock();
+
+        if (block instanceof BlockViaduct) return true;
+
+        if ((block == Blocks.STONE ) && toDirection != Direction.UP) {
+            int viaductConnections = 0;
+            Direction foundDir = null;
+
+            for (Direction dir : Direction.Plane.HORIZONTAL) {
+                BlockPos adjacentPos = neighborPos.relative(dir);
+                BlockState adjacent = level.getBlockState(adjacentPos);
+
+                if (adjacent.getBlock() instanceof BlockViaduct) {
+                    viaductConnections++;
+                    foundDir = dir;
+                }
+            }
+
+            // Unten auch zulassen
+            BlockState below = level.getBlockState(neighborPos.below());
+            if (below.getBlock() instanceof BlockViaduct) {
+                viaductConnections++;
+                foundDir = Direction.DOWN;
+            }
+
+            // Nur eine Verbindung erlaubt, und zwar in unsere Richtung
+            return viaductConnections == 1 && toDirection == foundDir;
+        }
+
         return false;
     }
     
+   
     @Override
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor world, BlockPos pos, BlockPos neighborPos) {
         if (!(world instanceof Level level)) return state;

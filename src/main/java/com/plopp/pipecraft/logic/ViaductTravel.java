@@ -1,4 +1,4 @@
-package com.plopp.pipecraft;
+package com.plopp.pipecraft.logic;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,17 +22,7 @@ public class ViaductTravel {
     private static final Map<UUID, List<BlockPos>> activeTravels = new HashMap<>();
     private static final Map<UUID, Integer> travelProgress = new HashMap<>();
 
-    private static boolean hasExactlyOneViaductConnection(Level level, BlockPos pos) {
-        int count = 0;
-        for (Direction dir : Direction.values()) {
-            BlockPos neighbor = pos.relative(dir);
-            BlockState state = level.getBlockState(neighbor);
-            if (state.getBlock() instanceof BlockViaduct) {
-                count++;
-            }
-        }
-        return count == 1;
-    }
+
     
     public static void start(Player player, BlockPos startPos) {
         Level level = player.level();
@@ -106,8 +96,14 @@ public class ViaductTravel {
             List<BlockPos> path = queue.poll();
             BlockPos last = path.get(path.size() - 1);
 
+            // Pfad gefunden
             if (last.equals(end)) {
-                return path;
+                // Erlaube nur Pfade mit mindestens einem Viaduct dazwischen
+                if (path.size() >= 3) {
+                    return path;
+                } else {
+                    continue; // Pfad zu kurz → überspringen
+                }
             }
 
             for (Direction dir : Direction.values()) {
@@ -115,7 +111,11 @@ public class ViaductTravel {
                 if (visited.contains(next)) continue;
 
                 BlockState state = level.getBlockState(next);
-                if (state.getBlock() instanceof BlockViaduct || state.is(Blocks.COBBLESTONE)) {
+
+                // STONE nur als Zielblock erlaubt, nicht zwischendrin
+                if (state.is(Blocks.STONE) && !next.equals(end)) continue;
+
+                if (state.getBlock() instanceof BlockViaduct || next.equals(end)) {
                     visited.add(next);
                     List<BlockPos> newPath = new ArrayList<>(path);
                     newPath.add(next);
@@ -124,27 +124,44 @@ public class ViaductTravel {
             }
         }
 
-        return List.of(); 
+        return List.of(); // Kein Pfad gefunden
     }
     public static boolean isTravelActive(Player player) {
         return activeTravels.containsKey(player.getUUID());
     }
     private static BlockPos findTarget(Level level, BlockPos from) {
-        int rangeXZ = 50;
-        int rangeY = 5;
+        Set<BlockPos> visited = new HashSet<>();
+        Queue<List<BlockPos>> queue = new LinkedList<>();
 
-        for (BlockPos pos : BlockPos.betweenClosed(from.offset(-rangeXZ, -rangeY, -rangeXZ), from.offset(rangeXZ, rangeY, rangeXZ))) {
-            BlockState state = level.getBlockState(pos);
-            if (state.is(Blocks.COBBLESTONE)) {
-                // Prüfe, ob Pfad existiert
-                List<BlockPos> path = findViaductPath(level, from, pos);
-                if (!path.isEmpty()) {
-                    System.out.println("[Viaduct] Ziel-Cobblestone gefunden und erreichbar bei " + pos);
-                    return pos.immutable();
+        queue.add(List.of(from));
+        visited.add(from);
+
+        int maxDistance = 512; // Optionaler Schutz
+        while (!queue.isEmpty()) {
+            List<BlockPos> path = queue.poll();
+            BlockPos last = path.get(path.size() - 1);
+
+            // Ziel gefunden (aber nicht direkt neben Start!)
+            if (!last.equals(from) && level.getBlockState(last).is(Blocks.STONE) && path.size() >= 3) {
+                return last.immutable();
+            }
+
+            for (Direction dir : Direction.values()) {
+                BlockPos next = last.relative(dir);
+                if (visited.contains(next)) continue;
+
+                if (from.distManhattan(next) > maxDistance) continue; // Sicherheitsgrenze
+
+                BlockState state = level.getBlockState(next);
+                if (state.getBlock() instanceof BlockViaduct || state.is(Blocks.STONE)) {
+                    visited.add(next);
+                    List<BlockPos> newPath = new ArrayList<>(path);
+                    newPath.add(next);
+                    queue.add(newPath);
                 }
             }
         }
-        System.out.println("[Viaduct] Kein erreichbarer Ziel-Cobblestone gefunden");
+
         return null;
     }
     
