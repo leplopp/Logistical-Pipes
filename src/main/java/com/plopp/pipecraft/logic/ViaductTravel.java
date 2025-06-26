@@ -10,6 +10,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import com.plopp.pipecraft.Blocks.Viaduct.BlockViaduct;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.Pose;
@@ -21,8 +22,6 @@ import net.minecraft.world.level.block.state.BlockState;
 public class ViaductTravel {
     private static final Map<UUID, List<BlockPos>> activeTravels = new HashMap<>();
     private static final Map<UUID, Integer> travelProgress = new HashMap<>();
-
-
     
     public static void start(Player player, BlockPos startPos) {
         Level level = player.level();
@@ -37,23 +36,20 @@ public class ViaductTravel {
 
                 if (!player.level().isClientSide()) {
                     player.setInvisible(true);
+                    player.setInvulnerable(true);
+                    player.setSwimming(false);
+                    player.setPose(Pose.STANDING);
+                    player.setShiftKeyDown(false);
+                    
                 }
             }
         }
     }
 
-
     public static void tick(Player player) {
         UUID id = player.getUUID();
-        if (!activeTravels.containsKey(id)) return;
 
-        if (player.xxa != 0 || player.zza != 0) {
-            activeTravels.remove(id);
-            travelProgress.remove(id);
-            // Pose zurücksetzen, falls Fahrt abgebrochen
-            player.setPose(Pose.STANDING);
-            return;
-        }
+        if (!activeTravels.containsKey(id)) return;
 
         List<BlockPos> path = activeTravels.get(id);
         int index = travelProgress.getOrDefault(id, 0);
@@ -61,27 +57,28 @@ public class ViaductTravel {
         if (index >= path.size()) {
             stop(player);
             return;
+              
+        }
+        if (ViaductTravel.isTravelActive(player)) {
+            player.setSwimming(false);
+            player.setPose(Pose.STANDING);
         }
 
         BlockPos targetPos = path.get(index);
         double x = targetPos.getX() + 0.5;
 
-        // Unterschiedliche Höhe während der Fahrt und am Ende:
         double y;
         if (index == path.size() - 1) {
-            // Letzter Block (Cobblestone), auf dem Block stehen
+            // Letzter Block, auf dem Block stehen
             y = targetPos.getY() + 1.0;
         } else {
             // Während der Fahrt in der "Pipe"
-            y = targetPos.getY() + -1;
+            y = targetPos.getY() - 1;
         }
 
         double z = targetPos.getZ() + 0.5;
         
-        // Teleportieren
         player.teleportTo(x, y, z);
-
-        // Nächster Punkt
         travelProgress.put(id, index + 1);
     }
     
@@ -96,13 +93,12 @@ public class ViaductTravel {
             List<BlockPos> path = queue.poll();
             BlockPos last = path.get(path.size() - 1);
 
-            // Pfad gefunden
             if (last.equals(end)) {
                 // Erlaube nur Pfade mit mindestens einem Viaduct dazwischen
                 if (path.size() >= 3) {
                     return path;
                 } else {
-                    continue; // Pfad zu kurz → überspringen
+                    continue; 
                 }
             }
 
@@ -124,10 +120,12 @@ public class ViaductTravel {
             }
         }
 
-        return List.of(); // Kein Pfad gefunden
+        return List.of(); 
     }
+    
     public static boolean isTravelActive(Player player) {
         return activeTravels.containsKey(player.getUUID());
+        
     }
     private static BlockPos findTarget(Level level, BlockPos from) {
         Set<BlockPos> visited = new HashSet<>();
@@ -136,15 +134,22 @@ public class ViaductTravel {
         queue.add(List.of(from));
         visited.add(from);
 
-        int maxDistance = 512; // Optionaler Schutz
+        int maxDistance = 512; 
         while (!queue.isEmpty()) {
             List<BlockPos> path = queue.poll();
             BlockPos last = path.get(path.size() - 1);
 
             // Ziel gefunden (aber nicht direkt neben Start!)
             if (!last.equals(from) && level.getBlockState(last).is(Blocks.STONE) && path.size() >= 3) {
+            	 BlockPos above = last.above();
+                 BlockState aboveState = level.getBlockState(above);
+                 if (!(aboveState.getBlock() instanceof BlockViaduct)) {
                 return last.immutable();
+            }else {
+                // Ziel ignorieren, weil oben Viaduct ist
+                continue;
             }
+       }
 
             for (Direction dir : Direction.values()) {
                 BlockPos next = last.relative(dir);
@@ -167,15 +172,23 @@ public class ViaductTravel {
     
     public static void stop(Player player) {
         UUID id = player.getUUID();
+        List<BlockPos> path = activeTravels.remove(id);
         activeTravels.remove(id);
         travelProgress.remove(id);
 
-        if (!player.level().isClientSide()) {
-            player.setPose(Pose.STANDING);
-            player.setInvisible(false);
+        player.setPose(Pose.STANDING);
+        player.setInvisible(false);
+        player.setInvulnerable(false);
+
+        if (path != null && !path.isEmpty()) {
+            BlockPos stonePos = path.get(path.size() - 1);       // Zielblock (STONE)
+            BlockPos below = stonePos.below();                   // Block darunter
+            BlockState belowState = player.level().getBlockState(below);
+
+            if (belowState.getBlock() instanceof BlockViaduct) {
+                System.out.println("===> SPRINGE! Viaduct unter Stone bei " + below);
+                Minecraft.getInstance().player.jumpFromGround();
+            }
         }
     }
-    
-    
-    
 }

@@ -1,6 +1,5 @@
 package com.plopp.pipecraft.Blocks.Viaduct;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -22,8 +21,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.EntityBlock;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -33,7 +30,7 @@ import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-public class BlockViaduct extends Block implements EntityBlock {
+public class BlockViaduct extends Block {
 
     public static List<Triangle> hitboxTriangles;
     public static final BooleanProperty CONNECTED_NORTH = BooleanProperty.create("connected_north");
@@ -308,12 +305,6 @@ public class BlockViaduct extends Block implements EntityBlock {
     @Override
     public boolean useShapeForLightOcclusion(BlockState state) {
         return true;
-    }
-
-    @Nullable
-    @Override
-    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new ViaductBlockEntity(pos, state);
     }
 
     public void debugRender(PoseStack poseStack, MultiBufferSource buffer) {

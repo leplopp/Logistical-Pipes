@@ -26,7 +26,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-public class BlockViaductAdvanced extends Block implements EntityBlock {
+public class BlockViaductAdvanced extends Block {
 
     public static List<Triangle> hitboxTriangles;
     public static final BooleanProperty CONNECTED_NORTH = BooleanProperty.create("connected_north");
@@ -204,12 +204,6 @@ public class BlockViaductAdvanced extends Block implements EntityBlock {
     @Override
     public boolean useShapeForLightOcclusion(BlockState state) {
         return true;
-    }
-
-    @Nullable
-    @Override
-    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new ViaductBlockEntityAdvanced(pos, state);
     }
 
     public void debugRender(PoseStack poseStack, MultiBufferSource buffer) {
