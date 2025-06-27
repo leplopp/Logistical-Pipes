@@ -1,14 +1,7 @@
 package com.plopp.pipecraft.Blocks.Viaduct;
 
-import java.util.List;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.plopp.pipecraft.logic.ViaductTravel;
-import com.plopp.pipecraft.obj.BlockViaductShapes;
-import com.plopp.pipecraft.obj.Triangle;
 import com.plopp.pipecraft.obj.objParser;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -24,7 +17,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -32,7 +24,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class BlockViaduct extends Block {
 
-    public static List<Triangle> hitboxTriangles;
     public static final BooleanProperty CONNECTED_NORTH = BooleanProperty.create("connected_north");
     public static final BooleanProperty CONNECTED_SOUTH = BooleanProperty.create("connected_south");
     public static final BooleanProperty CONNECTED_EAST = BooleanProperty.create("connected_east");
@@ -240,86 +231,31 @@ public class BlockViaduct extends Block {
     public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource rand) {
         updateConnections(level, pos);
     }
-    private BooleanProperty getPropertyForDirection(Direction dir) {
-        return switch (dir) {
-            case NORTH -> CONNECTED_NORTH;
-            case SOUTH -> CONNECTED_SOUTH;
-            case EAST  -> CONNECTED_EAST;
-            case WEST  -> CONNECTED_WEST;
-            case UP    -> CONNECTED_UP;
-            case DOWN  -> CONNECTED_DOWN;
-        };
-    }
-    
-    private String determineModelKey(BlockState state) {
-        int count = 0;
-        for (Direction dir : Direction.values()) {
-            if (state.getValue(getPropertyForDirection(dir))) {
-                count++;
-            }
-        }
-
-        boolean n = state.getValue(CONNECTED_NORTH);
-        boolean s = state.getValue(CONNECTED_SOUTH);
-        boolean e = state.getValue(CONNECTED_EAST);
-        boolean w = state.getValue(CONNECTED_WEST);
-        boolean u = state.getValue(CONNECTED_UP);
-        boolean d = state.getValue(CONNECTED_DOWN);
-
-        if (count == 0) return "default"; // viaduct.obj
-
-        if (count == 2) {
-            // Gerade Linie?
-            if ((n && s) || (e && w) || (u && d)) {
-                return "long"; // viaduct_connected_long.obj
-            }
-            return "corner"; // viaduct_connected_corner.obj
-        }
-
-        // 1 oder 3 Verbindungen: T oder Endstück → selbes Modell
-        if (count == 1 || count == 3) return "connected"; // viaduct_connected.obj
-
-        // Optional: 4 oder mehr? Kein passendes Modell → fallback
-        return "default";
-    }
+  
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
-        String key = determineModelKey(state); // "default", "connected", "corner", "long"
-
-        List<Triangle> tris = switch (key) {
-            case "connected" -> BlockViaductShapes.CONNECTED;
-            case "corner"    -> BlockViaductShapes.CORNER;
-            case "long"      -> BlockViaductShapes.LONG;
-            default          -> BlockViaductShapes.DEFAULT;
-        };
-
-        if (tris == null || tris.isEmpty()) return Shapes.empty();
-
-        VoxelShape shape = Shapes.empty();
-        for (Triangle tri : tris) {
-            shape = Shapes.or(shape, Shapes.create(tri.getBoundingBox()));
+        if (context instanceof EntityCollisionContext entityContext) {
+            Entity entity = entityContext.getEntity();
+            if (entity instanceof Player player) {
+                if (ViaductTravel.isTravelActive(player)) {
+                    return Shapes.empty(); // keine visuelle Hitbox
+                }
+            }
         }
-        return shape;
-    }
 
+        // „Stern“-Form wie vorher
+        VoxelShape center = box(4, 4, 4, 12, 12, 12);
+        VoxelShape north = box(4, 4, 0, 12, 12, 4);
+        VoxelShape south = box(4, 4, 12, 12, 12, 16);
+        VoxelShape west  = box(0, 4, 4, 4, 12, 12);
+        VoxelShape east  = box(12, 4, 4, 16, 12, 12);
+        VoxelShape up    = box(4, 12, 4, 12, 16, 12);
+        VoxelShape down  = box(4, 0, 4, 12, 4, 12);
+        return Shapes.or(center, north, south, west, east, up, down);
+    }
     @Override
     public boolean useShapeForLightOcclusion(BlockState state) {
         return true;
-    }
-
-    public void debugRender(PoseStack poseStack, MultiBufferSource buffer) {
-        VertexConsumer builder = buffer.getBuffer(RenderType.lines());
-        for (Triangle tri : hitboxTriangles) {
-            drawDebugLine(builder, poseStack, tri.a, tri.b);
-            drawDebugLine(builder, poseStack, tri.b, tri.c);
-            drawDebugLine(builder, poseStack, tri.c, tri.a);
-        }
-    }
-
-    private void drawDebugLine(VertexConsumer builder, PoseStack poseStack, Vec3 from, Vec3 to) {
-        builder.setColor(255, 0, 0, 255);
-        builder.addVertex((float) from.x, (float) from.y, (float) from.z);
-        builder.addVertex((float) to.x, (float) to.y, (float) to.z);
     }
     
     @Override
@@ -335,6 +271,6 @@ public class BlockViaduct extends Block {
             }
         }
         // Sonst normale Hitbox zurückgeben
-        return super.getCollisionShape(state, world, pos, context);
+        return getShape(state, world, pos, context);
     }
 } 

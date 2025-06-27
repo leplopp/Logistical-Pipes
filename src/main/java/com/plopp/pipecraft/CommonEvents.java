@@ -1,8 +1,9 @@
 package com.plopp.pipecraft;
 
+import java.util.UUID;
 import com.plopp.pipecraft.logic.ViaductTravel;
-
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -17,7 +18,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerChangeGameModeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
@@ -28,7 +28,17 @@ import net.minecraft.world.entity.Entity;
 @EventBusSubscriber(modid = PipeCraftIndex.MODID)
 public class CommonEvents {
 
+	@SubscribeEvent
+	public static void onClientPlayerTick(PlayerTickEvent.Post event) {
+	    Player player = event.getEntity();
+	    if (!(player instanceof LocalPlayer localPlayer)) return;
 
+	    UUID id = localPlayer.getUUID();
+	    if (ViaductTravel.shouldTriggerJump(id)) {
+	        localPlayer.jumpFromGround();
+	        System.out.println("[Client] Spieler ist am Ziel gesprungen!");
+	    }
+	}
 	@SubscribeEvent
 	public static void onPlayerTick(PlayerTickEvent.Post event) {
 	    Player player = event.getEntity();
@@ -50,7 +60,13 @@ public class CommonEvents {
 	        Block block = blockState.getBlock();
 
 	        if (player.isShiftKeyDown() && block == Blocks.STONE && !ViaductTravel.isTravelActive(player)) {
-	            ViaductTravel.start(player, pos);
+	        	// Für Block-Modus: 3 Ticks pro Block, keine Chunk-Geschwindigkeit
+	        	  boolean useChunkMode = true; // z.B. aus Config oder sonstwie
+	        	  if (useChunkMode) {
+	        	        ViaductTravel.start(player, pos, 0, 20); // Chunkmodus starten:
+	        	    } else {
+	        	        ViaductTravel.start(player, pos, 1, 0);// Blockmode modus starten:
+	        	    }
 	        }
 
 	        ViaductTravel.tick(player);

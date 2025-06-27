@@ -22,7 +22,7 @@ public class BlockRegister {
 
   public static final DeferredBlock<Block> VIADUCT = registerBlock("viaduct",
             () -> new BlockViaduct(BlockBehaviour.Properties.of()
-                    .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS).noOcclusion()));
+                    .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS)));
     
   public static final DeferredBlock<Block> VIADUCTADVANCED = registerBlock("viaduct_advanced",
           () -> new BlockViaductAdvanced(BlockBehaviour.Properties.of()

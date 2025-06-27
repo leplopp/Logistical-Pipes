@@ -14,13 +14,13 @@ public class BlockViaductAdvancedShapes {
     public static List<Triangle> SIDE_ROTATED;
 
     public static void loadAll(objParser parser) {
-        DEFAULT   = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/viaduct.obj"));
-        CONNECTED = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/viaduct_connected.obj"));
-        CORNER    = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/viaduct_connected_corner.obj"));
-        LONG      = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/viaduct_connected_long.obj"));
-        ALL_SIDE     = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/viaduct_connected_all_side.obj"));
-        CROSS        = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/viaduct_connected_cross.obj"));
-        SIDE_ROTATED = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/viaduct_connected_side_rotated.obj"));
+        DEFAULT   = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/hitbox/box.obj"));
+        CONNECTED = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/hitbox/box.obj"));
+        CORNER    = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/hitbox/box.obj"));
+        LONG      = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/hitbox/box.obj"));
+        ALL_SIDE     = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/hitbox/box.obj"));
+        CROSS        = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/hitbox/box.obj"));
+        SIDE_ROTATED = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/hitbox/box.obj"));
     }
 
 }

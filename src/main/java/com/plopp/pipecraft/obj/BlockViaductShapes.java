@@ -11,10 +11,10 @@ public class BlockViaductShapes {
     public static List<Triangle> LONG;
 
     public static void loadAll(objParser parser) {
-        DEFAULT   = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/viaduct.obj"));
-        CONNECTED = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/viaduct_connected.obj"));
-        CORNER    = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/viaduct_connected_corner.obj"));
-        LONG      = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/viaduct_connected_long.obj"));
+        DEFAULT   = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/hitbox/box.obj"));
+        CONNECTED = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/hitbox/box.obj"));
+        CORNER    = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/hitbox/box.obj"));
+        LONG      = objParser.loadTrianglesFromObj(ResourceLocation.fromNamespaceAndPath("logisticpipes", "models/block/viaduct/hitbox/box.obj"));
     }
 
 }
