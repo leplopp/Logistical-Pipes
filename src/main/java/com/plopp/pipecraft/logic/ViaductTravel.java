@@ -9,27 +9,74 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
-import com.plopp.pipecraft.Blocks.Viaduct.BlockViaduct;
+import net.minecraft.world.entity.Entity;
+import com.mojang.authlib.properties.Property;
+import com.mojang.authlib.GameProfile;
+import com.plopp.pipecraft.Blocks.BlockRegister;
+import com.plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 public class ViaductTravel {
 	
 	private static final Map<UUID, Integer> ticksPerChunkMap = new HashMap<>();
-	private static final Map<UUID, Integer> ticksPerBlockMap = new HashMap<>();
 	private static final Map<UUID, Integer> tickCounters = new HashMap<>();
-    private static final Map<UUID, List<BlockPos>> activeTravels = new HashMap<>();
+	public static final Map<UUID, List<BlockPos>> activeTravels = new HashMap<>();
     private static final Map<UUID, Integer> travelProgress = new HashMap<>();
     private static final Map<UUID, Double> progressMap = new HashMap<>();
     private static final Set<UUID> jumpAfterTravel = new HashSet<>();
     private static final Set<UUID> jumpTrigger = new HashSet<>();
+    public static final int MAX_CHARGE = 30; //charge time
+    private static final Map<UUID, Integer> chargeMap = new HashMap<>();
+    private static final Map<UUID, Integer> lastSentPercent = new HashMap<>();
+    public static final Map<UUID, ArmorStand> headEntities = new HashMap<>();
+    private static final Map<UUID, Float> lastYawMap = new HashMap<>();
+    
+    public static int incrementCharge(UUID id) {
+        int val = chargeMap.getOrDefault(id, 0) + 1;
+        chargeMap.put(id, val);
+        return val;
+    }
+
+    public static boolean isCharging(UUID id) {
+        return chargeMap.containsKey(id);
+    }
+
+    public static void cancelCharge(Player player) {
+        cancelCharge(player.getUUID());
+    }
+    public static void cancelCharge(UUID id) {
+        chargeMap.remove(id);
+        lastSentPercent.remove(id);
+    }
+    
+    public static void clearCharge(UUID id) {
+        chargeMap.remove(id);
+        lastSentPercent.remove(id);
+    }
+
+    public static int getLastSentPercent(UUID id) {
+        return lastSentPercent.getOrDefault(id, -1);
+    }
+
+    public static void setLastSentPercent(UUID id, int value) {
+        lastSentPercent.put(id, value);
+    }
 
     public static void markJumpAfterTravel(Player player) {
         jumpAfterTravel.add(player.getUUID());
@@ -43,10 +90,31 @@ public class ViaductTravel {
         jumpAfterTravel.remove(player.getUUID());
     }
     public static boolean shouldTriggerJump(UUID id) {
-        return jumpTrigger.remove(id); // gibt true zurück und entfernt es gleichzeitig
+        return jumpTrigger.remove(id); 
     }
     
-    public static void start(Player player, BlockPos startPos, int ticksPerBlock, int ticksPerChunk) {
+    private static Vec3 vecFromBlockPos(BlockPos pos) {
+        return new Vec3(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+    }
+    
+    public static boolean isTravelActive(Player player) {
+        return activeTravels.containsKey(player.getUUID());
+        
+    }
+    
+    private static float normalizeYaw(double yaw) {
+        while (yaw > 180) yaw -= 360;
+        while (yaw < -180) yaw += 360;
+        return (float) yaw;
+    }
+    private static float lerpAngle(float current, float target, float t) {
+        float diff = target - current;
+        while (diff < -180) diff += 360;
+        while (diff >= 180) diff -= 360;
+        return current + diff * t;
+    }
+    
+    public static void start(Player player, BlockPos startPos, int ticksPerChunk) {
         Level level = player.level();
         BlockPos target = findTarget(level, startPos);
 
@@ -57,7 +125,6 @@ public class ViaductTravel {
                 activeTravels.put(id, path);
                 travelProgress.put(id, 0);
                 tickCounters.put(id, 0);
-                ticksPerBlockMap.put(id, ticksPerBlock);
                 ticksPerChunkMap.put(id, ticksPerChunk);
 
                 if (!player.level().isClientSide()) {
@@ -68,103 +135,151 @@ public class ViaductTravel {
                     player.setShiftKeyDown(false);
                     player.noPhysics = true;
                     player.setNoGravity(true);
+                                         
+                    ArmorStand stand = new ArmorStand(level, player.getX(), player.getY(), player.getZ());
+                    stand.setInvisible(true);
+                    stand.setInvulnerable(true);
+                    stand.setNoGravity(true);
+                    stand.setCustomName(player.getDisplayName());
+                    stand.setCustomNameVisible(false);
+                    byte flags = 0;
+                    flags |= ArmorStand.CLIENT_FLAG_MARKER;
+                    flags |= ArmorStand.CLIENT_FLAG_NO_BASEPLATE;
+                    stand.getEntityData().set(ArmorStand.DATA_CLIENT_FLAGS, flags);
+
+                    ItemStack head = new ItemStack(Items.PLAYER_HEAD);
+
+                    CompoundTag skullOwner = new CompoundTag();
+
+                    GameProfile profile = player.getGameProfile();
+
+                    skullOwner.putString("Id", profile.getId().toString());
+                    skullOwner.putString("Name", profile.getName());
+
+                    if (profile.getProperties().containsKey("textures")) {
+                        ListTag propertiesList = new ListTag();
+                        for (Property property : profile.getProperties().get("textures")) {
+                            CompoundTag propTag = new CompoundTag();
+                            propTag.putString("Value", property.value());
+                            if (property.signature() != null) {
+                                propTag.putString("Signature", property.signature());
+                            }
+                            propertiesList.add(propTag);
+                        }
+                        skullOwner.put("Properties", propertiesList);
+                    }
+
+                    CompoundTag tag = new CompoundTag();
+                    tag.put("SkullOwner", skullOwner);
+
+                    head.getTags();
+
+                    stand.setItemSlot(EquipmentSlot.HEAD, head);
+
+                    level.addFreshEntity(stand);
+                    headEntities.put(player.getUUID(), stand);
                 }
             }
         }
     }
-
+  
     public static void tick(Player player) {
         UUID id = player.getUUID();
+        if (!headEntities.containsKey(id)) return;
+
+        ArmorStand stand = headEntities.get(id);
+        if (stand == null) return;
+
+        Vec3 pos = player.position();
+        stand.moveTo(pos.x, pos.y - 0.2, pos.z, stand.getYRot(), stand.getXRot());
 
         if (!activeTravels.containsKey(id)) return;
 
-        int ticksPerBlock = ticksPerBlockMap.getOrDefault(id, 0);
-        int ticksPerChunk = ticksPerChunkMap.getOrDefault(id, 0);
-        int tickCounter = tickCounters.getOrDefault(id, 0);
+        List<BlockPos> path = activeTravels.get(id);
+        int currentIndex = travelProgress.getOrDefault(id, 0);
+        int lastIndex = path.size() - 1;
+        if (currentIndex >= lastIndex) return;
 
-        tickCounter++;
+        int ticksPerChunk = ticksPerChunkMap.getOrDefault(id, 1);
+        if (ticksPerChunk <= 0) return;
+
+        int tickCounter = tickCounters.getOrDefault(id, 0) + 1;
         tickCounters.put(id, tickCounter);
 
-        List<BlockPos> path = activeTravels.get(id);
-        int index = travelProgress.getOrDefault(id, 0);
+        double chunkProgress = progressMap.getOrDefault(id, 0.0);
+        double chunkStep = 1.0 / ticksPerChunk;
+        chunkProgress += chunkStep;
 
-        if (index >= path.size() - 1) {
-            stop(player);
-            return;
+        int chunkSize = 16;
+        int stepsLeft = Math.min(chunkSize, lastIndex - currentIndex);
+
+        double totalStepProgress = chunkProgress * stepsLeft;
+        int subIndex = (int) totalStepProgress;
+        double lerpProgress = totalStepProgress - subIndex;
+
+        int fromIndex = Math.min(currentIndex + subIndex, lastIndex - 1);
+        int toIndex = Math.min(fromIndex + 1, lastIndex);
+
+        Vec3 from = vecFromBlockPos(path.get(fromIndex));
+        Vec3 to = vecFromBlockPos(path.get(toIndex));
+        Vec3 lerped = from.lerp(to, lerpProgress);
+
+        double lookAheadDistance = 0.1; 
+        double lookAheadProgress = lerpProgress + lookAheadDistance;
+        int lookAheadSubIndex = subIndex;
+
+        while (lookAheadProgress > 1.0) {
+            lookAheadProgress -= 1.0;
+            lookAheadSubIndex++;
         }
 
-        if (ticksPerBlock > 0 && ticksPerChunk == 0) {
-            // Blockmodus (bisheriger Modus)
-            if (tickCounter < ticksPerBlock) return;
-            tickCounters.put(id, 0);
+        int lookAheadFromIndex = Math.min(currentIndex + lookAheadSubIndex, lastIndex - 1);
+        int lookAheadToIndex = Math.min(lookAheadFromIndex + 1, lastIndex);
 
-            index++;
-            travelProgress.put(id, index);
+        Vec3 lookAheadFrom = vecFromBlockPos(path.get(lookAheadFromIndex));
+        Vec3 lookAheadTo = vecFromBlockPos(path.get(lookAheadToIndex));
+        Vec3 lookAheadPos = lookAheadFrom.lerp(lookAheadTo, lookAheadProgress);
 
-            BlockPos targetPos = path.get(index);
-            boolean isTargetBlock = (index == path.size() - 1);
-            teleportPlayerTo(player, targetPos, isTargetBlock);
+        Vec3 direction = lookAheadPos.subtract(lerped).normalize();
 
-        } else if (ticksPerChunk > 0 && ticksPerBlock == 0) {
-            double chunkProgress = progressMap.getOrDefault(id, 0.0);
-            double chunkStep = 1.0 / ticksPerChunk;
-            chunkProgress += chunkStep;
+        double rawYaw = Math.toDegrees(Math.atan2(direction.z, direction.x)) - 90;
+        float targetYaw = normalizeYaw(rawYaw);
 
-            int chunkSize = 16;
-            int currentIndex = travelProgress.getOrDefault(id, 0);
+        float lastYaw = lastYawMap.getOrDefault(id, targetYaw);
+        float smoothYaw = lerpAngle(lastYaw, targetYaw, 0.3f); // Sanfte Rotation
 
-            if (currentIndex >= path.size() - 1) {
-                stop(player);
-                return;
-            }
+        stand.setYRot(smoothYaw);
+        stand.setYHeadRot(smoothYaw);
+        stand.moveTo(stand.getX(), stand.getY(), stand.getZ(), smoothYaw, stand.getXRot());
 
-            int lastIndex = path.size() - 1;
-            int stepsLeft = Math.min(chunkSize, lastIndex - currentIndex);
+        lastYawMap.put(id, smoothYaw);
 
-            // Aktueller Fortschritt durch die 16 Schritte
-            double totalStepProgress = chunkProgress * stepsLeft;
+        if (stand.level() instanceof ServerLevel serverLevel) {
+            serverLevel.broadcastEntityEvent(stand, (byte) 3);
+        }
 
-            int subIndex = (int) totalStepProgress;
-            double lerpProgress = totalStepProgress - subIndex;
+        double y = (toIndex == lastIndex && chunkProgress >= 1.0) ? to.y + 1.0 : lerped.y - 1.0;
 
-            int fromIndex = Math.min(currentIndex + subIndex, path.size() - 2);
-            int toIndex = Math.min(fromIndex + 1, path.size() - 1);
-            
-            if (fromIndex >= path.size() - 1 || toIndex >= path.size()) {
-                stop(player);
-                return;
-            }
-            Vec3 from = vecFromBlockPos(path.get(fromIndex));
-            Vec3 to = vecFromBlockPos(path.get(toIndex));
-            Vec3 lerped = from.lerp(to, lerpProgress);
-
-            double y;
-            if (toIndex == lastIndex && chunkProgress >= 1.0) {
-                y = to.y + 1.0;
-            } else {
-                y = lerped.y - 1.0;
-            }
-
+        if (player instanceof ServerPlayer sp && sp.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
+            stop(player, false);
+            return;
+        } else {
             player.teleportTo(lerped.x, y, lerped.z);
+        }
 
-            // Fortschritt abschließen
-            if (chunkProgress >= 1.0) {
-                travelProgress.put(id, currentIndex + stepsLeft);
-                chunkProgress = 0.0;
-            }
-
+        if (chunkProgress >= 1.0) {
+            travelProgress.put(id, currentIndex + stepsLeft);
+            progressMap.put(id, 0.0);
+        } else {
             progressMap.put(id, chunkProgress);
         }
-    }
-    private static Vec3 vecFromBlockPos(BlockPos pos) {
-        return new Vec3(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
-    }
 
-    private static void teleportPlayerTo(Player player, BlockPos pos, boolean isTargetBlock) {
-        double x = pos.getX() + 0.5;
-        double y = isTargetBlock ? pos.getY() + 1.0 : pos.getY() - 1.0;
-        double z = pos.getZ() + 0.5;
-        player.teleportTo(x, y, z);
+        if (travelProgress.get(id) >= lastIndex) {
+            BlockPos stonePos = path.get(lastIndex);
+            player.teleportTo(stonePos.getX() + 0.5, stonePos.getY() + 1.0, stonePos.getZ() + 0.5);
+
+            stop(player, true);
+        }
     }
     
     public static List<BlockPos> findViaductPath(Level level, BlockPos start, BlockPos end) {
@@ -179,7 +294,6 @@ public class ViaductTravel {
             BlockPos last = path.get(path.size() - 1);
 
             if (last.equals(end)) {
-                // Erlaube nur Pfade mit mindestens einem Viaduct dazwischen
                 if (path.size() >= 3) {
                     return path;
                 } else {
@@ -193,8 +307,7 @@ public class ViaductTravel {
 
                 BlockState state = level.getBlockState(next);
 
-                // STONE nur als Zielblock erlaubt, nicht zwischendrin
-                if (state.is(Blocks.STONE) && !next.equals(end)) continue;
+                if (state.is(BlockRegister.VIADUCTCHARGERBLOCK) && !next.equals(end)) continue;
 
                 if (state.getBlock() instanceof BlockViaduct || next.equals(end)) {
                     visited.add(next);
@@ -208,11 +321,7 @@ public class ViaductTravel {
         return List.of(); 
     }
     
-    public static boolean isTravelActive(Player player) {
-        return activeTravels.containsKey(player.getUUID());
-        
-    }
-    private static BlockPos findTarget(Level level, BlockPos from) {
+    public static BlockPos findTarget(Level level, BlockPos from) {
         Set<BlockPos> visited = new HashSet<>();
         Queue<List<BlockPos>> queue = new LinkedList<>();
 
@@ -224,14 +333,12 @@ public class ViaductTravel {
             List<BlockPos> path = queue.poll();
             BlockPos last = path.get(path.size() - 1);
 
-            // Ziel gefunden (aber nicht direkt neben Start!)
-            if (!last.equals(from) && level.getBlockState(last).is(Blocks.STONE) && path.size() >= 3) {
+            if (!last.equals(from) && level.getBlockState(last).is(BlockRegister.VIADUCTCHARGERBLOCK) && path.size() >= 3) {
             	 BlockPos above = last.above();
                  BlockState aboveState = level.getBlockState(above);
                  if (!(aboveState.getBlock() instanceof BlockViaduct)) {
                 return last.immutable();
             }else {
-                // Ziel ignorieren, weil oben Viaduct ist
                 continue;
             }
        }
@@ -240,10 +347,10 @@ public class ViaductTravel {
                 BlockPos next = last.relative(dir);
                 if (visited.contains(next)) continue;
 
-                if (from.distManhattan(next) > maxDistance) continue; // Sicherheitsgrenze
+                if (from.distManhattan(next) > maxDistance) continue; 
 
                 BlockState state = level.getBlockState(next);
-                if (state.getBlock() instanceof BlockViaduct || state.is(Blocks.STONE)) {
+                if (state.getBlock() instanceof BlockViaduct || state.is(BlockRegister.VIADUCTCHARGERBLOCK)) {
                     visited.add(next);
                     List<BlockPos> newPath = new ArrayList<>(path);
                     newPath.add(next);
@@ -255,11 +362,15 @@ public class ViaductTravel {
         return null;
     }
     
-    public static void stop(Player player) {
+    public static void stop(Player player, boolean includeTeleport) {
         UUID id = player.getUUID();
+        ArmorStand stand = headEntities.remove(id);
+        if (stand != null) {
+            stand.remove(Entity.RemovalReason.DISCARDED);
+        }
+
         List<BlockPos> path = activeTravels.remove(id);
         travelProgress.remove(id);
-        ticksPerBlockMap.remove(id);
         tickCounters.remove(id);
 
         player.noPhysics = false;
@@ -269,7 +380,7 @@ public class ViaductTravel {
         player.setNoGravity(false);
         markJumpAfterTravel(player);
 
-        if (path != null && !path.isEmpty()) {
+        if (includeTeleport && path != null && !path.isEmpty()) {
             BlockPos stonePos = path.get(path.size() - 1);
             player.teleportTo(stonePos.getX() + 0.5, stonePos.getY() + 1.0, stonePos.getZ() + 0.5);
             BlockPos below = stonePos.below();                   // Block darunter
@@ -279,13 +390,11 @@ public class ViaductTravel {
                 System.out.println("===> SPRINGE! Viaduct unter Stone bei " + below);
 
                 if (player.level().isClientSide() && player instanceof LocalPlayer) {
-                    // Für direkte Clients (optional)
                     ((LocalPlayer) player).jumpFromGround();
                 } else {
-                    // Für Server: Setze Flag, das Client auswertet
                     jumpTrigger.add(player.getUUID());
                 }
-               }
-            }
-        }
+             }
+          }
+      }
 }

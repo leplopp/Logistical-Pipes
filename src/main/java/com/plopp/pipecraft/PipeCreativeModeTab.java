@@ -22,22 +22,11 @@ public class PipeCreativeModeTab {
     	            .displayItems((itemDisplayParameters, output) -> {
     	                output.accept(BlockRegister.VIADUCT.get().asItem());
     	                output.accept(BlockRegister.VIADUCTADVANCED.get().asItem());
+    	                output.accept(BlockRegister.VIADUCTCHARGERBLOCK.get().asItem());
     	            })
     	            .build()
     	    );
     
-    
-    public static final Supplier<CreativeModeTab> LOGGISTIC_CRAFT_CABLE_TAB =
-    	    CREATIVE_MODE_TABS.register("cable_tab",
-    	        () -> CreativeModeTab.builder()
-    	            .icon(() -> new ItemStack(BlockRegister.VIADUCT))
-    	            .title(Component.translatable("creativetab.logisticpipes.cable_blocks"))
-    	            .displayItems((itemDisplayParameters, output) -> {
-    	            })
-    	            .build()
-    	    );
-
-
 	    public static void register(IEventBus eventBus) {
 	        CREATIVE_MODE_TABS.register(eventBus);
 	    }

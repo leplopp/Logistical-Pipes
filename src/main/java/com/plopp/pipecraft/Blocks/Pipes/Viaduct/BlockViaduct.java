@@ -1,5 +1,6 @@
-package com.plopp.pipecraft.Blocks.Viaduct;
+package com.plopp.pipecraft.Blocks.Pipes.Viaduct;
 
+import com.plopp.pipecraft.Blocks.BlockRegister;
 import com.plopp.pipecraft.logic.ViaductTravel;
 import com.plopp.pipecraft.obj.objParser;
 import net.minecraft.core.BlockPos;
@@ -13,7 +14,6 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -191,7 +191,7 @@ public class BlockViaduct extends Block {
 
         if (block instanceof BlockViaduct) return true;
 
-        if ((block == Blocks.STONE ) && toDirection != Direction.UP) {
+        if ((block == BlockRegister.VIADUCTCHARGERBLOCK.get() ) && toDirection != Direction.UP) {
             int viaductConnections = 0;
             Direction foundDir = null;
 

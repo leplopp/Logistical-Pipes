@@ -1,4 +1,4 @@
-package com.plopp.pipecraft.Blocks.Viaduct;
+package com.plopp.pipecraft.Blocks.Pipes.Viaduct;
 
 import javax.annotation.Nullable;
 import java.util.List;

@@ -1,7 +1,7 @@
 package com.plopp.pipecraft;
 
 import com.plopp.pipecraft.Blocks.BlockRegister;
-import com.plopp.pipecraft.Blocks.Viaduct.BlockViaductAdvanced;
+import com.plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductAdvanced;
 import com.plopp.pipecraft.obj.BlockViaductAdvancedShapes;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
