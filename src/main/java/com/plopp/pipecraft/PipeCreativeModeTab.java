@@ -22,7 +22,7 @@ public class PipeCreativeModeTab {
     	            .displayItems((itemDisplayParameters, output) -> {
     	                output.accept(BlockRegister.VIADUCT.get().asItem());
     	                output.accept(BlockRegister.VIADUCTADVANCED.get().asItem());
-    	                output.accept(BlockRegister.VIADUCTCHARGERBLOCK.get().asItem());
+    	                output.accept(BlockRegister.VIADUCTLINKER.get().asItem());
     	            })
     	            .build()
     	    );

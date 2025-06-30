@@ -102,10 +102,10 @@ public class BlockViaductAdvanced extends Block {
         	    ((north && east) || (east && south) || (south && west) || (west && north));
 
         BlockState updated = current
-                .setValue(CONNECTED_NORTH, west)
-                .setValue(CONNECTED_SOUTH, east)
-                .setValue(CONNECTED_EAST, north)
-                .setValue(CONNECTED_WEST, south)
+                .setValue(CONNECTED_NORTH, north)
+                .setValue(CONNECTED_SOUTH, south)
+                .setValue(CONNECTED_EAST, east)
+                .setValue(CONNECTED_WEST, west)
                 .setValue(CONNECTED_UP, up)
                 .setValue(CONNECTED_DOWN, down)
                 .setValue(CORNER, isCorner);

@@ -1,29 +1,30 @@
 package com.plopp.pipecraft;
 
+import java.util.List;
 import java.util.UUID;
-import com.mojang.authlib.GameProfile;
 import com.plopp.pipecraft.Blocks.BlockRegister;
 import com.plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 import com.plopp.pipecraft.logic.ViaductTravel;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
@@ -33,13 +34,11 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Pose;
-import net.minecraft.world.entity.decoration.ArmorStand;
 
 @EventBusSubscriber(modid = PipeCraftIndex.MODID)
 public class CommonEvents {	
-	
+
 	@SubscribeEvent
 	public static void onClientPlayerTick(PlayerTickEvent.Post event) {
 	    Player player = event.getEntity();
@@ -79,7 +78,7 @@ public class CommonEvents {
 
 	    UUID id = player.getUUID();
 
-	    boolean isOnChargerBlock = state.getBlock() == BlockRegister.VIADUCTCHARGERBLOCK.get();
+	    boolean isOnChargerBlock = state.getBlock() == BlockRegister.VIADUCTLINKER.get();
 	    boolean isCharging = ViaductTravel.isCharging(id);
 
 	    Vec3 playerPos = player.position();
@@ -92,7 +91,7 @@ public class CommonEvents {
 	        for (Direction dir : Direction.Plane.HORIZONTAL) {
 	            BlockPos neighborPos = pos.relative(dir);
 	            BlockState neighborState = player.level().getBlockState(neighborPos);
-	            if (neighborState.getBlock() == BlockRegister.VIADUCTCHARGERBLOCK.get()) {
+	            if (neighborState.getBlock() == BlockRegister.VIADUCTLINKER.get()) {
 	                hasAdjacentCharger = true;
 	                break;
 	            }
@@ -142,7 +141,7 @@ public class CommonEvents {
 
 	        if (current >= ViaductTravel.MAX_CHARGE) {
 	            ViaductTravel.clearCharge(id);
-	            ViaductTravel.start(player, pos, 32); //change speed / 16 standart = 1 Block per second / min 1 / max 100
+	            ViaductTravel.start(player, pos, 32); //change speed / 32 standart = 1 Block per second / min 1 / max 100
 	            serverPlayer.displayClientMessage(
 	                Component.translatable("viaduct.travel.start")
 	                    .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD), true);
@@ -193,46 +192,25 @@ public class CommonEvents {
 	    if (ViaductTravel.activeTravels.containsKey(id)) {
 	    	 player.getServer().execute(() -> {
 
-	             player.setInvisible(true);
+	             //player.setInvisible(true);
 	             player.setInvulnerable(true);
 	             player.setSwimming(false);
-	             player.setPose(Pose.STANDING);
+	             player.setPose(Pose.SLEEPING);
 	             player.noPhysics = true;
 	             player.setNoGravity(true);
+	             player.setDeltaMovement(Vec3.ZERO);
+	             ItemStack helmet = player.getInventory().armor.get(3);
+                 ItemStack chestplate = player.getInventory().armor.get(2);
+                 ItemStack leggings = player.getInventory().armor.get(1);
+                 ItemStack boots = player.getInventory().armor.get(0);
+
+                 ViaductTravel.storedArmor.put(player.getUUID(), List.of(helmet, chestplate, leggings, boots));
+
+                 player.getInventory().armor.set(3, ItemStack.EMPTY);
+                 player.getInventory().armor.set(2, ItemStack.EMPTY);
+                 player.getInventory().armor.set(1, ItemStack.EMPTY);
+                 player.getInventory().armor.set(0, ItemStack.EMPTY);
 	         });
-	    	
-	        Level level = player.level();
-
-	        if (!ViaductTravel.headEntities.containsKey(id)) {
-	            ArmorStand stand = new ArmorStand(level, player.getX(), player.getY(), player.getZ());
-	            stand.setInvisible(true);
-	            stand.setInvulnerable(true);
-	            stand.setNoGravity(true);
-	            stand.setCustomName(player.getDisplayName());
-	            stand.setCustomNameVisible(false);
-	            stand.setSilent(true);
-	            byte flags = 0;
-	            flags |= ArmorStand.CLIENT_FLAG_MARKER;
-	            flags |= ArmorStand.CLIENT_FLAG_NO_BASEPLATE;
-	            stand.getEntityData().set(ArmorStand.DATA_CLIENT_FLAGS, flags);
-
-	            ItemStack head = new ItemStack(Items.PLAYER_HEAD);
-	            CompoundTag skullOwner = new CompoundTag();
-
-	            GameProfile profile = player.getGameProfile();
-
-	            skullOwner.putUUID("Id", profile.getId());
-	            skullOwner.putString("Name", profile.getName());
-
-	            CompoundTag tag = new CompoundTag();
-	            tag.put("SkullOwner", skullOwner);
-	            head.getTags();
-
-	            stand.setItemSlot(EquipmentSlot.HEAD, head);
-
-	            level.addFreshEntity(stand);
-	            ViaductTravel.headEntities.put(id, stand);
-	        }
 	    }
 	}
     
@@ -246,13 +224,40 @@ public class CommonEvents {
 	            player.setInvulnerable(false);
 	            player.setNoGravity(false);
 	            player.noPhysics = false;
-	        }
-
-	        ArmorStand stand = ViaductTravel.headEntities.remove(id);
-	        if (stand != null && !stand.level().isClientSide()) {
-	            stand.remove(Entity.RemovalReason.DISCARDED);
+	            List<ItemStack> armor = ViaductTravel.storedArmor.remove(player.getUUID());
+	            if (armor != null && armor.size() == 4) {
+	                player.getInventory().armor.set(3, armor.get(0)); 
+	                player.getInventory().armor.set(2, armor.get(1)); 
+	                player.getInventory().armor.set(1, armor.get(2)); 
+	                player.getInventory().armor.set(0, armor.get(3)); 
+	            }
 	        }
 	    }
+	    
+	    @SubscribeEvent
+	    public static void onClientTick(ClientTickEvent.Pre event) {
+	        Minecraft mc = Minecraft.getInstance();
+	        if (mc.player == null) return;
+
+	        Player player = mc.player;
+
+	        if (ViaductTravel.isTravelActive(player)) {
+	            player.setDeltaMovement(Vec3.ZERO);
+
+	            if (player instanceof LocalPlayer localPlayer) {
+	                localPlayer.input.forwardImpulse = 0;
+	                localPlayer.input.leftImpulse = 0;
+	                localPlayer.input.jumping = false;
+	                localPlayer.input.shiftKeyDown = false;
+	                player.setOnGround(true);
+	                
+	                player.setPose(Pose.STANDING);
+	                
+	            }
+	      } 
+	}
+	    
+	   
 	    
 	    @SubscribeEvent
 	    public static void onBlockBreak(PlayerEvent.BreakSpeed event) {
@@ -276,6 +281,7 @@ public class CommonEvents {
 	            event.setCanceled(true); 
 	        }
 	    }
+	    
 	    @SubscribeEvent
 	    public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
 	        Player player = event.getEntity();
@@ -318,6 +324,18 @@ public class CommonEvents {
 	                event.setCanceled(true); 
 	        }
 	    }
+	        
+	        @SubscribeEvent
+	        public static void onRightClick(PlayerInteractEvent.RightClickItem event) {
+	            Player player = event.getEntity();
+	            if (ViaductTravel.isTravelActive(player)) {
+	                ItemStack item = event.getItemStack();
+	                if (item.getItem() instanceof ArmorItem) {
+	                    event.setCanceled(true);
+	                }
+	            }
+	        }
+	        
 
 	    @SubscribeEvent
 	    public static void onItemToss(ItemTossEvent event) {

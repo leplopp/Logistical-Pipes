@@ -2,10 +2,9 @@ package com.plopp.pipecraft.Blocks;
 
 import com.google.common.base.Supplier;
 import com.plopp.pipecraft.PipeCraftIndex;
-import com.plopp.pipecraft.Blocks.Blocks.ViaductChargerBlock;
 import com.plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 import com.plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductAdvanced;
-
+import com.plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
@@ -21,9 +20,9 @@ public class BlockRegister {
     public static final DeferredRegister.Items ITEMS =
             DeferredRegister.createItems(PipeCraftIndex.MODID);
     
-    public static final DeferredBlock<Block> VIADUCTCHARGERBLOCK = registerBlock("viaduct_charger_block",
-            () -> new ViaductChargerBlock(BlockBehaviour.Properties.of()
-                    .strength(4f).requiresCorrectToolForDrops().sound(SoundType.COPPER)));
+    public static final DeferredBlock<Block> VIADUCTLINKER = registerBlock("viaduct_linker",
+            () -> new BlockViaductLinker(BlockBehaviour.Properties.of()
+                    .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS).noOcclusion()));
 
   public static final DeferredBlock<Block> VIADUCT = registerBlock("viaduct",
             () -> new BlockViaduct(BlockBehaviour.Properties.of()

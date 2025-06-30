@@ -2,6 +2,7 @@
   "loader": "neoforge:obj",
   "model": "logisticpipes:models/block/viaduct/viaduct_connected_side.obj",
   "flip-v": true,
+  "render_type": "translucent",
   "textures": {
     "particle": "minecraft:block/glass"
   }

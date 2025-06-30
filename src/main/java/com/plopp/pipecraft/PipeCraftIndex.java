@@ -2,13 +2,18 @@ package com.plopp.pipecraft;
 
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
+import com.plopp.pipecraft.Blocks.BlockEntityRegister;
 import com.plopp.pipecraft.Blocks.BlockRegister;
+import com.plopp.pipecraft.gui.MenuTypeRegister;
+import com.plopp.pipecraft.gui.viaductlinker.ViaductLinkerScreen;
+
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
@@ -17,7 +22,7 @@ import net.neoforged.neoforge.event.server.ServerStartingEvent;
 public class PipeCraftIndex
 {
     public static final String MODID = "logisticpipes";
-    private static final Logger LOGGER = LogUtils.getLogger();
+    public static final Logger LOGGER = LogUtils.getLogger();
 
     
     public PipeCraftIndex(IEventBus modEventBus, ModContainer modContainer)
@@ -28,10 +33,12 @@ public class PipeCraftIndex
         PipeCreativeModeTab.register(modEventBus);
         modEventBus.addListener(this::addCreative);
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        BlockEntityRegister.register(modEventBus);
+        MenuTypeRegister.MENUS.register(modEventBus);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event){
-       
+
     }
     
     
@@ -43,6 +50,28 @@ public class PipeCraftIndex
     public void onServerStarting(ServerStartingEvent event)
     {
     }
-        
+	
     
 }
+
+/*idden
+ * 
+ *  viaduct											<- Beta		/ player model /connections / texture 
+ *  viaduct Linker with gui and icons to destination<- Beta		/ texture & model /facing
+ *  viaduct player detector 						<- concept
+ *  viaduct	glowing ?								<- concept
+ *  viaduct Speed controller						<- concept
+ *  viaduct pipe monitoring block?!					<- concept
+ *   	
+ *  viaduct facade for all pipes & cables			<- concept
+ *   
+ *  item & fluid pipes: 							
+ *   
+ *  sorter pipe										<- concept
+ *  outout/inout pipe								<- concept
+ *  hopper pipe										<- concept
+ *  speed up pipe									<- conceptc
+ *  detector pipe									<- concept
+ *  
+ */
+

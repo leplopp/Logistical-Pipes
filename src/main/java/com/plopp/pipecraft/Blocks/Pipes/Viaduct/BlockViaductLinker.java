@@ -4,7 +4,10 @@ import com.plopp.pipecraft.logic.ViaductTravel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -12,15 +15,19 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-public class BlockViaduct extends Block {
+public class BlockViaductLinker extends Block implements EntityBlock {
 
     public static final BooleanProperty CONNECTED_NORTH = BooleanProperty.create("connected_north");
     public static final BooleanProperty CONNECTED_SOUTH = BooleanProperty.create("connected_south");
@@ -29,8 +36,9 @@ public class BlockViaduct extends Block {
     public static final BooleanProperty CORNER = BooleanProperty.create("corner");
     public static final BooleanProperty CONNECTED_UP = BooleanProperty.create("connected_up");
     public static final BooleanProperty CONNECTED_DOWN = BooleanProperty.create("connected_down");
+    public static final DirectionProperty FACING = DirectionProperty.create("facing", Direction.values());
 
-    public BlockViaduct(Properties properties) {
+    public BlockViaductLinker(Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any()
                 .setValue(CONNECTED_NORTH, false)
@@ -39,34 +47,60 @@ public class BlockViaduct extends Block {
                 .setValue(CONNECTED_WEST, false)
                 .setValue(CORNER, false)
         		.setValue(CONNECTED_UP, false)
-        		.setValue(CONNECTED_DOWN, false));
+        		.setValue(CONNECTED_DOWN, false)
+        		.setValue(FACING, Direction.NORTH));
     }
     
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(CONNECTED_NORTH, CONNECTED_SOUTH, CONNECTED_EAST, CONNECTED_WEST, CORNER, CONNECTED_UP, CONNECTED_DOWN);
+    	builder.add(CONNECTED_NORTH, CONNECTED_SOUTH, CONNECTED_EAST, CONNECTED_WEST, CONNECTED_UP, CONNECTED_DOWN, CORNER, FACING);
     }
     
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Level level = context.getLevel();
         BlockPos pos = context.getClickedPos();
+        Direction facing = context.getNearestLookingDirection().getOpposite();
+
+        BlockPos targetPos = pos.relative(facing);
+        BlockState neighborState = level.getBlockState(targetPos);
+
+        if (neighborState.getBlock() instanceof BlockViaduct || neighborState.getBlock() instanceof BlockViaductLinker) {
+            return null;
+        }
 
         for (Direction dir : Direction.values()) {
             BlockPos neighborPos = pos.relative(dir);
-            BlockState neighborState = level.getBlockState(neighborPos);
+            BlockState neighbor = level.getBlockState(neighborPos);
 
-            if (neighborState.getBlock() instanceof BlockViaductLinker &&
-                neighborState.hasProperty(BlockViaductLinker.FACING)) {
+            if (neighbor.getBlock() instanceof BlockViaductLinker &&
+                neighbor.hasProperty(FACING) &&
+                neighbor.getValue(FACING) == dir.getOpposite()) {
+                return null;
+            }
+        }
 
-                Direction neighborFacing = neighborState.getValue(BlockViaductLinker.FACING);
+        return this.defaultBlockState().setValue(FACING, facing);
+    }
 
-                if (neighborPos.relative(neighborFacing).equals(pos)) {
-                    return null;
+    @Override
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
+        if (!level.isClientSide()) {
+            if (player.isCrouching() && player instanceof ServerPlayer serverPlayer) {
+
+            	serverPlayer.openMenu(new ViaductGuiProvider(pos), buf -> buf.writeBlockPos(pos));
+                return InteractionResult.CONSUME;
+            } else {
+                BlockEntity be = level.getBlockEntity(pos);
+                if (be instanceof MenuProvider prov) {
+                    if (player instanceof ServerPlayer sp) {
+                    	sp.openMenu(prov, buf -> buf.writeBlockPos(pos));
+                        return InteractionResult.CONSUME;
+                    }
                 }
             }
         }
-        return this.defaultBlockState(); 
+        return InteractionResult.SUCCESS;
     }
 
     @Override
@@ -91,7 +125,7 @@ public class BlockViaduct extends Block {
 
     public void updateConnections(Level level, BlockPos pos) {
         BlockState current = level.getBlockState(pos);
-        if (!(current.getBlock() instanceof BlockViaduct)) return;
+        if (!(current.getBlock() instanceof BlockViaductLinker)) return;
 
         boolean north = isViaduct(level.getBlockState(pos.relative(Direction.NORTH)), level, pos.relative(Direction.NORTH), Direction.SOUTH);
         boolean south = isViaduct(level.getBlockState(pos.relative(Direction.SOUTH)), level, pos.relative(Direction.SOUTH), Direction.NORTH);
@@ -110,13 +144,14 @@ public class BlockViaduct extends Block {
         	    ((north && east) || (east && south) || (south && west) || (west && north));
 
         BlockState updated = current
-                .setValue(CONNECTED_NORTH, north)
-                .setValue(CONNECTED_SOUTH, south)
-                .setValue(CONNECTED_EAST, east)
-                .setValue(CONNECTED_WEST, west)
-                .setValue(CONNECTED_UP, up)
-                .setValue(CONNECTED_DOWN, down)
-                .setValue(CORNER, isCorner);
+        	    .setValue(CONNECTED_NORTH, north)
+        	    .setValue(CONNECTED_SOUTH, south)
+        	    .setValue(CONNECTED_EAST, east)
+        	    .setValue(CONNECTED_WEST, west)
+        	    .setValue(CONNECTED_UP, up)
+        	    .setValue(CONNECTED_DOWN, down)
+        	    .setValue(CORNER, isCorner)
+        	    .setValue(FACING, current.getValue(FACING));
 
         if (!current.equals(updated)) {
             level.setBlock(pos, updated, 3);
@@ -131,7 +166,7 @@ public class BlockViaduct extends Block {
             for (Direction dir : Direction.values()) {
                 BlockPos neighborPos = pos.relative(dir);
                 BlockState neighborState = level.getBlockState(neighborPos);
-                if (neighborState.getBlock() instanceof BlockViaduct) {
+                if (neighborState.getBlock() instanceof BlockViaductLinker) {
                     updateConnections(level, neighborPos);
                 }
             }
@@ -143,7 +178,23 @@ public class BlockViaduct extends Block {
 
         Block block = state.getBlock();
 
-        return block instanceof BlockViaduct || block instanceof BlockViaductLinker;
+        if (block instanceof BlockViaduct) return true;
+
+    for (Direction dir : Direction.Plane.HORIZONTAL) {
+                BlockPos adjacentPos = neighborPos.relative(dir);
+                BlockState adjacent = level.getBlockState(adjacentPos);
+
+                if (adjacent.getBlock() instanceof BlockViaduct) {
+
+                }
+            }
+
+            BlockState below = level.getBlockState(neighborPos.below());
+            if (below.getBlock() instanceof BlockViaduct) {
+
+            }
+
+        return false;
     }
     
     @Override
@@ -164,7 +215,7 @@ public class BlockViaduct extends Block {
             Entity entity = entityContext.getEntity();
             if (entity instanceof Player player) {
                 if (ViaductTravel.isTravelActive(player)) {
-                    return Shapes.empty();
+                    return Shapes.empty(); 
                 }
             }
         }
@@ -195,5 +246,10 @@ public class BlockViaduct extends Block {
             }
         }
         return getShape(state, world, pos, context);
+    }
+    
+    @Override
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new BlockEntityViaductLinker(pos, state);
     }
 } 
