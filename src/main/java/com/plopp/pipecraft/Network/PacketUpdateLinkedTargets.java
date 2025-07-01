@@ -2,7 +2,7 @@ package com.plopp.pipecraft.Network;
 
 import java.util.ArrayList;
 import java.util.List;
-import com.plopp.pipecraft.logic.LinkedTargetEntry;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 

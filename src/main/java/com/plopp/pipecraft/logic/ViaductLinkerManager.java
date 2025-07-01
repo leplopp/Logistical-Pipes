@@ -1,5 +1,6 @@
 package com.plopp.pipecraft.logic;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -7,7 +8,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.plopp.pipecraft.Blocks.BlockRegister;
 import com.plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
+import com.plopp.pipecraft.Network.LinkedTargetEntry;
 import com.plopp.pipecraft.Network.LinkedTargetEntryRecord;
 import com.plopp.pipecraft.Network.ViaductLinkerWorldData;
 
@@ -18,17 +22,26 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
 public class ViaductLinkerManager {
-	  private static final Set<BlockPos> allLinkers = new HashSet<>();
+	
 	    private static final Map<BlockPos, LinkedTargetEntryRecord> allLinkersData = new HashMap<>();
-
+	    private static final Map<BlockPos, LinkedTargetEntryRecord> knownLinkers = new HashMap<>();
+	    private static List<LinkedTargetEntryRecord> cachedSortedLinkers = new ArrayList<>();
+	    private static boolean cacheInvalidated = true;
+	    
 	    public static void addOrUpdateLinker(BlockPos pos, String name, ItemStack icon) {
 	        pos = pos.immutable();
-	        allLinkersData.put(pos, new LinkedTargetEntryRecord(pos, name, icon));
+	        LinkedTargetEntryRecord record = new LinkedTargetEntryRecord(pos, name, icon);
+	        allLinkersData.put(pos, record);
+	        knownLinkers.put(pos, record);
+	        cacheInvalidated = true;
+	        System.out.println("[ViaductLinkerManager] addOrUpdateLinker: pos=" + pos + " total allLinkers=" + allLinkersData.size());
 	    }
 
 	    public static void removeLinker(BlockPos pos) {
-	        pos = pos.immutable();
+	        knownLinkers.remove(pos);
 	        allLinkersData.remove(pos);
+	        cacheInvalidated = true;
+	        System.out.println("[ViaductLinkerManager] removeLinker: pos=" + pos + " total allLinkers=" + allLinkersData.size());
 	    }
 
 	    public static Set<BlockPos> getAllLinkers() {
@@ -38,6 +51,7 @@ public class ViaductLinkerManager {
 	    public static Collection<LinkedTargetEntryRecord> getAllLinkersData() {
 	        return Collections.unmodifiableCollection(allLinkersData.values());
 	    }
+	    
 	    public static void loadFromWorldData(ViaductLinkerWorldData data) {
 	        allLinkersData.clear();
 	        allLinkersData.putAll(data.getLinkers());
@@ -64,5 +78,6 @@ public class ViaductLinkerManager {
 	                }
 	            }
 	        }
+	    
 	    }
 	}

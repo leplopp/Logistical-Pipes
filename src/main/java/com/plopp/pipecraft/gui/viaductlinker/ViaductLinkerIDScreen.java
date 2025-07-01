@@ -35,7 +35,6 @@ public class ViaductLinkerIDScreen extends AbstractContainerScreen<ViaductLinker
 	  }
 	  
 	  private void onTextChanged(String newText) {
-		  System.out.println("[TextField] changed to: " + newText);
 		    menu.setCustomName(newText);
 		}
 

@@ -9,8 +9,8 @@ import java.util.Queue;
 import java.util.Set;
 import com.plopp.pipecraft.Blocks.BlockEntityRegister;
 import com.plopp.pipecraft.Blocks.BlockRegister;
+import com.plopp.pipecraft.Network.LinkedTargetEntry;
 import com.plopp.pipecraft.gui.viaductlinker.ViaductLinkerMenu;
-import com.plopp.pipecraft.logic.LinkedTargetEntry;
 import com.plopp.pipecraft.logic.ViaductLinkerManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -56,9 +56,7 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
     @Override
     public void setRemoved() {
         super.setRemoved();
-        if (!level.isClientSide) {
-            ViaductLinkerManager.removeLinker(worldPosition);
-        }
+
     }
 
     public void addLinkedTarget(LinkedTargetEntry entry) {

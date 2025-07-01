@@ -1,16 +1,17 @@
 package com.plopp.pipecraft.gui.viaductlinker;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
+import com.plopp.pipecraft.Network.LinkedTargetEntry;
 import com.plopp.pipecraft.Network.LinkedTargetEntryRecord;
 import com.plopp.pipecraft.Network.NetworkHandler;
 import com.plopp.pipecraft.Network.ViaductLinkerListPacket;
 import com.plopp.pipecraft.gui.MenuTypeRegister;
-import com.plopp.pipecraft.logic.LinkedTargetEntry;
 import com.plopp.pipecraft.logic.ViaductLinkerManager;
 
 import net.minecraft.core.BlockPos;
@@ -30,8 +31,6 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
     public final List<Component> linkedNames = new ArrayList<>();
     public final List<ItemStack> linkedItems = new ArrayList<>();
     private List<LinkedTargetEntryRecord> linkers = new ArrayList<>();
-    private boolean manualOverride = false;
-
 
     public ViaductLinkerMenu(int containerId, Inventory inv, FriendlyByteBuf buf) {
     	  this(containerId, inv, (BlockEntityViaductLinker) inv.player.level().getBlockEntity(buf.readBlockPos()));
@@ -40,21 +39,26 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
     public ViaductLinkerMenu(int containerId, Inventory inv, BlockEntityViaductLinker tile) {
         super(MenuTypeRegister.VIADUCT_LINKER.get(), containerId);
         this.blockEntity = tile;
-        
+
         if (!inv.player.level().isClientSide()) {
-            // Serverseitig die Linkerliste holen und Packet an den Client senden
-        	Set<BlockPos> connected = tile.getLinkedTargets().stream()
-        		    .map(e -> e.pos)
-        		    .collect(Collectors.toSet());
+            Set<BlockPos> connected = tile.getLinkedTargets().stream()
+                    .map(e -> e.pos)
+                    .collect(Collectors.toSet());
 
-        		List<LinkedTargetEntryRecord> linkers = ViaductLinkerManager.getAllLinkersData().stream()
-        		    .filter(e -> connected.contains(e.pos()))
-        		    .toList();
-
-        		ViaductLinkerListPacket packet = new ViaductLinkerListPacket(linkers);
-        		NetworkHandler.sendToClient((ServerPlayer) inv.player, packet);
+            List<LinkedTargetEntryRecord> linkers = ViaductLinkerManager.getAllLinkersData().stream()
+                    .filter(e -> connected.contains(e.pos()))
+                    .sorted(Comparator.comparingDouble(e -> e.pos().distSqr(tile.getBlockPos())))
+                    .toList();
+            
+            this.linkers = linkers;
+            updateFromLinkers();
+            
+            ViaductLinkerListPacket packet = new ViaductLinkerListPacket(linkers);
+            NetworkHandler.sendToClient((ServerPlayer) inv.player, packet);
         }
+        
     }
+    
     public void updateFromLinkers() {
         linkedNames.clear();
         linkedItems.clear();

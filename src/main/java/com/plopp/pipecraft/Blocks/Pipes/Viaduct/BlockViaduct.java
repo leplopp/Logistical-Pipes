@@ -1,5 +1,6 @@
 package com.plopp.pipecraft.Blocks.Pipes.Viaduct;
 
+import com.plopp.pipecraft.Blocks.BlockRegister;
 import com.plopp.pipecraft.logic.ViaductLinkerManager;
 import com.plopp.pipecraft.logic.ViaductTravel;
 import net.minecraft.core.BlockPos;
@@ -7,7 +8,9 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -42,7 +45,28 @@ public class BlockViaduct extends Block {
         		.setValue(CONNECTED_UP, false)
         		.setValue(CONNECTED_DOWN, false));
     }
-    
+    @Override
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
+        super.setPlacedBy(level, pos, state, placer, stack);
+        if (!level.isClientSide) {
+            boolean connectsToNetwork = false;
+
+            for (Direction dir : Direction.values()) {
+                BlockPos neighborPos = pos.relative(dir);
+                BlockState neighborState = level.getBlockState(neighborPos);
+                if (neighborState.getBlock() == BlockRegister.VIADUCT.get()
+                    || neighborState.getBlock() == BlockRegister.VIADUCTLINKER.get()) {
+                    connectsToNetwork = true;
+                    break;
+                }
+            }
+
+            if (connectsToNetwork) {
+                // Netzwerk nur dann updaten, wenn Verbindung vorhanden
+                ViaductLinkerManager.updateAllLinkers(level);
+            }
+        }
+    }
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(CONNECTED_NORTH, CONNECTED_SOUTH, CONNECTED_EAST, CONNECTED_WEST, CORNER, CONNECTED_UP, CONNECTED_DOWN);

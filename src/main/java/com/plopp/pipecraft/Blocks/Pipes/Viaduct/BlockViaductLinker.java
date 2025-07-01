@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import com.plopp.pipecraft.Blocks.BlockRegister;
-import com.plopp.pipecraft.logic.LinkedTargetEntry;
+import com.plopp.pipecraft.Network.LinkedTargetEntry;
 import com.plopp.pipecraft.logic.ViaductLinkerManager;
 import com.plopp.pipecraft.logic.ViaductTravel;
 import net.minecraft.core.BlockPos;
@@ -125,12 +125,13 @@ public class BlockViaductLinker extends Block implements EntityBlock {
 
     @Override
     public void onRemove(BlockState oldState, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        super.onRemove(oldState, level, pos, newState, isMoving);
-        if (!level.isClientSide && oldState.getBlock() != newState.getBlock()) {
-        	if (!level.isClientSide && level.getServer() != null) {
-        	    level.getServer().execute(() -> updateAllLinkers(level));
-        	}
+        if (!level.isClientSide() && oldState.getBlock() != newState.getBlock()) {
+            if (level.getServer() != null) {
+                level.getServer().execute(() -> updateAllLinkers(level));
+                ViaductLinkerManager.removeLinker(pos);
+            }
         }
+        super.onRemove(oldState, level, pos, newState, isMoving);
     }
     private void updateAllLinkers(Level level) {
         if (level == null || level.isClientSide) return;

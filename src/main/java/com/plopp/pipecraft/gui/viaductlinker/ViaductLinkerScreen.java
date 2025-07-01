@@ -40,7 +40,6 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
 	    @Override
 	    protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
 	    	maxScroll = Math.max(0, menu.linkedNames.size() - maxVisibleButtons);
-	    	System.out.println("maxScroll = " + maxScroll + ", linkedNames = " + menu.linkedNames.size());
 	        RenderSystem.setShader(GameRenderer::getPositionTexShader);
 	        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 	        RenderSystem.setShaderTexture(0, VIADUCT_LINKER_GUI);
@@ -123,7 +122,6 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
 	    @Override
 	    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
 	        super.render(guiGraphics, mouseX, mouseY, partialTick);
-	        System.out.println("maxScroll = " + maxScroll + ", linkedNames = " + menu.linkedNames.size());
 	        this.renderTooltip(guiGraphics, mouseX, mouseY);
 	    }
 
@@ -134,10 +132,8 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
 
 	    @Override
 	    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-	        System.out.println("mouseScrolled called with scrollY=" + scrollY);
 	        if (maxScroll <= 0) return false;
 	        scrollOffset = Mth.clamp(scrollOffset - (int) Math.signum(scrollY), 0, maxScroll);
-	        System.out.println("ScrollOffset: " + scrollOffset);
 	        return true;
 	    }
 	    
