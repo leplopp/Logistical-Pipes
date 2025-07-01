@@ -4,7 +4,6 @@
       "when": {
 		"connected_up": false,
 		"connected_down": false,
-        "corner": true,
         "connected_north": true,
         "connected_east": true,
 		"connected_south": false,
@@ -21,7 +20,6 @@
       "when": {
 		"connected_up": false,
 		"connected_down": false,
-        "corner": true,
         "connected_east": true,
         "connected_south": true,
 		"connected_north": false,
@@ -37,7 +35,6 @@
       "when": {
 		"connected_up": false,
 		"connected_down": false,
-        "corner": true,
 		"connected_south": true,
 		"connected_west": true,
 		"connected_north": false,
@@ -54,7 +51,6 @@
       "when": {
 		"connected_up": false,
 		"connected_down": false,
-        "corner": true,
 		"connected_west": true,
 		"connected_north": true,
 		"connected_south": false,
