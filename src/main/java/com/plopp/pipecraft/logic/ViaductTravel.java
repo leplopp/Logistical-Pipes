@@ -9,21 +9,16 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
-import com.mojang.authlib.properties.Property;
-import com.mojang.authlib.GameProfile;
 import com.plopp.pipecraft.Blocks.BlockRegister;
 import com.plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -39,40 +34,8 @@ public class ViaductTravel {
     private static final Set<UUID> jumpAfterTravel = new HashSet<>();
     private static final Set<UUID> jumpTrigger = new HashSet<>();
     public static final int MAX_CHARGE = 30; //charge time
-    private static final Map<UUID, Integer> chargeMap = new HashMap<>();
-    private static final Map<UUID, Integer> lastSentPercent = new HashMap<>();
     public static final Map<UUID, List<ItemStack>> storedArmor = new HashMap<>();
     
-    public static int incrementCharge(UUID id) {
-        int val = chargeMap.getOrDefault(id, 0) + 1;
-        chargeMap.put(id, val);
-        return val;
-    }
-
-    public static boolean isCharging(UUID id) {
-        return chargeMap.containsKey(id);
-    }
-
-    public static void cancelCharge(Player player) {
-        cancelCharge(player.getUUID());
-    }
-    public static void cancelCharge(UUID id) {
-        chargeMap.remove(id);
-        lastSentPercent.remove(id);
-    }
-    
-    public static void clearCharge(UUID id) {
-        chargeMap.remove(id);
-        lastSentPercent.remove(id);
-    }
-
-    public static int getLastSentPercent(UUID id) {
-        return lastSentPercent.getOrDefault(id, -1);
-    }
-
-    public static void setLastSentPercent(UUID id, int value) {
-        lastSentPercent.put(id, value);
-    }
 
     public static void markJumpAfterTravel(Player player) {
         jumpAfterTravel.add(player.getUUID());
@@ -98,41 +61,36 @@ public class ViaductTravel {
         
     }
     
-    public static void start(Player player, BlockPos startPos, int ticksPerChunk) {
+    public static void start(Player player, BlockPos startPos, BlockPos targetPos, int ticksPerChunk) {
+    	 System.out.println("[ViaductTravel] start() called with start=" + startPos + ", target=" + targetPos);
         Level level = player.level();
-        BlockPos target = findTarget(level, startPos);
 
-        if (target != null) {
-            List<BlockPos> path = findViaductPath(level, startPos, target);
-            if (!path.isEmpty()) {
-                UUID id = player.getUUID();
-                activeTravels.put(id, path);
-                travelProgress.put(id, 0);
-                tickCounters.put(id, 0);
-                ticksPerChunkMap.put(id, ticksPerChunk);
+        List<BlockPos> path = findViaductPath(level, startPos, targetPos);
 
-                if (!player.level().isClientSide()) {
-                	//player.setInvisible(true);
-                    player.setInvulnerable(true);
-                    player.setShiftKeyDown(false);
-                    player.noPhysics = true;
-                    player.setNoGravity(true);
-                    player.setDeltaMovement(Vec3.ZERO);
-                    activeTravels.put(player.getUUID(), path);
-                   
+        if (!path.isEmpty()) {
+            UUID id = player.getUUID();
+            activeTravels.put(id, path);
+            travelProgress.put(id, 0);
+            tickCounters.put(id, 0);
+            ticksPerChunkMap.put(id, ticksPerChunk);
 
-                    ItemStack helmet = player.getInventory().armor.get(3);
-                    ItemStack chestplate = player.getInventory().armor.get(2);
-                    ItemStack leggings = player.getInventory().armor.get(1);
-                    ItemStack boots = player.getInventory().armor.get(0);
+            if (!player.level().isClientSide()) {
+                player.setInvulnerable(true);
+                player.setShiftKeyDown(false);
+                player.noPhysics = true;
+                player.setNoGravity(true);
+                player.setDeltaMovement(Vec3.ZERO);
 
-                    storedArmor.put(player.getUUID(), List.of(helmet, chestplate, leggings, boots));
+                ItemStack helmet = player.getInventory().armor.get(3);
+                ItemStack chestplate = player.getInventory().armor.get(2);
+                ItemStack leggings = player.getInventory().armor.get(1);
+                ItemStack boots = player.getInventory().armor.get(0);
 
-                    player.getInventory().armor.set(3, ItemStack.EMPTY);
-                    player.getInventory().armor.set(2, ItemStack.EMPTY);
-                    player.getInventory().armor.set(1, ItemStack.EMPTY);
-                    player.getInventory().armor.set(0, ItemStack.EMPTY);
-                }
+                storedArmor.put(player.getUUID(), List.of(helmet, chestplate, leggings, boots));
+                player.getInventory().armor.set(3, ItemStack.EMPTY);
+                player.getInventory().armor.set(2, ItemStack.EMPTY);
+                player.getInventory().armor.set(1, ItemStack.EMPTY);
+                player.getInventory().armor.set(0, ItemStack.EMPTY);
             }
         }
     }

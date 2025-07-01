@@ -1,5 +1,15 @@
 package com.plopp.pipecraft.Blocks.Pipes.Viaduct;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
+import com.plopp.pipecraft.Blocks.BlockRegister;
+import com.plopp.pipecraft.logic.LinkedTargetEntry;
+import com.plopp.pipecraft.logic.ViaductLinkerManager;
 import com.plopp.pipecraft.logic.ViaductTravel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -9,7 +19,9 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -55,7 +67,7 @@ public class BlockViaductLinker extends Block implements EntityBlock {
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
     	builder.add(CONNECTED_NORTH, CONNECTED_SOUTH, CONNECTED_EAST, CONNECTED_WEST, CONNECTED_UP, CONNECTED_DOWN, CORNER, FACING);
     }
-    
+   
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Level level = context.getLevel();
@@ -105,23 +117,59 @@ public class BlockViaductLinker extends Block implements EntityBlock {
 
     @Override
     public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
-        if (!level.isClientSide) {
-            updateConnections(level, pos);
-            for (Direction dir : Direction.values()) {
-                updateConnections(level, pos.relative(dir));
-            }
+        super.onPlace(state, level, pos, oldState, isMoving);
+        if (!level.isClientSide && level.getServer() != null) {
+            level.getServer().execute(() -> updateAllLinkers(level));
         }
     }
 
     @Override
-    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        if (!level.isClientSide && state.getBlock() != newState.getBlock()) {
-            for (Direction dir : Direction.Plane.HORIZONTAL) {
-                updateConnections(level, pos.relative(dir));
+    public void onRemove(BlockState oldState, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
+        super.onRemove(oldState, level, pos, newState, isMoving);
+        if (!level.isClientSide && oldState.getBlock() != newState.getBlock()) {
+        	if (!level.isClientSide && level.getServer() != null) {
+        	    level.getServer().execute(() -> updateAllLinkers(level));
+        	}
+        }
+    }
+    private void updateAllLinkers(Level level) {
+        if (level == null || level.isClientSide) return;
+
+        for (BlockPos pos : ViaductLinkerManager.getAllLinkers()) {
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be instanceof BlockEntityViaductLinker linker) {
+                List<LinkedTargetEntry> newLinkedTargets = linker.findLinkedTargetsThroughViaducts();
+
+                if (!linker.getLinkedTargets().equals(newLinkedTargets)) {
+                    linker.getLinkedTargets().clear();
+                    linker.getLinkedTargets().addAll(newLinkedTargets);
+                    linker.setChanged();
+
+                    if (level instanceof ServerLevel serverLevel) {
+                        serverLevel.sendBlockUpdated(pos, level.getBlockState(pos), level.getBlockState(pos), 3);
+                    }
+                }
             }
         }
-        super.onRemove(state, level, pos, newState, isMoving);
     }
+    
+    public static void findAllConnectedLinkers(Level level, BlockPos start, Set<BlockPos> found) {
+        if (found.contains(start)) return;
+        found.add(start);
+
+        for (Direction dir : Direction.values()) {
+            BlockPos neighbor = start.relative(dir);
+            BlockState state = level.getBlockState(neighbor);
+            BlockEntity be = level.getBlockEntity(neighbor);
+
+            if (be instanceof BlockEntityViaductLinker) {
+                findAllConnectedLinkers(level, neighbor, found);
+            } else if (state.getBlock() == BlockRegister.VIADUCT.get()) {
+                findAllConnectedLinkers(level, neighbor, found);
+            }
+        }
+    }
+
 
     public void updateConnections(Level level, BlockPos pos) {
         BlockState current = level.getBlockState(pos);

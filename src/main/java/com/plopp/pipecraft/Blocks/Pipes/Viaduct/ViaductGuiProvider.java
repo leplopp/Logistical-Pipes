@@ -30,6 +30,4 @@ public class ViaductGuiProvider implements MenuProvider {
 	        }
 	        return new ViaductLinkerIDMenu(id, inv, (BlockEntityViaductLinker) be);
 	    }
-	
-
 }

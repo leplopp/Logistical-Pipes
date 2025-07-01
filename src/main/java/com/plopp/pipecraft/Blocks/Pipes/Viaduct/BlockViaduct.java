@@ -1,5 +1,6 @@
 package com.plopp.pipecraft.Blocks.Pipes.Viaduct;
 
+import com.plopp.pipecraft.logic.ViaductLinkerManager;
 import com.plopp.pipecraft.logic.ViaductTravel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -76,19 +77,29 @@ public class BlockViaduct extends Block {
             for (Direction dir : Direction.values()) {
                 updateConnections(level, pos.relative(dir));
             }
+
+            if (level.getServer() != null) {
+                level.getServer().execute(() -> ViaductLinkerManager.updateAllLinkers(level));
+            }
         }
     }
 
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!level.isClientSide && state.getBlock() != newState.getBlock()) {
+            // Globale Linker-Verbindungen neu berechnen
+            if (level.getServer() != null) {
+                level.getServer().execute(() -> ViaductLinkerManager.updateAllLinkers(level));
+            }
+
+            // Lokale Verbindungsgrafik aktualisieren (optional)
             for (Direction dir : Direction.Plane.HORIZONTAL) {
                 updateConnections(level, pos.relative(dir));
             }
         }
+
         super.onRemove(state, level, pos, newState, isMoving);
     }
-
     public void updateConnections(Level level, BlockPos pos) {
         BlockState current = level.getBlockState(pos);
         if (!(current.getBlock() instanceof BlockViaduct)) return;

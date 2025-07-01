@@ -5,15 +5,12 @@ import com.mojang.logging.LogUtils;
 import com.plopp.pipecraft.Blocks.BlockEntityRegister;
 import com.plopp.pipecraft.Blocks.BlockRegister;
 import com.plopp.pipecraft.gui.MenuTypeRegister;
-import com.plopp.pipecraft.gui.viaductlinker.ViaductLinkerScreen;
-
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
@@ -56,8 +53,8 @@ public class PipeCraftIndex
 
 /*idden
  * 
- *  viaduct											<- Beta		/ player model /connections / texture 
- *  viaduct Linker with gui and icons to destination<- Beta		/ texture & model /facing
+ *  viaduct											<- Beta		/ player model /models / texture / bug mit ausloggen
+ *  viaduct Linker with gui 						<- Pre Release		/ texture & model 
  *  viaduct player detector 						<- concept
  *  viaduct	glowing ?								<- concept
  *  viaduct Speed controller						<- concept

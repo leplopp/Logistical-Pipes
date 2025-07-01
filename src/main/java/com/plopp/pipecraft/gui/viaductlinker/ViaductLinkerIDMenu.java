@@ -1,15 +1,11 @@
 package com.plopp.pipecraft.gui.viaductlinker;
 
-import com.plopp.pipecraft.PipeCraftIndex;
 import com.plopp.pipecraft.Blocks.BlockRegister;
 import com.plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
 import com.plopp.pipecraft.gui.MenuTypeRegister;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.Container;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -47,6 +43,7 @@ public class ViaductLinkerIDMenu extends AbstractContainerMenu {
             this.addSlot(new Slot(playerInv, col, startX + col * 18, startY + 58));
         }
     }
+    
     public String getCustomName() {
         return customName;
     }
@@ -56,9 +53,14 @@ public class ViaductLinkerIDMenu extends AbstractContainerMenu {
         
     }
     
+    public String getInitialName() {
+        return customName;
+    }
+    
     public ItemStack getDisplayedItem() {
         return this.displayedItem != null ? this.displayedItem : ItemStack.EMPTY;
     }
+    
     @Override
     public boolean stillValid(Player player) {
         return true; 
@@ -66,44 +68,35 @@ public class ViaductLinkerIDMenu extends AbstractContainerMenu {
    
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        return ItemStack.EMPTY; // Kein Shift-Click für Phantom
+        return ItemStack.EMPTY; 
     }
     
     @Override
     public void removed(Player player) {
         super.removed(player);
-        // NICHTS TUN – Änderungen kommen bereits über Packet
     }
-    
-    public String getInitialName() {
-        return customName;
-    }
-
 
     public void setName(String name) {
         this.customName = (name == null || name.isEmpty()) ? "Viaduct Link" : name;
     }
-
   
     @Override
     public void clicked(int slotId, int dragType, ClickType clickType, Player player) {
         if (slotId == 0) {
             if (player.level().isClientSide) {
-                // Client-seitige Anzeige des Icons
                 ItemStack held = Minecraft.getInstance().player.containerMenu.getCarried();
                 displayedItem = held.isEmpty()
                     ? new ItemStack(BlockRegister.VIADUCTLINKER.get())
                     : held.copyWithCount(1);
                 this.slots.get(0).setChanged();
             } else {
-                // Server-seitige Speicherung
+            	
                 ItemStack held = player.containerMenu.getCarried();
                 displayedItem = held.isEmpty()
                     ? new ItemStack(BlockRegister.VIADUCTLINKER.get())
                     : held.copyWithCount(1);
                 this.slots.get(0).setChanged();
 
-                // 🔽 HIER: Name zusätzlich speichern
                 blockEntity.setCustomName(customName);
                 blockEntity.setDisplayedItem(displayedItem.copy());
                 blockEntity.setChanged();
@@ -130,22 +123,21 @@ public class ViaductLinkerIDMenu extends AbstractContainerMenu {
 
         @Override
         public boolean mayPlace(ItemStack stack) {
-            return false; // Kein echtes Einlegen erlaubt
+            return false;
         }
 
         @Override
         public boolean mayPickup(Player player) {
-            return false; // Kein Herausnehmen erlaubt
+            return false;
         }
 
         @Override
         public ItemStack getItem() {
-            return getDisplayedItem(); // Zeige das "Phantom" Item aus dem Menu
+            return getDisplayedItem(); 
         }
 
         @Override
         public void set(ItemStack stack) {
-            // Ignoriere Setzungen, da wir nur aus getDisplayedItem rendern
         }
     }
     
@@ -164,6 +156,3 @@ public class ViaductLinkerIDMenu extends AbstractContainerMenu {
         }
     }
 }
-
-
-

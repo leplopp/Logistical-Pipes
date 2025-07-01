@@ -1,10 +1,8 @@
 package com.plopp.pipecraft.gui.viaductlinker;
 
 import org.lwjgl.glfw.GLFW;
-
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.plopp.pipecraft.NetworkHandler;
-
+import com.plopp.pipecraft.Network.NetworkHandler;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -14,6 +12,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 
 public class ViaductLinkerIDScreen extends AbstractContainerScreen<ViaductLinkerIDMenu> {
+	
 	private static final ResourceLocation VIADUCT_LINKER_IDGUI = 
 			ResourceLocation.fromNamespaceAndPath("logisticpipes", "textures/gui/viaduct_linker_idgui.png");
 	private EditBox textField;
@@ -29,11 +28,12 @@ public class ViaductLinkerIDScreen extends AbstractContainerScreen<ViaductLinker
 	      super.init();
 	      textField = new EditBox(font, leftPos + 7, topPos + 20, 162, 16, Component.literal(""));
 	      textField.setMaxLength(32);
-	      textField.setValue(menu.getCustomName());  // Namen aus Container holen
+	      textField.setValue(menu.getCustomName()); 
 	      textField.setResponder(this::onTextChanged);
 	      addWidget(textField);
 	      textField.setFocused(true);
 	  }
+	  
 	  private void onTextChanged(String newText) {
 		  System.out.println("[TextField] changed to: " + newText);
 		    menu.setCustomName(newText);
@@ -52,8 +52,7 @@ public class ViaductLinkerIDScreen extends AbstractContainerScreen<ViaductLinker
 	        guiGraphics.blit(VIADUCT_LINKER_IDGUI, x, y, 0, 0, imageWidth, imageHeight);
 
 	    }
-	    
-
+	   
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
@@ -61,6 +60,7 @@ public class ViaductLinkerIDScreen extends AbstractContainerScreen<ViaductLinker
         textField.render(guiGraphics, mouseX, mouseY, partialTicks);
     }
 
+    
 	    @Override
 	    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
 	        guiGraphics.drawString(font, title, 8, 6, 0x404040, false);
@@ -77,12 +77,10 @@ public class ViaductLinkerIDScreen extends AbstractContainerScreen<ViaductLinker
 	    @Override
 	    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
 	        if (textField.isFocused()) {
-	            // ESC schließt GUI
 	            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
 	                this.onClose();
 	                return true;
 	            }
-	            // Alle anderen Tasten gehen ans Textfeld
 	            return textField.keyPressed(keyCode, scanCode, modifiers);
 	        }
 
@@ -91,7 +89,6 @@ public class ViaductLinkerIDScreen extends AbstractContainerScreen<ViaductLinker
 
 	    @Override
 	    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-	        // Muss true zurückgeben, wenn das Textfeld geklickt wurde
 	        if (textField.mouseClicked(mouseX, mouseY, button)) {
 	            return true;
 	        }
@@ -99,21 +96,19 @@ public class ViaductLinkerIDScreen extends AbstractContainerScreen<ViaductLinker
 	    }
 	    @Override
 	    public void onClose() {
+	    	
 	        String value = textField.getValue();
-
-	        // Optional: Setze im Menü den neuen Namen für spätere Anzeige
 	        menu.setCustomName(value);
 
-	        // Nur CLIENT: Sende den Namen an den Server
 	        if (minecraft.player != null && minecraft.level != null && minecraft.level.isClientSide) {
 	            NetworkHandler.sendNameToServer(menu.blockEntity.getBlockPos(), value);
 	        }
 
-	        super.onClose(); // GUI schließen
+	        super.onClose();
 	    }
+	    
 	    @Override
 	    public void removed() {
 	        super.removed();
 	    }
 }
-
