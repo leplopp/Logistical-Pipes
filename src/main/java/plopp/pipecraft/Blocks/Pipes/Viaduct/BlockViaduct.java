@@ -1,5 +1,7 @@
 package plopp.pipecraft.Blocks.Pipes.Viaduct;
 
+import java.util.HashMap;
+import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -29,6 +31,7 @@ public class BlockViaduct extends Block {
     public static final BooleanProperty CONNECTED_WEST = BooleanProperty.create("connected_west");
     public static final BooleanProperty CONNECTED_UP = BooleanProperty.create("connected_up");
     public static final BooleanProperty CONNECTED_DOWN = BooleanProperty.create("connected_down");
+    private static final Map<BlockState, VoxelShape> octagonShapeCache = new HashMap<>();
 
     public BlockViaduct(Properties properties) {
         super(properties);
@@ -123,21 +126,18 @@ public class BlockViaduct extends Block {
                 .setValue(CONNECTED_DOWN, down);
 
         if (!current.equals(updated)) {
-            level.setBlock(pos, updated, 3);
+            updateAndPropagate(level, pos, current, updated);
         }
     }
-    
+
     public void updateAndPropagate(Level level, BlockPos pos, BlockState current, BlockState updated) {
-        if (!current.equals(updated)) {
-            level.setBlock(pos, updated, 3);
+        level.setBlock(pos, updated, 3);
 
-
-            for (Direction dir : Direction.values()) {
-                BlockPos neighborPos = pos.relative(dir);
-                BlockState neighborState = level.getBlockState(neighborPos);
-                if (neighborState.getBlock() instanceof BlockViaduct) {
-                    updateConnections(level, neighborPos);
-                }
+        for (Direction dir : Direction.values()) {
+            BlockPos neighborPos = pos.relative(dir);
+            BlockState neighborState = level.getBlockState(neighborPos);
+            if (neighborState.getBlock() instanceof BlockViaduct) {
+                updateConnections(level, neighborPos);
             }
         }
     }
@@ -152,19 +152,24 @@ public class BlockViaduct extends Block {
     
     @Override
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor world, BlockPos pos, BlockPos neighborPos) {
-    	  for(Direction dir : Direction.values()) {
-    	        boolean connected = ConnectionHelper.canConnect(world instanceof Level ? (Level)world : null, pos, dir);
-    	        state = state.setValue(getPropertyForDirection(dir), connected);
-    	    }
-    	    return state;
-    	
+        if (world instanceof Level level) {
+            boolean connected = ConnectionHelper.canConnect(level, pos, direction);
+            return state.setValue(getPropertyForDirection(direction), connected);
+        }
+        return state;
     }
 
     @Override
     public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource rand) {
         updateConnections(level, pos);
     }
-  
+    @Override
+    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
+        if (!level.isClientSide) {
+            updateConnections(level, pos);
+        }
+    }
+    
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
         if (context instanceof EntityCollisionContext entityContext) {
@@ -176,14 +181,114 @@ public class BlockViaduct extends Block {
             }
         }
 
+        boolean north = state.getValue(CONNECTED_NORTH);
+        boolean south = state.getValue(CONNECTED_SOUTH);
+        boolean east  = state.getValue(CONNECTED_EAST);
+        boolean west  = state.getValue(CONNECTED_WEST);
+        boolean up    = state.getValue(CONNECTED_UP);
+        boolean down  = state.getValue(CONNECTED_DOWN);
+        
         VoxelShape center = box(4, 4, 4, 12, 12, 12);
-        VoxelShape north = box(4, 4, 0, 12, 12, 4);
-        VoxelShape south = box(4, 4, 12, 12, 12, 16);
-        VoxelShape west  = box(0, 4, 4, 4, 12, 12);
-        VoxelShape east  = box(12, 4, 4, 16, 12, 12);
-        VoxelShape up    = box(4, 12, 4, 12, 16, 12);
-        VoxelShape down  = box(4, 0, 4, 12, 4, 12);
-        return Shapes.or(center, north, south, west, east, up, down);
+        VoxelShape northArm = box(4, 4, 0, 12, 12, 4);
+        VoxelShape southArm = box(4, 4, 12, 12, 12, 16);
+        VoxelShape westArm  = box(0, 4, 4, 4, 12, 12);
+        VoxelShape eastArm  = box(12, 4, 4, 16, 12, 12);
+        VoxelShape upArm    = box(4, 12, 4, 12, 16, 12);
+        VoxelShape downArm  = box(4, 0, 4, 12, 4, 12);
+        
+        VoxelShape defaultShape = Shapes.or(center, northArm, southArm, westArm, eastArm, upArm, downArm);
+        
+        boolean noConnections = !(north || south || east || west || up || down);
+        boolean noConnectionsUp =  down && !(north || south || east || west || up);
+        boolean noConnectionsDown = up && !(north || south || east || west || down);
+        boolean ConnectionsUpDown = (up &&  down) && !(north || south || east || west);
+        boolean ConnectionsWestEast = (east &&  west) && !(north || south || up || down);
+        boolean ConnectionsSouthNorth = (north &&  south) && !(east || west || up || down);
+        boolean onlyNorth = north && !(south || east || west || up || down);
+        boolean onlySouth = south && !(north || east || west || up || down);
+        boolean onlyEast  = east  && !(north || south || west || up || down);
+        boolean onlyWest  = west  && !(north || south || east || up || down);
+        
+        if (noConnections) {
+
+            return Shapes.or(defaultShape);
+        }
+        
+        if (noConnectionsUp) {
+             upArm    = box(4, 12, 4, 12, 16, 12);
+             northArm = box(4, 0, 0, 12, 12, 16);
+             westArm  = box(0, 0, 4, 16, 12, 12);
+          
+            return Shapes.or(northArm, westArm, upArm);
+        }
+        
+        if (noConnectionsDown) {
+             downArm  = box(4, 0, 4, 12, 4, 12);
+             northArm = box(4, 4, 0, 12, 16, 16);
+             westArm  = box(0, 4, 4, 16, 16, 12);
+            
+            return Shapes.or(northArm, westArm, downArm);
+        }
+        
+        if (ConnectionsUpDown) {
+             northArm = box(4, 0, 0, 12, 16, 16);
+             westArm  = box(0, 0, 4, 16, 16, 12);
+            
+            return Shapes.or(northArm, westArm);
+        }
+        
+        if (ConnectionsWestEast) {
+             northArm = box(0, 4, 0, 16, 12, 16);
+             westArm  = box(0, 0, 4, 16, 16, 12);
+            
+            return Shapes.or(northArm, westArm);
+        }
+        
+        if (ConnectionsSouthNorth) {
+            northArm = box(0, 4, 0, 16, 12, 16);
+            westArm  = box(4, 0, 0, 12, 16, 16);
+           
+           return Shapes.or(northArm, westArm);
+        }
+        
+        if (onlyNorth) {
+        	
+            northArm = box(0, 4, 0, 16, 12, 12);
+            westArm  = box(4, 0, 0, 12, 16, 12);
+            southArm = box(4, 4, 12, 12, 12, 16);
+            
+            return Shapes.or(northArm, westArm, southArm);
+        }
+
+        	if (onlySouth) {
+        	
+        	northArm = box(4, 4, 0, 12, 12, 4);
+            westArm  = box(4, 0, 4, 12, 16, 16);
+            southArm = box(0, 4, 4, 16, 12, 16);
+            
+            return Shapes.or(northArm, westArm, southArm);
+        }
+
+        	if (onlyEast) {
+            	
+            	northArm = box(4, 4, 0, 16, 12, 16);
+            	westArm  = box(0, 4, 4, 4, 12, 12);
+                southArm = box(4, 0, 4, 16, 16, 12);
+                
+                return Shapes.or(northArm, westArm, southArm);
+            }
+
+        	if (onlyWest) {
+            	
+        		eastArm  = box(12, 4, 4, 16, 12, 12);
+                westArm  = box(0, 4, 0, 12, 12, 16);
+                southArm = box(0, 0, 4, 12, 16, 12);
+                
+                return Shapes.or(eastArm, westArm, southArm);
+            }
+        
+        
+		return defaultShape;     
     }
     
     @Override
