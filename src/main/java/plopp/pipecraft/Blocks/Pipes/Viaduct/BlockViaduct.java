@@ -25,7 +25,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import plopp.pipecraft.logic.ViaductTravel;
 import plopp.pipecraft.util.ConnectionHelper;
 
-public class BlockViaduct extends Block implements EntityBlock{
+public class BlockViaduct extends Block{
 
     public static final BooleanProperty CONNECTED_NORTH = BooleanProperty.create("connected_north");
     public static final BooleanProperty CONNECTED_SOUTH = BooleanProperty.create("connected_south");
@@ -321,8 +321,4 @@ public class BlockViaduct extends Block implements EntityBlock{
         return getShape(state, world, pos, context);
     }
 
-    @Override
-    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new BlockEntityViaduct(pos, state);
-    }
 } 

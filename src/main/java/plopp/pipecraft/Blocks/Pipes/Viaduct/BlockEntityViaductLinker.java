@@ -17,7 +17,6 @@ import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
@@ -64,10 +63,12 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
         super.setRemoved();
 
     }
+    
     @Override
     public CompoundTag getPersistentData() {
         return customPersistentData;
     }
+    
     public List<BlockPos> getSortedTargetPositions() {
         return Collections.unmodifiableList(sortedTargetPositions);
     }
@@ -126,9 +127,6 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
 	 protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
 	     super.saveAdditional(tag, registries);
 
-	     System.out.println("[BlockEntity] saveAdditional called, Thread: " + Thread.currentThread().getName());
-	     System.out.println("[BlockEntity] saveAdditional called, CustomSortedTargets: " + sortedTargetPositions);
-
 	     tag.putString("CustomName", customName);
 	     if (!displayedItem.isEmpty()) {
 	         tag.put("DisplayedItem", displayedItem.save(registries));
@@ -138,24 +136,19 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
 	     for (LinkedTargetEntry entry : linkedTargets) {
 	         listTag.add(entry.toNBT());
 	     }
+	     
 	     tag.put("LinkedTargets", listTag);
-
-	     // Custom-Sortierung speichern
 	     ListTag sortedListTag = new ListTag();
 	     for (BlockPos pos : sortedTargetPositions) {
 	         sortedListTag.add(NbtUtils.writeBlockPos(pos));
 	     }
+	     
 	     tag.put("CustomSortedTargets", sortedListTag);
-
-	     System.out.println("[BlockEntity] saveAdditional called, NBT dump: " + tag);
-	     System.out.println("[BlockEntity] saveAdditional called, CustomSortedTargets: " + sortedTargetPositions);
 	 }
 
 	 @Override
 	 protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
 	     super.loadAdditional(tag, registries);
-
-	     System.out.println("[BlockEntity] loadAdditional called, NBT dump: " + tag);
 
 	     if (tag.contains("CustomName", Tag.TAG_STRING)) {
 	         customName = tag.getString("CustomName");
@@ -181,7 +174,6 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
 	         }
 	     }
 
-	     // Custom-Sortierung laden
 	     if (sortedTargetPositions == null) {
 	         sortedTargetPositions = new ArrayList<>();
 	     }
@@ -199,6 +191,7 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
 	    	    }
 	    	}
 	 }
+	 
 	 @Override
 	 public CompoundTag getUpdateTag(HolderLookup.Provider lookup) {
 	     return saveWithFullMetadata(lookup);
@@ -233,7 +226,6 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
 
         visited.add(worldPosition);
 
-        // Nur angrenzende Viaducts als Start
         for (Direction dir : Direction.values()) {
             BlockPos neighbor = worldPosition.relative(dir);
             BlockState neighborState = level.getBlockState(neighbor);
@@ -245,7 +237,7 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
 
         while (!toVisit.isEmpty()) {
             BlockPos current = toVisit.poll();
-            toBeVisited.remove(current); // aus "geplant"-Set entfernen
+            toBeVisited.remove(current); 
 
             if (!visited.add(current)) continue;
 

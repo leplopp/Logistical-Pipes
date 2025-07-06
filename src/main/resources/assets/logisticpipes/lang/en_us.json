@@ -6,5 +6,8 @@
   "viaduct.travel.drop_denied": "Dropping while riding is not allowed",
   "screen.pipecraft.viaduct_linker": "Viaduct Linker Ziel",
   "screen.pipecraft.viaduct_linker_id": "Viaduct Linker ID",
-  "screen.pipecraft.linkerid.inventory" : "Inventory"
+  "screen.pipecraft.linkerid.inventory" : "Inventory",
+  "gui.linkerscreen.sortmode_distance": "Sort by Distance",
+  "gui.linkerscreen.sortmode_alphabet": "Sort Alphabetically",
+  "gui.linkerscreen.sortmode_custom": "Sort Custom (right click drag&drop)"
 }

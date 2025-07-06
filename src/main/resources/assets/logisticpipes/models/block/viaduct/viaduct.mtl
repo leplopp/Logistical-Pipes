@@ -1,6 +1,5 @@
-# Blender 4.4.3 MTL File: 'None'
-# www.blender.org
+# Made in Blockbench 4.12.5
 
 newmtl Material
-map_Kd logisticpipes:block/viaduct
 
+map_Kd logisticpipes:block/viaduct

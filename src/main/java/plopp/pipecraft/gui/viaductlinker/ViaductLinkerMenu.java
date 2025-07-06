@@ -1,12 +1,10 @@
 package plopp.pipecraft.gui.viaductlinker;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -38,7 +36,7 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
     private boolean allLinkersLoaded = false;
     private List<LinkedTargetEntryRecord> customSortedLinkers = new ArrayList<>();
 	public ServerPlayer serverPlayer;
-	
+	private boolean dataHandled = false;
     
     public ViaductLinkerMenu(int containerId, Inventory inv, FriendlyByteBuf buf) {
     	  this(containerId, inv, (BlockEntityViaductLinker) inv.player.level().getBlockEntity(buf.readBlockPos()));
@@ -54,8 +52,6 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
             ViaductLinkerManager.setOpenMenu(this);
 
             sp.level().sendBlockUpdated(tile.getBlockPos(), tile.getBlockState(), tile.getBlockState(), 3);
-
-            // ✨ Das fehlte bisher – überträgt BlockEntity-Daten (inkl. CustomSortedTargets) an Client
             ClientboundBlockEntityDataPacket packet = tile.getUpdatePacket();
             if (packet != null) {
                 sp.connection.send(packet);
@@ -89,7 +85,6 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
                     }
                 }
 
-                // Hänge verbleibende (nicht gespeicherte) hinten dran
                 sortedList.addAll(unsorted);
 
                 this.customSortedLinkers = sortedList;
@@ -109,9 +104,8 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
     }
 
     public void setCustomSortedLinkers(List<LinkedTargetEntryRecord> list) {
-        System.out.println("[Menu] setCustomSortedLinkers aufgerufen mit: " + list.stream().map(e -> e.pos().toString()).toList());
         this.customSortedLinkers = list;
-        setLinkers(list); // WICHTIG: aktualisiert GUI-Inhalte
+        setLinkers(list); 
     }
 
     public void checkIfAllLoaded(int expectedCount) {
@@ -134,9 +128,7 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
                 .map(LinkedTargetEntryRecord::pos)
                 .toList();
 
-            System.out.println("[Menu] removed called on thread: " + Thread.currentThread().getName());
             blockEntity.setSortedTargetPositions(sorted);
-            System.out.println("[Menu] saved sortedTargetPositions on removed: " + sorted);
 
             if (!player.level().isClientSide) {
                 ((ServerLevel)player.level()).sendBlockUpdated(blockEntity.getBlockPos(),
@@ -145,9 +137,7 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
                     3);
                 player.level().getChunk(blockEntity.getBlockPos()).setUnsaved(true);
             }
-        } else {
-            System.out.println("[Menu] removed called, aber keine customSortedLinkers zum Speichern");
-        }
+        } 
     }
     
     public boolean hasNewData() {

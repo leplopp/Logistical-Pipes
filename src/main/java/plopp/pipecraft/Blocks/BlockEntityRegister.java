@@ -6,7 +6,6 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import plopp.pipecraft.PipeCraftIndex;
-import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaduct;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
 
 public class BlockEntityRegister {
@@ -18,11 +17,6 @@ public class BlockEntityRegister {
 		        BLOCK_ENTITIES.register("viaduct_linker", () ->
 		            BlockEntityType.Builder.of(BlockEntityViaductLinker::new, BlockRegister.VIADUCTLINKER.get()).build(null)
 		        );
-
-		    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BlockEntityViaduct>> VIADUCT =
-			        BLOCK_ENTITIES.register("viaduct", () ->
-			            BlockEntityType.Builder.of(BlockEntityViaduct::new, BlockRegister.VIADUCT.get()).build(null)
-			        );
 
 
 

@@ -47,16 +47,6 @@ import net.minecraft.world.entity.Pose;
 public class CommonEvents {	
 
 	    
-	@SubscribeEvent
-	public static void onClientPlayerTick(PlayerTickEvent.Post event) {
-	    Player player = event.getEntity();
-	    if (!(player instanceof LocalPlayer localPlayer)) return;
-
-	    UUID id = localPlayer.getUUID();
-	    if (ViaductTravel.shouldTriggerJump(id)) {
-	        localPlayer.jumpFromGround();
-	    }
-	}
 	
 	@SubscribeEvent
 	public static void onPlayerTick(PlayerTickEvent.Post event) {
@@ -122,28 +112,6 @@ public class CommonEvents {
 	        }
 	    }
 	    
-	    @SubscribeEvent
-	    public static void onClientTick(ClientTickEvent.Pre event) {
-	        Minecraft mc = Minecraft.getInstance();
-	        if (mc.player == null) return;
-
-	        Player player = mc.player;
-
-	        if (ViaductTravel.isTravelActive(player)) {
-	            player.setDeltaMovement(Vec3.ZERO);
-
-	            if (player instanceof LocalPlayer localPlayer) {
-	                localPlayer.input.forwardImpulse = 0;
-	                localPlayer.input.leftImpulse = 0;
-	                localPlayer.input.jumping = false;
-	                localPlayer.input.shiftKeyDown = false;
-	                player.setOnGround(true);
-	                
-	                player.setPose(Pose.STANDING);
-	                
-	            }
-	      } 
-	}
 	    
 	    @SubscribeEvent
 	    public static void onBlockBreak(PlayerEvent.BreakSpeed event) {

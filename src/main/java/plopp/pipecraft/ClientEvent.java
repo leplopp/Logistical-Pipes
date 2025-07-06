@@ -1,11 +1,13 @@
 package plopp.pipecraft;
 
 import java.lang.reflect.Field;
+import java.util.UUID;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
@@ -13,8 +15,11 @@ import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.client.resources.PlayerSkin.Model;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -23,9 +28,8 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import plopp.pipecraft.Blocks.BlockEntityRegister;
-import plopp.pipecraft.Blocks.ViaductOverlayRenderer;
-import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaduct;
 import plopp.pipecraft.gui.MenuTypeRegister;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerIDScreen;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerScreen;
@@ -35,15 +39,7 @@ import plopp.pipecraft.model.LyingPlayerModel;
 @EventBusSubscriber(modid = PipeCraftIndex.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class ClientEvent {
 	
-	@SubscribeEvent
-    public static void onClientSetup(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> {
-        	BlockEntityRenderers.register(
-        		    (BlockEntityType<BlockEntityViaduct>) BlockEntityRegister.VIADUCT.get(),
-        		    (BlockEntityRendererProvider<BlockEntityViaduct>) ViaductOverlayRenderer::new
-        		);
-        });
-	    }
+
     @SubscribeEvent
     public static void onClientSetup(RegisterMenuScreensEvent event) {
     	event.register(MenuTypeRegister.VIADUCT_LINKER.get(), ViaductLinkerScreen::new);
@@ -73,7 +69,7 @@ public class ClientEvent {
         }
     }
     
-  
+   
 
 }
 
