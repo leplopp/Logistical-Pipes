@@ -1,6 +1,8 @@
 package plopp.pipecraft.logic;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -14,6 +16,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -36,7 +39,7 @@ public class ViaductTravel {
     private static final Set<UUID> jumpTrigger = new HashSet<>();
     public static final int MAX_CHARGE = 30; //charge time
     public static final Map<UUID, List<ItemStack>> storedArmor = new HashMap<>();
-    
+    private static final Map<UUID, Float> travelYawMap = new HashMap<>();
 
     public static void markJumpAfterTravel(Player player) {
         jumpAfterTravel.add(player.getUUID());
@@ -62,6 +65,10 @@ public class ViaductTravel {
         
     }
     
+    public static float getTravelYaw(UUID id) {
+        return travelYawMap.getOrDefault(id, 0f);
+    }
+
     public static void start(Player player, BlockPos startPos, BlockPos targetPos, int ticksPerChunk) {
     	 System.out.println("[ViaductTravel] start() called with start=" + startPos + ", target=" + targetPos);
         Level level = player.level();
@@ -154,8 +161,10 @@ public class ViaductTravel {
         Vec3 lookTarget = lookFrom.lerp(lookTo, lookAheadProgress);
 
         Vec3 lookDirection = lookTarget.subtract(lerped).normalize();
-        float yaw = (float) (Math.toDegrees(Math.atan2(lookDirection.z, lookDirection.x)) - 90);
+        float yaw = (float) (Math.toDegrees(Math.atan2(lookDirection.z, lookDirection.x)) + 0);
+        travelYawMap.put(player.getUUID(), yaw);
         player.setYRot(yaw);
+
 
         double y = (toIndex == lastIndex && chunkProgress >= 1.0) ? to.y + 1.0 : lerped.y - 1;
 
@@ -182,77 +191,83 @@ public class ViaductTravel {
     
     public static List<BlockPos> findViaductPath(Level level, BlockPos start, BlockPos end) {
         Set<BlockPos> visited = new HashSet<>();
-        Queue<List<BlockPos>> queue = new LinkedList<>();
+        Map<BlockPos, BlockPos> cameFrom = new HashMap<>();
+        Queue<BlockPos> queue = new ArrayDeque<>();
 
-        queue.add(List.of(start));
+        queue.add(start);
         visited.add(start);
 
         while (!queue.isEmpty()) {
-            List<BlockPos> path = queue.poll();
-            BlockPos last = path.get(path.size() - 1);
+            BlockPos current = queue.poll();
 
-            if (last.equals(end)) {
+            if (current.equals(end)) {
+                // Pfad rekonstruieren
+                List<BlockPos> path = new ArrayList<>();
+                BlockPos step = current;
+                while (step != null) {
+                    path.add(step);
+                    step = cameFrom.get(step);
+                }
+                Collections.reverse(path);
+
+                // Mindestens 3 Schritte wie vorher
                 if (path.size() >= 3) {
                     return path;
                 } else {
-                    continue; 
+                    continue;
                 }
             }
 
             for (Direction dir : Direction.values()) {
-                BlockPos next = last.relative(dir);
-                if (visited.contains(next)) continue;
+                BlockPos neighbor = current.relative(dir);
 
-                BlockState state = level.getBlockState(next);
+                if (visited.contains(neighbor)) continue;
 
-                if (state.is(BlockRegister.VIADUCTLINKER) && !next.equals(end)) continue;
+                BlockState state = level.getBlockState(neighbor);
 
-                if (state.getBlock() instanceof BlockViaduct || next.equals(end)) {
-                    visited.add(next);
-                    List<BlockPos> newPath = new ArrayList<>(path);
-                    newPath.add(next);
-                    queue.add(newPath);
+                if (state.is(BlockRegister.VIADUCTLINKER) && !neighbor.equals(end)) continue;
+
+                if (state.getBlock() instanceof BlockViaduct || neighbor.equals(end)) {
+                    visited.add(neighbor);
+                    cameFrom.put(neighbor, current);
+                    queue.add(neighbor);
                 }
             }
         }
 
-        return List.of(); 
+        return List.of();
     }
     
     public static BlockPos findTarget(Level level, BlockPos from) {
         Set<BlockPos> visited = new HashSet<>();
-        Queue<List<BlockPos>> queue = new LinkedList<>();
+        Queue<BlockPos> queue = new ArrayDeque<>();
 
-        queue.add(List.of(from));
+        queue.add(from);
         visited.add(from);
 
-        int maxDistance = 512; 
         while (!queue.isEmpty()) {
-            List<BlockPos> path = queue.poll();
-            BlockPos last = path.get(path.size() - 1);
+            BlockPos current = queue.poll();
 
-            if (!last.equals(from) && level.getBlockState(last).is(BlockRegister.VIADUCTLINKER) && path.size() >= 3) {
-            	 BlockPos above = last.above();
-                 BlockState aboveState = level.getBlockState(above);
-                 if (!(aboveState.getBlock() instanceof BlockViaduct)) {
-                return last.immutable();
-            }else {
-                continue;
+            if (!current.equals(from) && level.getBlockState(current).is(BlockRegister.VIADUCTLINKER)) {
+                BlockPos above = current.above();
+                BlockState aboveState = level.getBlockState(above);
+
+                if (!(aboveState.getBlock() instanceof BlockViaduct)) {
+                    return current.immutable();
+                } else {
+                    continue;
+                }
             }
-       }
 
             for (Direction dir : Direction.values()) {
-                BlockPos next = last.relative(dir);
-                if (visited.contains(next)) continue;
+                BlockPos neighbor = current.relative(dir);
 
-                if (from.distManhattan(next) > maxDistance) continue; 
+                if (visited.contains(neighbor)) continue;
 
-                BlockState state = level.getBlockState(next);
+                BlockState state = level.getBlockState(neighbor);
                 if (state.getBlock() instanceof BlockViaduct || state.is(BlockRegister.VIADUCTLINKER)) {
-                    visited.add(next);
-                    List<BlockPos> newPath = new ArrayList<>(path);
-                    newPath.add(next);
-                    queue.add(newPath);
+                    visited.add(neighbor);
+                    queue.add(neighbor);
                 }
             }
         }
@@ -299,4 +314,6 @@ public class ViaductTravel {
              }
           }
       }
+
+
 }

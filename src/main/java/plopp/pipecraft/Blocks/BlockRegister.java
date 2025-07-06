@@ -11,7 +11,6 @@ import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import plopp.pipecraft.PipeCraftIndex;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
-import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductAdvanced;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
 
 public class BlockRegister {
@@ -28,10 +27,6 @@ public class BlockRegister {
   public static final DeferredBlock<Block> VIADUCT = registerBlock("viaduct",
             () -> new BlockViaduct(BlockBehaviour.Properties.of()
                     .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS)));
-    
-  public static final DeferredBlock<Block> VIADUCTADVANCED = registerBlock("viaduct_advanced",
-          () -> new BlockViaductAdvanced(BlockBehaviour.Properties.of()
-                  .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS).noOcclusion()));
     
     private static <T extends Block> DeferredBlock<T> registerBlock(String name, Supplier<T> block) {
         DeferredBlock<T> toReturn = (DeferredBlock<T>) BLOCKS.register(name, block);

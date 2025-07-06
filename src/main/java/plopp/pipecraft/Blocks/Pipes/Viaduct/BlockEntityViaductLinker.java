@@ -11,8 +11,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.IntArrayTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.Connection;
@@ -25,20 +27,21 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.common.extensions.IBlockEntityExtension;
 import plopp.pipecraft.Blocks.BlockEntityRegister;
 import plopp.pipecraft.Blocks.BlockRegister;
 import plopp.pipecraft.Network.LinkedTargetEntry;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerMenu;
 import plopp.pipecraft.logic.ViaductLinkerManager;
 
-public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvider {
+public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvider, IBlockEntityExtension  {
 	
 	private ItemStack displayedItem = new ItemStack(BlockRegister.VIADUCTLINKER.get());
 	private String customName = "Viaduct Link";
 	final List<LinkedTargetEntry> linkedTargets = new ArrayList<>();
 	private List<LinkedTargetEntry> cachedLinkedTargets = new ArrayList<>();
-	private long lastUpdateTick = 0;
-	private static final long UPDATE_INTERVAL_TICKS = 20;
+	private List<BlockPos> sortedTargetPositions = new ArrayList<>();
+	private CompoundTag customPersistentData = new CompoundTag();
 	
     public BlockEntityViaductLinker(BlockPos pos, BlockState state) {
         super(BlockEntityRegister.VIADUCT_LINKER.get(), pos, state);
@@ -61,7 +64,22 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
         super.setRemoved();
 
     }
+    @Override
+    public CompoundTag getPersistentData() {
+        return customPersistentData;
+    }
+    public List<BlockPos> getSortedTargetPositions() {
+        return Collections.unmodifiableList(sortedTargetPositions);
+    }
 
+    public void setSortedTargetPositions(List<BlockPos> positions) {
+        this.sortedTargetPositions = new ArrayList<>(positions);
+        setChanged();
+        if (level instanceof ServerLevel serverLevel) {
+            serverLevel.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+    
     public void addLinkedTarget(LinkedTargetEntry entry) {
         if (linkedTargets.stream().noneMatch(e -> e.pos.equals(entry.pos))) {
             linkedTargets.add(entry);
@@ -104,48 +122,93 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
 	        return Component.translatable("screen.pipecraft.viaduct_linker");
 	    }
 	
-	@Override
-	protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-	    super.saveAdditional(tag, registries);
-	    tag.putString("CustomName", customName);
-	    if (!displayedItem.isEmpty()) {
-	        tag.put("DisplayedItem", displayedItem.save(registries));
-	    }
+	 @Override
+	 protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+	     super.saveAdditional(tag, registries);
 
-	    ListTag listTag = new ListTag();
-	    for (LinkedTargetEntry entry : linkedTargets) {
-	        listTag.add(entry.toNBT());
-	    }
-	    tag.put("LinkedTargets", listTag);
-	}
-      
-	@Override
-	protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-	    super.loadAdditional(tag, registries);
-	    if (tag.contains("CustomName", Tag.TAG_STRING)) {
-	        customName = tag.getString("CustomName");
-	    } else {
-	        customName = "Viaduct Link";
-	    }
-	    if (tag.contains("DisplayedItem", Tag.TAG_COMPOUND)) {
-	        displayedItem = ItemStack.CODEC
-	            .parse(NbtOps.INSTANCE, tag.getCompound("DisplayedItem"))
-	            .result()
-	            .orElse(ItemStack.EMPTY);
-	    } else {
-	        displayedItem = new ItemStack(BlockRegister.VIADUCTLINKER.get());
-	    }
+	     System.out.println("[BlockEntity] saveAdditional called, Thread: " + Thread.currentThread().getName());
+	     System.out.println("[BlockEntity] saveAdditional called, CustomSortedTargets: " + sortedTargetPositions);
 
-	    linkedTargets.clear();
-	    if (tag.contains("LinkedTargets", Tag.TAG_LIST)) {
-	        ListTag listTag = tag.getList("LinkedTargets", Tag.TAG_COMPOUND);
-	        for (int i = 0; i < listTag.size(); i++) {
-	            CompoundTag posTag = listTag.getCompound(i);
-	            linkedTargets.add(LinkedTargetEntry.fromNBT(posTag));
-	        }
-	    }
-	}
+	     tag.putString("CustomName", customName);
+	     if (!displayedItem.isEmpty()) {
+	         tag.put("DisplayedItem", displayedItem.save(registries));
+	     }
 
+	     ListTag listTag = new ListTag();
+	     for (LinkedTargetEntry entry : linkedTargets) {
+	         listTag.add(entry.toNBT());
+	     }
+	     tag.put("LinkedTargets", listTag);
+
+	     // Custom-Sortierung speichern
+	     ListTag sortedListTag = new ListTag();
+	     for (BlockPos pos : sortedTargetPositions) {
+	         sortedListTag.add(NbtUtils.writeBlockPos(pos));
+	     }
+	     tag.put("CustomSortedTargets", sortedListTag);
+
+	     System.out.println("[BlockEntity] saveAdditional called, NBT dump: " + tag);
+	     System.out.println("[BlockEntity] saveAdditional called, CustomSortedTargets: " + sortedTargetPositions);
+	 }
+
+	 @Override
+	 protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+	     super.loadAdditional(tag, registries);
+
+	     System.out.println("[BlockEntity] loadAdditional called, NBT dump: " + tag);
+
+	     if (tag.contains("CustomName", Tag.TAG_STRING)) {
+	         customName = tag.getString("CustomName");
+	     } else {
+	         customName = "Viaduct Link";
+	     }
+
+	     if (tag.contains("DisplayedItem", Tag.TAG_COMPOUND)) {
+	         displayedItem = ItemStack.CODEC
+	             .parse(NbtOps.INSTANCE, tag.getCompound("DisplayedItem"))
+	             .result()
+	             .orElse(ItemStack.EMPTY);
+	     } else {
+	         displayedItem = new ItemStack(BlockRegister.VIADUCTLINKER.get());
+	     }
+
+	     linkedTargets.clear();
+	     if (tag.contains("LinkedTargets", Tag.TAG_LIST)) {
+	         ListTag listTag = tag.getList("LinkedTargets", Tag.TAG_COMPOUND);
+	         for (int i = 0; i < listTag.size(); i++) {
+	             CompoundTag posTag = listTag.getCompound(i);
+	             linkedTargets.add(LinkedTargetEntry.fromNBT(posTag));
+	         }
+	     }
+
+	     // Custom-Sortierung laden
+	     if (sortedTargetPositions == null) {
+	         sortedTargetPositions = new ArrayList<>();
+	     }
+	     sortedTargetPositions.clear();
+
+	     if (tag.contains("CustomSortedTargets", Tag.TAG_LIST)) {
+	    	    ListTag listTag = tag.getList("CustomSortedTargets", Tag.TAG_INT_ARRAY);
+	    	    for (int i = 0; i < listTag.size(); i++) {
+	    	        IntArrayTag intArrayTag = (IntArrayTag) listTag.get(i);
+	    	        int[] coords = intArrayTag.getAsIntArray();
+	    	        if (coords.length == 3) {
+	    	            BlockPos pos = new BlockPos(coords[0], coords[1], coords[2]);
+	    	            sortedTargetPositions.add(pos);
+	    	        }
+	    	    }
+	    	}
+	 }
+	 @Override
+	 public CompoundTag getUpdateTag(HolderLookup.Provider lookup) {
+	     return saveWithFullMetadata(lookup);
+	 }
+
+	    @Override
+	    public void handleUpdateTag(CompoundTag tag, HolderLookup.Provider lookup) {
+	    	 this.loadAdditional(tag, null);
+	    }
+	 
     @Override
     public AbstractContainerMenu createMenu(int id, Inventory inv, Player player) {
         return new ViaductLinkerMenu(id, inv, this);
@@ -156,56 +219,58 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
         return ClientboundBlockEntityDataPacket.create(this);
     }
 
-    @Override
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt, HolderLookup.Provider registries) {
-        this.loadAdditional(pkt.getTag(), registries);
-    }
-    
-    @Override
-    public CompoundTag getUpdateTag(HolderLookup.Provider lookup) {
-        CompoundTag tag = new CompoundTag();
-        this.saveAdditional(tag, lookup); 
-        return tag;
-    }
 
-    @Override
-    public void handleUpdateTag(CompoundTag tag, HolderLookup.Provider lookup) {
-        this.loadAdditional(tag, lookup); 
-    }
-
-    public List<LinkedTargetEntry> findLinkedTargetsThroughViaducts() {
+    public List<LinkedTargetEntry> findLinkedTargetsThroughViaducts(boolean forceUpdate) {
         if (level == null || level.isClientSide) return Collections.emptyList();
-
-        long currentTick = level.getGameTime();
-        if (currentTick - lastUpdateTick < UPDATE_INTERVAL_TICKS) {
+        if (!forceUpdate && !cachedLinkedTargets.isEmpty()) {
             return cachedLinkedTargets;
         }
-        lastUpdateTick = currentTick;
 
         Set<BlockPos> visited = new HashSet<>();
+        Set<BlockPos> toBeVisited = new HashSet<>();
         List<LinkedTargetEntry> foundLinkers = new ArrayList<>();
         Queue<BlockPos> toVisit = new ArrayDeque<>();
-        toVisit.add(worldPosition);
+
+        visited.add(worldPosition);
+
+        // Nur angrenzende Viaducts als Start
+        for (Direction dir : Direction.values()) {
+            BlockPos neighbor = worldPosition.relative(dir);
+            BlockState neighborState = level.getBlockState(neighbor);
+            if (neighborState.getBlock() == BlockRegister.VIADUCT.get()) {
+                toVisit.add(neighbor);
+                toBeVisited.add(neighbor);
+            }
+        }
 
         while (!toVisit.isEmpty()) {
             BlockPos current = toVisit.poll();
+            toBeVisited.remove(current); // aus "geplant"-Set entfernen
+
             if (!visited.add(current)) continue;
 
-            for (Direction dir : Direction.values()) {
-                BlockPos neighbor = current.relative(dir);
-                if (visited.contains(neighbor)) continue;
+            BlockState currentState = level.getBlockState(current);
 
-                BlockState state = level.getBlockState(neighbor);
+            for (Direction dir : Direction.values()) {
+            	
+                if (!BlockViaduct.isConnectedTo(currentState, dir)) continue;
+
+                BlockPos neighbor = current.relative(dir);
+                if (visited.contains(neighbor) || toBeVisited.contains(neighbor)) continue;
+
+                BlockState neighborState = level.getBlockState(neighbor);
                 BlockEntity be = level.getBlockEntity(neighbor);
 
                 if (be instanceof BlockEntityViaductLinker linker && !neighbor.equals(worldPosition)) {
                     String name = linker.getCustomName();
                     foundLinkers.add(new LinkedTargetEntry(neighbor, name));
-                } else if (state.getBlock() == BlockRegister.VIADUCT.get()) {
+                } else if (neighborState.getBlock() == BlockRegister.VIADUCT.get()) {
                     toVisit.add(neighbor);
+                    toBeVisited.add(neighbor);
                 }
             }
         }
+
         cachedLinkedTargets = foundLinkers;
         return foundLinkers;
     }

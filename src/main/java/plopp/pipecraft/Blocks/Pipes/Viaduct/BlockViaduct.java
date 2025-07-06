@@ -13,6 +13,8 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -23,7 +25,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import plopp.pipecraft.logic.ViaductTravel;
 import plopp.pipecraft.util.ConnectionHelper;
 
-public class BlockViaduct extends Block {
+public class BlockViaduct extends Block implements EntityBlock{
 
     public static final BooleanProperty CONNECTED_NORTH = BooleanProperty.create("connected_north");
     public static final BooleanProperty CONNECTED_SOUTH = BooleanProperty.create("connected_south");
@@ -31,7 +33,6 @@ public class BlockViaduct extends Block {
     public static final BooleanProperty CONNECTED_WEST = BooleanProperty.create("connected_west");
     public static final BooleanProperty CONNECTED_UP = BooleanProperty.create("connected_up");
     public static final BooleanProperty CONNECTED_DOWN = BooleanProperty.create("connected_down");
-    private static final Map<BlockState, VoxelShape> octagonShapeCache = new HashMap<>();
 
     public BlockViaduct(Properties properties) {
         super(properties);
@@ -56,7 +57,18 @@ public class BlockViaduct extends Block {
             default -> throw new IllegalArgumentException("Invalid direction for connection: " + direction);
         };
     }
-
+    
+    public static boolean isConnectedTo(BlockState state, Direction dir) {
+        return switch (dir) {
+            case NORTH -> state.getValue(BlockViaduct.CONNECTED_NORTH);
+            case SOUTH -> state.getValue(BlockViaduct.CONNECTED_SOUTH);
+            case EAST -> state.getValue(BlockViaduct.CONNECTED_EAST);
+            case WEST -> state.getValue(BlockViaduct.CONNECTED_WEST);
+            case UP -> state.getValue(BlockViaduct.CONNECTED_UP);
+            case DOWN -> state.getValue(BlockViaduct.CONNECTED_DOWN);
+        };
+    }
+    
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(CONNECTED_NORTH, CONNECTED_SOUTH, CONNECTED_EAST, CONNECTED_WEST, CONNECTED_UP, CONNECTED_DOWN);
@@ -307,5 +319,10 @@ public class BlockViaduct extends Block {
             }
         }
         return getShape(state, world, pos, context);
+    }
+
+    @Override
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new BlockEntityViaduct(pos, state);
     }
 } 

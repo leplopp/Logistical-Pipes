@@ -3,6 +3,8 @@
   "itemGroup.logisticpipes.cable_blocks": "Cable & Electriyity",
   "block.logisticpipes.viaduct": "Viaduct",
   "block.logisticpipes.viaduct_advanced": "Viaduct Advanced",
-  "viaduct.travel.drop_denied": "Droppen während der Fahrt nicht Erlaubt"
- 
+  "viaduct.travel.drop_denied": "Droppen während der Fahrt nicht Erlaubt",
+  "screen.pipecraft.viaduct_linker": "Viaduct Linker",
+  "screen.pipecraft.viaduct_linker_id": "Viaduct Linker",
+  "screen.pipecraft.linkerid.inventory" : "Inventory"
 }

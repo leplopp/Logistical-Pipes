@@ -1,12 +1,21 @@
 package plopp.pipecraft;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.model.geom.ModelLayers;
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.client.resources.PlayerSkin.Model;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -17,6 +26,8 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RenderPlayerEvent;
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
@@ -25,6 +36,9 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerChangeGameMo
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import plopp.pipecraft.logic.ViaductLinkerManager;
 import plopp.pipecraft.logic.ViaductTravel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Pose;
@@ -32,6 +46,7 @@ import net.minecraft.world.entity.Pose;
 @EventBusSubscriber(modid = PipeCraftIndex.MODID)
 public class CommonEvents {	
 
+	    
 	@SubscribeEvent
 	public static void onClientPlayerTick(PlayerTickEvent.Post event) {
 	    Player player = event.getEntity();
@@ -66,7 +81,6 @@ public class CommonEvents {
 	    if (ViaductTravel.activeTravels.containsKey(id)) {
 	    	 player.getServer().execute(() -> {
 
-	             //player.setInvisible(true);
 	             player.setInvulnerable(true);
 	             player.setSwimming(false);
 	             player.setPose(Pose.SLEEPING);

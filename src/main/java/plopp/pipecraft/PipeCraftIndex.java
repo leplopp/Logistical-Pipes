@@ -59,7 +59,6 @@ public class PipeCraftIndex
  *  viaduct player detector 						<- concept
  *  viaduct	glowing ?								<- concept
  *  viaduct Speed controller						<- concept
- *  viaduct pipe monitoring block?!					<- concept
  *   	
  *  viaduct facade for all pipes & cables			<- concept
  *   
@@ -68,7 +67,7 @@ public class PipeCraftIndex
  *  sorter pipe										<- concept
  *  outout/inout pipe								<- concept
  *  hopper pipe										<- concept
- *  speed up pipe									<- conceptc
+ *  speed up pipe									<- concept
  *  detector pipe									<- concept
  *  
  */

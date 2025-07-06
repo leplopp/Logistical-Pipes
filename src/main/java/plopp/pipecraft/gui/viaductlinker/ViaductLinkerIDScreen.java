@@ -28,11 +28,10 @@ public class ViaductLinkerIDScreen extends AbstractContainerScreen<ViaductLinker
 	  protected void init() {
 	      super.init();
 	      textField = new EditBox(font, leftPos + 7, topPos + 20, 162, 16, Component.literal(""));
-	      textField.setMaxLength(32);
+	      textField.setMaxLength(20);
 	      textField.setValue(menu.getCustomName()); 
 	      textField.setResponder(this::onTextChanged);
 	      addWidget(textField);
-	      textField.setFocused(true);
 	  }
 	  
 	  private void onTextChanged(String newText) {
@@ -64,6 +63,7 @@ public class ViaductLinkerIDScreen extends AbstractContainerScreen<ViaductLinker
 	    @Override
 	    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
 	        guiGraphics.drawString(font, title, 8, 6, 0x404040, false);
+	        guiGraphics.drawString(font, Component.translatable("screen.pipecraft.linkerid.inventory"), 8, 73, 0x404040, false);
 	    }  
 	    
 	    @Override
@@ -89,11 +89,20 @@ public class ViaductLinkerIDScreen extends AbstractContainerScreen<ViaductLinker
 
 	    @Override
 	    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-	        if (textField.mouseClicked(mouseX, mouseY, button)) {
+	        if (super.mouseClicked(mouseX, mouseY, button)) {
 	            return true;
 	        }
-	        return super.mouseClicked(mouseX, mouseY, button);
+	        return false;
 	    }
+	    
+	    @Override
+	    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+	        if (!textField.isMouseOver(mouseX, mouseY)) {
+	            textField.setFocused(false);
+	        }
+	        return super.mouseReleased(mouseX, mouseY, button);
+	    }
+	    
 	    @Override
 	    public void onClose() {
 	    	

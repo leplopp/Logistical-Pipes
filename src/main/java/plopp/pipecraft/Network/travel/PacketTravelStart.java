@@ -1,4 +1,4 @@
-package plopp.pipecraft.Network;
+package plopp.pipecraft.Network.travel;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -49,7 +49,7 @@ public record PacketTravelStart(BlockPos startPos, BlockPos targetPos) implement
                     System.out.println("[TravelStart] Kein Linker an startPos gefunden!");
                 }
 
-                ViaductTravel.start(serverPlayer, packet.startPos(), packet.targetPos(), 32); //speed
+                ViaductTravel.start(serverPlayer, packet.startPos(), packet.targetPos(), 4); //speed
 
                 serverPlayer.displayClientMessage(Component.literal("Fahrt gestartet."), true);
                 serverPlayer.closeContainer();

@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -17,6 +18,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
 import plopp.pipecraft.Network.LinkedTargetEntry;
 import plopp.pipecraft.Network.LinkedTargetEntryRecord;
+import plopp.pipecraft.Network.NetworkHandler;
+import plopp.pipecraft.Network.ViaductLinkerListPacket;
 import plopp.pipecraft.Network.ViaductLinkerWorldData;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerMenu;
 
@@ -68,43 +71,41 @@ public class ViaductLinkerManager {
 	        data.setLinkers(new HashMap<>(allLinkersData));
 	    }
 	    
-	    public static void updateAllLinkers(Level level) {
+	    public static void updateOpenLinker(Level level) {
 	        if (level == null || level.isClientSide) return;
+	        if (openMenu == null) return;
 
-	        boolean anyChanges = false;
+	        BlockEntityViaductLinker currentLinker = openMenu.blockEntity;
+	        if (currentLinker == null) return;
 
-	        for (BlockPos pos : allLinkersData.keySet()) {
-	            BlockEntity be = level.getBlockEntity(pos);
-	            if (be instanceof BlockEntityViaductLinker linker) {
-	                List<LinkedTargetEntry> newTargets = linker.findLinkedTargetsThroughViaducts();
-	                if (!linker.getLinkedTargets().equals(newTargets)) {
-	                    linker.getLinkedTargets().clear();
-	                    linker.getLinkedTargets().addAll(newTargets);
-	                    linker.setChanged();
+	        // Nur für den geöffneten Linker die Ziele neu suchen
+	        List<LinkedTargetEntry> newTargets = currentLinker.findLinkedTargetsThroughViaducts(true);
+	        if (!currentLinker.getLinkedTargets().equals(newTargets)) {
+	            currentLinker.getLinkedTargets().clear();
+	            currentLinker.getLinkedTargets().addAll(newTargets);
+	            currentLinker.setChanged();
 
-	                    if (level instanceof ServerLevel serverLevel) {
-	                        serverLevel.sendBlockUpdated(pos, level.getBlockState(pos), level.getBlockState(pos), 3);
-	                    }
-	                    anyChanges = true;
-	                }
+	            if (level instanceof ServerLevel serverLevel) {
+	                serverLevel.sendBlockUpdated(currentLinker.getBlockPos(), level.getBlockState(currentLinker.getBlockPos()), level.getBlockState(currentLinker.getBlockPos()), 3);
 	            }
-	        }
 
-	        if (anyChanges && openMenu != null) {
+	            // Gefilterte Liste der verbundenen Linker für das GUI
+	            Set<BlockPos> connectedPositions = currentLinker.getLinkedTargets().stream()
+	                .map(t -> t.pos)
+	                .collect(Collectors.toSet());
 
-	            BlockEntityViaductLinker currentLinker = openMenu.blockEntity;
-	            if (currentLinker != null) {
-	                Set<BlockPos> connectedPositions = currentLinker.getLinkedTargets().stream()
-	                    .map(t -> t.pos)
-	                    .collect(Collectors.toSet());
+	            List<LinkedTargetEntryRecord> filtered = allLinkersData.values().stream()
+	                .filter(e -> connectedPositions.contains(e.pos()))
+	                .sorted(Comparator.comparingDouble(e -> e.pos().distSqr(currentLinker.getBlockPos())))
+	                .toList();
 
-	                List<LinkedTargetEntryRecord> filtered = allLinkersData.values().stream()
-	                    .filter(e -> connectedPositions.contains(e.pos()))
-	                    .sorted(Comparator.comparingDouble(e -> e.pos().distSqr(currentLinker.getBlockPos())))
-	                    .toList();
-
+	            if (openMenu != null) {
 	                openMenu.updateLinkersData(filtered);
 	                openMenu.checkIfAllLoaded(filtered.size());
+	                
+	                if (openMenu.serverPlayer != null) {
+	                    NetworkHandler.sendToClient(openMenu.serverPlayer, new ViaductLinkerListPacket(filtered));
+	                }
 	            }
 	        }
 	    }

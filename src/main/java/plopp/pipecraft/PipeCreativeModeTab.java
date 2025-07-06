@@ -21,7 +21,6 @@ public class PipeCreativeModeTab {
     	            .title(Component.translatable("creativetab.logisticpipes.pipe_blocks"))
     	            .displayItems((itemDisplayParameters, output) -> {
     	                output.accept(BlockRegister.VIADUCT.get().asItem());
-    	                output.accept(BlockRegister.VIADUCTADVANCED.get().asItem());
     	                output.accept(BlockRegister.VIADUCTLINKER.get().asItem());
     	            })
     	            .build()
