@@ -1,7 +1,5 @@
 package plopp.pipecraft.Blocks.Pipes.Viaduct;
 
-import java.util.HashMap;
-import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -13,11 +11,10 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.EntityBlock;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -33,7 +30,8 @@ public class BlockViaduct extends Block{
     public static final BooleanProperty CONNECTED_WEST = BooleanProperty.create("connected_west");
     public static final BooleanProperty CONNECTED_UP = BooleanProperty.create("connected_up");
     public static final BooleanProperty CONNECTED_DOWN = BooleanProperty.create("connected_down");
-
+    public static final IntegerProperty LIGHT_LEVEL = IntegerProperty.create("light_level", 0, 15);
+    
     public BlockViaduct(Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any()
@@ -41,10 +39,11 @@ public class BlockViaduct extends Block{
                 .setValue(CONNECTED_SOUTH, false)
                 .setValue(CONNECTED_EAST, false)
                 .setValue(CONNECTED_WEST, false)
-        		.setValue(CONNECTED_UP, false)
-        		.setValue(CONNECTED_DOWN, false));
+                .setValue(CONNECTED_UP, false)
+                .setValue(CONNECTED_DOWN, false)
+                .setValue(LIGHT_LEVEL, 0));  
     }
-    
+  
     public BooleanProperty getPropertyForDirection(Direction direction) {
         return switch (direction) {
             case NORTH -> CONNECTED_NORTH;
@@ -71,7 +70,7 @@ public class BlockViaduct extends Block{
     
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(CONNECTED_NORTH, CONNECTED_SOUTH, CONNECTED_EAST, CONNECTED_WEST, CONNECTED_UP, CONNECTED_DOWN);
+        builder.add(CONNECTED_NORTH, CONNECTED_SOUTH, CONNECTED_EAST, CONNECTED_WEST, CONNECTED_UP, CONNECTED_DOWN, LIGHT_LEVEL);
     }
     
     @Override
@@ -95,7 +94,7 @@ public class BlockViaduct extends Block{
         }
         return this.defaultBlockState(); 
     }
-
+    
     @Override
     public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
         if (!level.isClientSide) {
@@ -152,6 +151,10 @@ public class BlockViaduct extends Block{
                 updateConnections(level, neighborPos);
             }
         }
+    }
+    @Override
+    public int getLightEmission(BlockState state, BlockGetter world, BlockPos pos) {
+        return state.getValue(LIGHT_LEVEL);
     }
     
     private boolean isViaduct(BlockState state, Level level, BlockPos neighborPos, Direction toDirection) {
@@ -320,5 +323,4 @@ public class BlockViaduct extends Block{
         }
         return getShape(state, world, pos, context);
     }
-
 } 

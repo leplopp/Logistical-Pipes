@@ -1,4 +1,4 @@
-package plopp.pipecraft.Network;
+package plopp.pipecraft.Network.linker;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.Connection;
@@ -35,7 +35,8 @@ public record PacketUpdateLinkerName(BlockPos pos, String name) implements Custo
             handleInternal(packet, context.connection(), context.player());
         }
 
-        private static void handleInternal(PacketUpdateLinkerName packet, Connection connection, Player player) {
+        @SuppressWarnings("deprecation")
+		private static void handleInternal(PacketUpdateLinkerName packet, Connection connection, Player player) {
             if (player == null) return;
             Level level = player.level();
             if (level.hasChunkAt(packet.pos())) {

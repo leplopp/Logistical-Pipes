@@ -1,4 +1,4 @@
-package plopp.pipecraft.Network;
+package plopp.pipecraft.Network.linker;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;

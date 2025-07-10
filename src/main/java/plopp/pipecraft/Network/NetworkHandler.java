@@ -10,6 +10,9 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import plopp.pipecraft.PipeCraftIndex;
+import plopp.pipecraft.Network.linker.PacketUpdateLinkerName;
+import plopp.pipecraft.Network.linker.PacketUpdateSortedPositions;
+import plopp.pipecraft.Network.linker.ViaductLinkerListPacket;
 import plopp.pipecraft.Network.travel.PacketTravelStart;
 
 @EventBusSubscriber(modid = PipeCraftIndex.MODID, bus = EventBusSubscriber.Bus.MOD)

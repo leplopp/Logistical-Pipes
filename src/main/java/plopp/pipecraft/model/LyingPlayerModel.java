@@ -1,16 +1,12 @@
 package plopp.pipecraft.model;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-
+import net.minecraft.client.CameraType;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.entity.RenderLayerParent;
-import net.minecraft.client.renderer.entity.layers.RenderLayer;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
 import plopp.pipecraft.logic.ViaductTravel;
+import plopp.pipecraft.logic.ViaductTravel.VerticalDirection;
 
 public class LyingPlayerModel<T extends AbstractClientPlayer> extends PlayerModel<T> {
     public LyingPlayerModel(ModelPart part, boolean slim) {
@@ -20,44 +16,187 @@ public class LyingPlayerModel<T extends AbstractClientPlayer> extends PlayerMode
     @Override
     public void setupAnim(T player, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
         super.setupAnim(player, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
+        
+        if (player.level().isClientSide() && Minecraft.getInstance().options.getCameraType() == CameraType.FIRST_PERSON) {
+            return;
+        }
+        if (ViaductTravel.consumeResetModel(player.getUUID())) {
 
-        if (ViaductTravel.isTravelActive(player)) {
-            float yaw = ViaductTravel.getTravelYaw(player.getUUID());
-            float radiansYaw = (float) Math.toRadians(yaw);
+            this.body.xRot = 0;
+            this.body.yRot = 0;
+            this.body.zRot = 0;
 
-            // Körper
-            this.body.xRot = (float) Math.toRadians(90);
-            this.body.yRot = radiansYaw;
-
-            // Kopf – unabhängig von Kamera
             this.head.xRot = 0;
-            this.head.yRot = radiansYaw;
+            this.head.yRot = 0;
+            this.head.zRot = 0;
 
-            // Arme
-            this.rightArm.xRot = (float) Math.toRadians(270);
-            this.rightArm.yRot = radiansYaw;
-            this.rightArm.zRot = (float) Math.toRadians(-10);
+            this.rightArm.xRot = 0;
+            this.rightArm.yRot = 0;
+            this.rightArm.zRot = 0;
+            this.rightArm.x = -5;
+            this.rightArm.y = 2;
+            this.rightArm.z = 0;
+
+            this.leftArm.xRot = 0;
+            this.leftArm.yRot = 0;
+            this.leftArm.zRot = 0;
+            this.leftArm.x = 5;
+            this.leftArm.y = 2;
+            this.leftArm.z = 0;
+
+            this.leftLeg.xRot = 0;
+            this.leftLeg.yRot = 0;
+            this.leftLeg.zRot = 0;
+            this.leftLeg.y = 12;
+            this.leftLeg.z = 0;
+
+            this.rightLeg.xRot = 0;
+            this.rightLeg.yRot = 0;
+            this.rightLeg.zRot = 0;
+            this.rightLeg.y = 12;
+            this.rightLeg.z = 0;
+
+            this.hat.visible = true;
+            this.jacket.visible = true;
+            this.leftSleeve.visible = true;
+            this.rightSleeve.visible = true;
+            this.leftPants.visible = true;
+            this.rightPants.visible = true;
+
+            return;
+        }
+
+        VerticalDirection vdir = ViaductTravel.getVerticalDirection(player.getUUID());
+        if (vdir != VerticalDirection.NONE) {
+            boolean upsideDown = vdir == VerticalDirection.DOWN;
+
+            this.body.xRot = 0;
+            this.body.yRot = 0;
+            this.body.zRot = upsideDown ? (float) Math.toRadians(180) : 0;
+
+            this.head.xRot = upsideDown ? (float) Math.toRadians(90) : (float) Math.toRadians(-90);
+            this.head.yRot = 0;
+            this.head.zRot = 0;
+
+            this.rightArm.xRot = upsideDown ? (float) Math.toRadians(0) : (float) Math.toRadians(180);
+            this.rightArm.yRot = upsideDown ? 0 : (float) Math.toRadians(-10);
+            this.rightArm.zRot = 0;
+            this.rightArm.x = -5;
             this.rightArm.y = 0;
             this.rightArm.z = 0;
 
-            this.leftArm.xRot = (float) Math.toRadians(270);
-            this.leftArm.yRot = radiansYaw;
-            this.leftArm.zRot = (float) Math.toRadians(10);
+            this.leftArm.xRot = upsideDown ? (float) Math.toRadians(0) : (float) Math.toRadians(180);
+            this.leftArm.yRot = upsideDown ? 0 : (float) Math.toRadians(10);
+            this.leftArm.zRot = 0;
+            this.leftArm.x = 5;
             this.leftArm.y = 0;
             this.leftArm.z = 0;
+            
+            this.leftLeg.xRot = upsideDown ? (float) Math.toRadians(180) : 0;
+            this.leftLeg.y = upsideDown ? -12 : 12;
+            this.leftLeg.z = 0;
 
-            // Beine
+            this.rightLeg.xRot = upsideDown ? (float) Math.toRadians(180) : 0;
+            this.rightLeg.y = upsideDown ? -12 : 12;
+            this.rightLeg.z = 0;
+
+            this.hat.visible = false;
+            this.jacket.visible = false;
+            this.leftSleeve.visible = false;
+            this.rightSleeve.visible = false;
+            this.leftPants.visible = false;
+            this.rightPants.visible = false;
+
+            return;
+        }
+        
+        if (ViaductTravel.isTravelActive(player)) {
+            float yaw = ViaductTravel.getTravelYaw(player.getUUID());
+
+            float correctedYaw = yaw - 180f;
+            float radiansYaw = (float) Math.toRadians(correctedYaw);
+            
+            float normalizedYaw = (yaw % 360 + 360) % 360;
+            int direction = Math.round(normalizedYaw / 90f) % 4;
+
+            float rollRotation = 0f;
+            switch (direction) {
+                case 1: 
+                case 3: 
+                    rollRotation = (float) Math.toRadians(0);
+                    break;
+                default:
+                    rollRotation = 0f;
+                    break;
+            }
+            
+            this.body.xRot = (float) Math.toRadians(90);
+            this.body.yRot = 0;
+            this.body.zRot = rollRotation;
+
+            this.head.xRot = (float) Math.toRadians(0);
+            this.head.yRot = (float) Math.toRadians(0);
+            this.head.zRot =  (float) Math.toRadians(0);
+
+            float rightArmZ = radiansYaw + (float) Math.toRadians(-10);
+            float leftArmZ  = radiansYaw + (float) Math.toRadians(10);
+            float armYOffsetR = 0f;
+            float armYOffsetL = 0f;
+            float armZOffset = 0f;
+            float rightArmX = 0f;
+            float leftArmX = 0f;
+
+            switch (direction) {
+                case 0: // south
+                	rightArmX = -7;
+                	leftArmX  = +7;
+                    break;
+                case 1: // west
+                	rightArmX = -6;
+                	leftArmX  = +6;
+                    armYOffsetL = 1f;
+                    armYOffsetR = -1f;
+                    armZOffset = 0f;
+                    break;
+                case 2: // north
+                	rightArmX = -5;
+                	leftArmX  = +5;
+                    break;
+                case 3: // east
+                	rightArmX = -6;
+                	leftArmX  = +6;
+                    armYOffsetL = -1f;
+                    armYOffsetR = 1f;
+                    armZOffset = 0.5f;
+                    break;
+            }
+            
+            this.rightArm.xRot = (float) Math.toRadians(270);
+            this.rightArm.yRot = 0;
+            this.rightArm.zRot = rightArmZ;
+            this.rightArm.y = armYOffsetR;
+            this.rightArm.z = armZOffset;
+            this.rightArm.x = rightArmX;
+
+            this.leftArm.xRot = (float) Math.toRadians(270);
+            this.leftArm.yRot = 0;
+            this.leftArm.zRot = leftArmZ;
+            this.leftArm.y = armYOffsetL;
+            this.leftArm.z = armZOffset;
+            this.leftArm.x = leftArmX;
+
             this.leftLeg.xRot = (float) Math.toRadians(90);
-            this.leftLeg.yRot = radiansYaw;
+            this.leftLeg.yRot = 0;
+            this.leftLeg.zRot = radiansYaw;
             this.leftLeg.y = 0F;
             this.leftLeg.z = 12.0F;
 
             this.rightLeg.xRot = (float) Math.toRadians(90);
-            this.rightLeg.yRot = radiansYaw;
+            this.rightLeg.yRot = 0;
+            this.rightLeg.zRot = radiansYaw;
             this.rightLeg.y = 0F;
             this.rightLeg.z = 12.0F;
 
-            // Skin-Layer deaktivieren
             this.hat.visible = false;
             this.jacket.visible = false;
             this.leftSleeve.visible = false;

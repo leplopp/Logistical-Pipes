@@ -1,4 +1,4 @@
-package plopp.pipecraft.Blocks.Pipes.Viaduct;
+package plopp.pipecraft.gui;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -7,6 +7,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerIDMenu;
 
 public class ViaductGuiProvider implements MenuProvider {

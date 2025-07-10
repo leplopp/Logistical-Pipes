@@ -18,9 +18,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
-import plopp.pipecraft.Network.LinkedTargetEntryRecord;
 import plopp.pipecraft.Network.NetworkHandler;
-import plopp.pipecraft.Network.ViaductLinkerListPacket;
+import plopp.pipecraft.Network.linker.LinkedTargetEntryRecord;
+import plopp.pipecraft.Network.linker.ViaductLinkerListPacket;
 import plopp.pipecraft.gui.MenuTypeRegister;
 import plopp.pipecraft.logic.ViaductLinkerManager;
 
@@ -36,9 +36,8 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
     private boolean allLinkersLoaded = false;
     private List<LinkedTargetEntryRecord> customSortedLinkers = new ArrayList<>();
 	public ServerPlayer serverPlayer;
-	private boolean dataHandled = false;
-    
-    public ViaductLinkerMenu(int containerId, Inventory inv, FriendlyByteBuf buf) {
+	
+	public ViaductLinkerMenu(int containerId, Inventory inv, FriendlyByteBuf buf) {
     	  this(containerId, inv, (BlockEntityViaductLinker) inv.player.level().getBlockEntity(buf.readBlockPos()));
     }
 
@@ -51,12 +50,11 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
             this.serverPlayer = sp;
             ViaductLinkerManager.setOpenMenu(this);
 
-            sp.level().sendBlockUpdated(tile.getBlockPos(), tile.getBlockState(), tile.getBlockState(), 3);
             ClientboundBlockEntityDataPacket packet = tile.getUpdatePacket();
             if (packet != null) {
                 sp.connection.send(packet);
             }
-
+            sp.level().sendBlockUpdated(tile.getBlockPos(), tile.getBlockState(), tile.getBlockState(), 3);
             sp.server.execute(() -> ViaductLinkerManager.updateOpenLinker(level));
         }
 
@@ -99,6 +97,11 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
             	NetworkHandler.sendToClient((ServerPlayer) inv.player, packet);
         }
     }
+    
+    public boolean isAsyncScanInProgress() {
+        return blockEntity != null && blockEntity.isAsyncScanInProgress();
+    }
+    
     public List<LinkedTargetEntryRecord> getCustomSortedLinkers() {
         return customSortedLinkers;
     }
@@ -150,7 +153,22 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
     }
 
     public void updateLinkersData(List<LinkedTargetEntryRecord> newLinkers) {
-        this.latestLinkers = newLinkers;
+        // Entferne alle alten nicht mehr vorhandenen Linker
+        List<LinkedTargetEntryRecord> filteredSorted = customSortedLinkers.stream()
+            .filter(e -> newLinkers.stream().anyMatch(n -> n.pos().equals(e.pos())))
+            .toList();
+
+        // Füge neue Linker (z. B. sehr weit entfernte) hinten an, wenn sie noch nicht enthalten sind
+        List<LinkedTargetEntryRecord> result = new ArrayList<>(filteredSorted);
+
+        for (LinkedTargetEntryRecord entry : newLinkers) {
+            boolean alreadyIn = filteredSorted.stream().anyMatch(e -> e.pos().equals(entry.pos()));
+            if (!alreadyIn) {
+                result.add(entry);
+            }
+        }
+
+        this.latestLinkers = result;
         this.newDataAvailable = true;
     }
     

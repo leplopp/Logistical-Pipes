@@ -9,5 +9,6 @@
   "screen.pipecraft.linkerid.inventory" : "Inventory",
   "gui.linkerscreen.sortmode_distance": "Sort by Distance",
   "gui.linkerscreen.sortmode_alphabet": "Sort Alphabetically",
-  "gui.linkerscreen.sortmode_custom": "Sort Custom (right click drag&drop)"
+  "gui.linkerscreen.sortmode_custom": "Sort Custom (right click drag&drop)",
+  "gui.linkerscreen.sortmode_loading": "Searching Linkers"
 }

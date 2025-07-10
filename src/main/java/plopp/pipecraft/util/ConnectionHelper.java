@@ -15,9 +15,8 @@ public class ConnectionHelper {
 	    Block block = state.getBlock();
 	    Block neighborBlock = neighborState.getBlock();
 
+	    // Nur Viaduct ↔ Viaduct oder Viaduct ↔ Linker, aber nicht Linker ↔ Linker
 	    if (block instanceof BlockViaduct && neighborBlock instanceof BlockViaduct) return true;
-	    if (block instanceof BlockViaductLinker && neighborBlock instanceof BlockViaductLinker) return true;
-
 	    if ((block instanceof BlockViaduct && neighborBlock instanceof BlockViaductLinker) ||
 	        (block instanceof BlockViaductLinker && neighborBlock instanceof BlockViaduct)) return true;
 

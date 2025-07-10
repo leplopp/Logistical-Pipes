@@ -1,7 +1,6 @@
 package plopp.pipecraft.Blocks.Pipes.Viaduct;
 
-import java.util.Set;
-
+import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -19,6 +18,8 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -28,7 +29,8 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import plopp.pipecraft.Blocks.BlockRegister;
+import plopp.pipecraft.Blocks.BlockEntityRegister;
+import plopp.pipecraft.gui.ViaductGuiProvider;
 import plopp.pipecraft.logic.ViaductLinkerManager;
 import plopp.pipecraft.logic.ViaductTravel;
 import plopp.pipecraft.util.ConnectionHelper;
@@ -42,7 +44,16 @@ public class BlockViaductLinker extends Block implements EntityBlock {
     public static final BooleanProperty CONNECTED_UP = BooleanProperty.create("connected_up");
     public static final BooleanProperty CONNECTED_DOWN = BooleanProperty.create("connected_down");
     public static final DirectionProperty FACING = DirectionProperty.create("facing", Direction.values());
-
+    
+    @SuppressWarnings("unchecked")
+	@Nullable
+    private static <T extends BlockEntity, E extends BlockEntity> BlockEntityTicker<T> createTickerHelper(
+            BlockEntityType<T> actualType,
+            BlockEntityType<E> expectedType,
+            BlockEntityTicker<? super E> ticker) {
+        return expectedType == actualType ? (BlockEntityTicker<T>) ticker : null;
+    }
+    
     public BlockViaductLinker(Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any()
@@ -72,7 +83,10 @@ public class BlockViaductLinker extends Block implements EntityBlock {
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
     	builder.add(CONNECTED_NORTH, CONNECTED_SOUTH, CONNECTED_EAST, CONNECTED_WEST, CONNECTED_UP, CONNECTED_DOWN, FACING);
     }
-   
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+        return level.isClientSide ? null : createTickerHelper(type, BlockEntityRegister.VIADUCT_LINKER.get(), BlockEntityViaductLinker::serverTick);
+    }
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Level level = context.getLevel();
@@ -148,23 +162,6 @@ public class BlockViaductLinker extends Block implements EntityBlock {
         }
         super.onRemove(oldState, level, pos, newState, isMoving);
     }
-    
-    public static void findAllConnectedLinkers(Level level, BlockPos start, Set<BlockPos> found) {
-        if (found.contains(start)) return;
-        found.add(start);
-
-        for (Direction dir : Direction.values()) {
-            BlockPos neighbor = start.relative(dir);
-            BlockState state = level.getBlockState(neighbor);
-            BlockEntity be = level.getBlockEntity(neighbor);
-
-            if (be instanceof BlockEntityViaductLinker) {
-                findAllConnectedLinkers(level, neighbor, found);
-            } else if (state.getBlock() == BlockRegister.VIADUCT.get()) {
-                findAllConnectedLinkers(level, neighbor, found);
-            }
-        }
-    }
 
     public void updateConnections(Level level, BlockPos pos) {
         BlockState current = level.getBlockState(pos);
@@ -212,23 +209,7 @@ public class BlockViaductLinker extends Block implements EntityBlock {
 
         Block block = state.getBlock();
 
-        if (block instanceof BlockViaduct) return true;
-
-    for (Direction dir : Direction.Plane.HORIZONTAL) {
-                BlockPos adjacentPos = neighborPos.relative(dir);
-                BlockState adjacent = level.getBlockState(adjacentPos);
-
-                if (adjacent.getBlock() instanceof BlockViaduct) {
-
-                }
-            }
-
-            BlockState below = level.getBlockState(neighborPos.below());
-            if (below.getBlock() instanceof BlockViaduct) {
-
-            }
-
-        return false;
+        return block instanceof BlockViaduct;
     }
     
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor world, BlockPos pos, BlockPos neighborPos) {
@@ -237,7 +218,6 @@ public class BlockViaductLinker extends Block implements EntityBlock {
   	        state = state.setValue(getPropertyForDirection(dir), connected);
   	    }
   	    return state;
-  	
   }
 
     @Override

@@ -2,13 +2,11 @@ package plopp.pipecraft;
 
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
-
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
@@ -22,7 +20,6 @@ public class PipeCraftIndex
     public static final String MODID = "logisticpipes";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    
     public PipeCraftIndex(IEventBus modEventBus, ModContainer modContainer)
     {
 
@@ -35,11 +32,6 @@ public class PipeCraftIndex
         MenuTypeRegister.MENUS.register(modEventBus);
     }
 
-    private void commonSetup(final FMLCommonSetupEvent event){
-
-    }
-    
-    
     private void addCreative(BuildCreativeModeTabContentsEvent event){
     	
     }
@@ -48,16 +40,14 @@ public class PipeCraftIndex
     public void onServerStarting(ServerStartingEvent event)
     {
     }
-	
-    
 }
 
-/*idden
+/*ideen
  * 
- *  viaduct											<- Beta		/ player model /models / texture / bug mit ausloggen
- *  viaduct Linker with gui 						<- Pre Release		/ texture & model 
+ *  viaduct											<- Beta						/ player model auf server /models / texture /hitbox vollenden /sounds hinzufügen
+ *  viaduct Linker with gui 						<- Pre Release				/ texture & model /hitbox vollenden /sounds hinzufügen / bug manchmal resettet sich die speicherung zummindest halb
  *  viaduct player detector 						<- concept
- *  viaduct	glowing ?								<- concept
+ *  viaduct	glowing option 							<- Released
  *  viaduct Speed controller						<- concept
  *   	
  *  viaduct facade for all pipes & cables			<- concept
@@ -69,6 +59,6 @@ public class PipeCraftIndex
  *  hopper pipe										<- concept
  *  speed up pipe									<- concept
  *  detector pipe									<- concept
+ *  ItemFluid pipe									<- concept
  *  
  */
-

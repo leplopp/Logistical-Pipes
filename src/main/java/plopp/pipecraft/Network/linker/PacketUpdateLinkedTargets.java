@@ -1,4 +1,4 @@
-package plopp.pipecraft.Network;
+package plopp.pipecraft.Network.linker;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -24,12 +24,13 @@ import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.extensions.IBlockEntityExtension;
 import plopp.pipecraft.Blocks.BlockEntityRegister;
 import plopp.pipecraft.Blocks.BlockRegister;
-import plopp.pipecraft.Network.LinkedTargetEntry;
+import plopp.pipecraft.Network.linker.LinkedTargetEntry;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerMenu;
 import plopp.pipecraft.logic.ViaductLinkerManager;
 
@@ -38,9 +39,11 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
 	private ItemStack displayedItem = new ItemStack(BlockRegister.VIADUCTLINKER.get());
 	private String customName = "Viaduct Link";
 	final List<LinkedTargetEntry> linkedTargets = new ArrayList<>();
-	private List<LinkedTargetEntry> cachedLinkedTargets = new ArrayList<>();
+	private boolean asyncScanInProgress = false;
 	private List<BlockPos> sortedTargetPositions = new ArrayList<>();
 	private CompoundTag customPersistentData = new CompoundTag();
+	private AsyncViaductScanner asyncScanner = null;
+	private List<LinkedTargetEntry> cachedLinkedTargets = Collections.emptyList();
 	
     public BlockEntityViaductLinker(BlockPos pos, BlockState state) {
         super(BlockEntityRegister.VIADUCT_LINKER.get(), pos, state);
@@ -57,11 +60,15 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
             ViaductLinkerManager.addOrUpdateLinker(worldPosition, getCustomName(), getDisplayedItem());
         }
     }
-
+    
     @Override
     public void setRemoved() {
         super.setRemoved();
 
+    }
+    
+    public List<LinkedTargetEntry> getCachedLinkedTargets() {
+        return cachedLinkedTargets;
     }
     
     @Override
@@ -74,6 +81,7 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
     }
 
     public void setSortedTargetPositions(List<BlockPos> positions) {
+        System.out.println("[BlockEntity] setSortedTargetPositions aufgerufen: " + positions);
         this.sortedTargetPositions = new ArrayList<>(positions);
         setChanged();
         if (level instanceof ServerLevel serverLevel) {
@@ -126,7 +134,8 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
 	 @Override
 	 protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
 	     super.saveAdditional(tag, registries);
-
+	     tag.putBoolean("AsyncScan", asyncScanInProgress);
+	     
 	     tag.putString("CustomName", customName);
 	     if (!displayedItem.isEmpty()) {
 	         tag.put("DisplayedItem", displayedItem.save(registries));
@@ -150,6 +159,10 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
 	 protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
 	     super.loadAdditional(tag, registries);
 
+	     if (tag.contains("AsyncScan")) {
+	    	    this.asyncScanInProgress = tag.getBoolean("AsyncScan");
+	    	}
+	     
 	     if (tag.contains("CustomName", Tag.TAG_STRING)) {
 	         customName = tag.getString("CustomName");
 	     } else {
@@ -212,58 +225,114 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
         return ClientboundBlockEntityDataPacket.create(this);
     }
 
-
+    public boolean isAsyncScanInProgress() {
+        return asyncScanInProgress;
+    }
+    
+    public void setAsyncScanInProgress(boolean value) {
+        this.asyncScanInProgress = value;
+        if (level != null && !level.isClientSide) {
+            setChanged();
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+    
     public List<LinkedTargetEntry> findLinkedTargetsThroughViaducts(boolean forceUpdate) {
         if (level == null || level.isClientSide) return Collections.emptyList();
+
         if (!forceUpdate && !cachedLinkedTargets.isEmpty()) {
             return cachedLinkedTargets;
         }
 
-        Set<BlockPos> visited = new HashSet<>();
-        Set<BlockPos> toBeVisited = new HashSet<>();
-        List<LinkedTargetEntry> foundLinkers = new ArrayList<>();
-        Queue<BlockPos> toVisit = new ArrayDeque<>();
-
-        visited.add(worldPosition);
-
-        for (Direction dir : Direction.values()) {
-            BlockPos neighbor = worldPosition.relative(dir);
-            BlockState neighborState = level.getBlockState(neighbor);
-            if (neighborState.getBlock() == BlockRegister.VIADUCT.get()) {
-                toVisit.add(neighbor);
-                toBeVisited.add(neighbor);
-            }
+        if (asyncScanner == null) {
+            asyncScanner = new AsyncViaductScanner(level, worldPosition, 99);
+            setAsyncScanInProgress(true); 
         }
 
-        while (!toVisit.isEmpty()) {
-            BlockPos current = toVisit.poll();
-            toBeVisited.remove(current); 
+        return cachedLinkedTargets;
+    }
+    
+    public static void serverTick(Level level, BlockPos pos, BlockState state, BlockEntityViaductLinker be) {
+        if (be.asyncScanner != null) {
+            boolean done = be.asyncScanner.tick();
 
-            if (!visited.add(current)) continue;
+            List<LinkedTargetEntry> partial = be.asyncScanner.getFoundLinkers();
 
-            BlockState currentState = level.getBlockState(current);
+            if (!be.cachedLinkedTargets.equals(partial)) {
+                be.cachedLinkedTargets = List.copyOf(partial);
+
+                if (level instanceof ServerLevel serverLevel) {
+                    ViaductLinkerManager.updateOpenLinker(serverLevel);
+                }
+            }
+
+            if (done) {
+                be.asyncScanner = null;
+                be.setAsyncScanInProgress(false); 
+            }
+        }
+    }
+    public class AsyncViaductScanner {
+        private final Level level;
+        private final BlockPos startPos;
+
+        private final Set<BlockPos> visited = new HashSet<>();
+        private final Queue<BlockPos> toVisit = new ArrayDeque<>();
+        private final List<LinkedTargetEntry> foundLinkers = new ArrayList<>();
+
+        private final int maxStepsPerTick;
+
+        public AsyncViaductScanner(Level level, BlockPos startPos, int maxStepsPerTick) {
+            this.level = level;
+            this.startPos = startPos;
+            this.maxStepsPerTick = maxStepsPerTick;
+
+            visited.add(startPos);
 
             for (Direction dir : Direction.values()) {
-            	
-                if (!BlockViaduct.isConnectedTo(currentState, dir)) continue;
-
-                BlockPos neighbor = current.relative(dir);
-                if (visited.contains(neighbor) || toBeVisited.contains(neighbor)) continue;
-
+                BlockPos neighbor = startPos.relative(dir);
                 BlockState neighborState = level.getBlockState(neighbor);
-                BlockEntity be = level.getBlockEntity(neighbor);
-
-                if (be instanceof BlockEntityViaductLinker linker && !neighbor.equals(worldPosition)) {
-                    String name = linker.getCustomName();
-                    foundLinkers.add(new LinkedTargetEntry(neighbor, name));
-                } else if (neighborState.getBlock() == BlockRegister.VIADUCT.get()) {
+                if (neighborState.getBlock() == BlockRegister.VIADUCT.get()) {
                     toVisit.add(neighbor);
-                    toBeVisited.add(neighbor);
                 }
             }
         }
 
-        cachedLinkedTargets = foundLinkers;
-        return foundLinkers;
+        public boolean tick() {
+            int steps = 0;
+
+            while (!toVisit.isEmpty() && steps < maxStepsPerTick) {
+                BlockPos current = toVisit.poll();
+
+                if (!visited.add(current)) continue;
+
+                BlockState currentState = level.getBlockState(current);
+
+                for (Direction dir : Direction.values()) {
+                    if (!BlockViaduct.isConnectedTo(currentState, dir)) continue;
+
+                    BlockPos neighbor = current.relative(dir);
+                    if (visited.contains(neighbor) || toVisit.contains(neighbor)) continue;
+
+                    BlockState neighborState = level.getBlockState(neighbor);
+                    BlockEntity be = level.getBlockEntity(neighbor);
+
+                    if (be instanceof BlockEntityViaductLinker linker && !neighbor.equals(startPos)) {
+                        String name = linker.getCustomName();
+                        foundLinkers.add(new LinkedTargetEntry(neighbor, name));
+                    } else if (neighborState.getBlock() == BlockRegister.VIADUCT.get()) {
+                        toVisit.add(neighbor);
+                    }
+                }
+
+                steps++;
+            }
+
+            return toVisit.isEmpty();
+        }
+
+        public List<LinkedTargetEntry> getFoundLinkers() {
+            return foundLinkers;
+        }
     }
 }

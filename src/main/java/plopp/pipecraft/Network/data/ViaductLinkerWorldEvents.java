@@ -1,4 +1,4 @@
-package plopp.pipecraft.Network;
+package plopp.pipecraft.Network.data;
 
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.bus.api.SubscribeEvent;

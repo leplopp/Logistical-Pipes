@@ -6,7 +6,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
-import java.util.function.ToDoubleFunction;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -17,10 +16,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import plopp.pipecraft.Network.LinkedTargetEntryRecord;
 import plopp.pipecraft.Network.NetworkHandler;
-import plopp.pipecraft.Network.PacketUpdateSortedPositions;
-
+import plopp.pipecraft.Network.linker.LinkedTargetEntryRecord;
+import plopp.pipecraft.Network.linker.PacketUpdateSortedPositions;
 
 public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMenu> {
 
@@ -49,10 +47,6 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
     @Override
     public void onClose() {
         super.onClose();
-
-        if (minecraft != null && minecraft.player != null) {
-            minecraft.player.closeContainer(); 
-        }
 
         if (!menu.getCustomSortedLinkers().isEmpty()) {
             List<BlockPos> sorted = menu.getCustomSortedLinkers().stream()
@@ -121,49 +115,63 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
         maxScroll = Math.max(0, menu.linkedNames.size() - maxVisibleButtons);
         scrollOffset = Mth.clamp(scrollOffset, 0, maxScroll);
     }
-
+ 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         if (menu.hasNewData()) {
-            System.out.println("[Screen] updateLinkers triggered from render()");
             updateLinkers(menu.getLatestLinkers());
         }
 
         int btnSize = 9;
         int left = leftPos + 174;
 
+        boolean isLoading = menu.isAsyncScanInProgress();
+
         int distBtnX = left;
         int distBtnY = topPos + 4;
         if (mouseX >= distBtnX && mouseX < distBtnX + btnSize &&
             mouseY >= distBtnY && mouseY < distBtnY + btnSize) {
-            guiGraphics.renderTooltip(font, Component.translatable("gui.linkerscreen.sortmode_distance"), mouseX, mouseY);
+            if (isLoading) {
+                guiGraphics.renderTooltip(font, Component.translatable("gui.linkerscreen.sortmode_loading"), mouseX, mouseY);
+            } else {
+                guiGraphics.renderTooltip(font, Component.translatable("gui.linkerscreen.sortmode_distance"), mouseX, mouseY);
+            }
         }
 
         int alphaBtnX = left;
         int alphaBtnY = topPos + 16;
         if (mouseX >= alphaBtnX && mouseX < alphaBtnX + btnSize &&
             mouseY >= alphaBtnY && mouseY < alphaBtnY + btnSize) {
-            guiGraphics.renderTooltip(font, Component.translatable("gui.linkerscreen.sortmode_alphabet"), mouseX, mouseY);
+            if (isLoading) {
+                guiGraphics.renderTooltip(font, Component.translatable("gui.linkerscreen.sortmode_loading"), mouseX, mouseY);
+            } else {
+                guiGraphics.renderTooltip(font, Component.translatable("gui.linkerscreen.sortmode_alphabet"), mouseX, mouseY);
+            }
         }
 
         int customBtnX = left;
         int customBtnY = topPos + 28;
         if (mouseX >= customBtnX && mouseX < customBtnX + btnSize &&
             mouseY >= customBtnY && mouseY < customBtnY + btnSize) {
-            guiGraphics.renderTooltip(font, Component.translatable("gui.linkerscreen.sortmode_custom"), mouseX, mouseY);
+            if (isLoading) {
+                guiGraphics.renderTooltip(font, Component.translatable("gui.linkerscreen.sortmode_loading"), mouseX, mouseY);
+            } else {
+                guiGraphics.renderTooltip(font, Component.translatable("gui.linkerscreen.sortmode_custom"), mouseX, mouseY);
+            }
         }
 
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
+    
     @Override
     public void containerTick() {
         super.containerTick();
         if (menu.hasNewData()) {
-            System.out.println("[Screen] updateLinkers() in containerTick()");
             updateLinkers(menu.getLatestLinkers());
         }
     }
+    
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         guiGraphics.drawString(font, this.title, 7, 6, 0x404040, false);
@@ -254,6 +262,8 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
             guiGraphics.drawCenteredString(font, label, textX, textY, 0xFFFFFF);
         }
 
+        boolean asyncBusy = menu.isAsyncScanInProgress();
+
         int distBtnX = leftPos + 174;
         int distBtnY = topPos + 4;
         boolean hoveredDist = mouseX >= distBtnX && mouseX < distBtnX + 9 &&
@@ -261,9 +271,14 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
 
         boolean distActive = alphabeticalSortEnabled || (!alphabeticalSortEnabled && !customSortEnabled);
 
-        int distTexX = hoveredDist ? 202 : (distActive ? 178 : 190);
-        int distTexY = (currentSortMode == SortMode.DISTANCE_ASCENDING) ? 31 : 19;
-
+        int distTexX, distTexY;
+        if (asyncBusy) {
+            distTexX = 214;
+            distTexY = (currentSortMode == SortMode.DISTANCE_ASCENDING) ? 31 : 20;
+        } else {
+            distTexX = hoveredDist ? 202 : (distActive ? 178 : 190);
+            distTexY = (currentSortMode == SortMode.DISTANCE_ASCENDING) ? 31 : 19;
+        }
         guiGraphics.blit(VIADUCT_LINKER_GUI, distBtnX, distBtnY, distTexX, distTexY, 9, 9);
 
         int alphaBtnX = leftPos + 174;
@@ -271,9 +286,14 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
         boolean hoveredAlpha = mouseX >= alphaBtnX && mouseX < alphaBtnX + 9 &&
                                mouseY >= alphaBtnY && mouseY < alphaBtnY + 9;
 
-        int alphaTexX = alphabeticalSortEnabled ? (hoveredAlpha ? 202 : 178) : (hoveredAlpha ? 202 : 190);
-        int alphaTexY = 43;
-
+        int alphaTexX, alphaTexY;
+        if (asyncBusy) {
+            alphaTexX = 214;
+            alphaTexY = 43;
+        } else {
+            alphaTexX = alphabeticalSortEnabled ? (hoveredAlpha ? 202 : 178) : (hoveredAlpha ? 202 : 190);
+            alphaTexY = 43;
+        }
         guiGraphics.blit(VIADUCT_LINKER_GUI, alphaBtnX, alphaBtnY, alphaTexX, alphaTexY, 9, 9);
 
         int customBtnX = leftPos + 174;
@@ -281,9 +301,14 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
         boolean hoveredCustom = mouseX >= customBtnX && mouseX < customBtnX + 9 &&
                                mouseY >= customBtnY && mouseY < customBtnY + 9;
 
-        int customTexX = customSortEnabled ? (hoveredCustom ? 202 : 178) : (hoveredCustom ? 202 : 190);
-        int customTexY = 55;
-
+        int customTexX, customTexY;
+        if (asyncBusy) {
+            customTexX = 214;
+            customTexY = 55;
+        } else {
+            customTexX = customSortEnabled ? (hoveredCustom ? 202 : 178) : (hoveredCustom ? 202 : 190);
+            customTexY = 55;
+        }
         guiGraphics.blit(VIADUCT_LINKER_GUI, customBtnX, customBtnY, customTexX, customTexY, 9, 9);
     }
 
@@ -296,17 +321,57 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
 
         if (button == 0 && mouseX >= scrollbarX && mouseX < scrollbarX + scrollbarW &&
                 mouseY >= scrollbarY && mouseY < scrollbarY + scrollbarH) {
-                isDraggingScrollbar = true;
-                return true;
+            isDraggingScrollbar = true;
+            return true;
+        }
+        
+        if (button == 0 && !menu.linkedNames.isEmpty()) {
+            int relMouseX = (int)(mouseX - leftPos);
+            int relMouseY = (int)(mouseY - topPos);
+
+            int x = 28;
+            int y = 24;
+            int btnWidth = 129;
+            int btnHeight = 14;
+            int spacing = btnHeight + 6;
+
+            for (int i = 0; i < maxVisibleButtons; i++) {
+                int index = i + scrollOffset;
+                if (index >= menu.linkedNames.size()) break;
+
+                int btnX = x;
+                int btnY = y + i * spacing;
+
+                if (relMouseX >= btnX && relMouseX < btnX + btnWidth && relMouseY >= btnY && relMouseY < btnY + btnHeight) {
+                    BlockPos start = menu.blockEntity.getBlockPos();
+                    BlockPos target = menu.getLinkers().get(index).pos();
+
+                    // TravelStart-Packet senden
+                    NetworkHandler.sendTravelStartPacket(start, target);
+
+                    // Nachricht anzeigen
+                    this.minecraft.player.displayClientMessage(
+                        Component.literal("Starte Fahrt zum Link " + menu.linkedNames.get(index).getString()), true);
+                    
+                    this.onClose();
+
+                    return true;
+                }
             }
+        }
+
+        if (menu.isAsyncScanInProgress()) {
+            this.minecraft.player.displayClientMessage(Component.literal("Linker-Suche läuft..."), true);
+            return false;
+        }
 
         int btnSize = 9;
-        int sortBtnX = leftPos + 175;
-        int sortBtnY = topPos + 4;
+        int distBtnX = leftPos + 175;
+        int distBtnY = topPos + 4;
 
         if (button == 0 &&
-            mouseX >= sortBtnX && mouseX < sortBtnX + btnSize &&
-            mouseY >= sortBtnY && mouseY < sortBtnY + btnSize) {
+            mouseX >= distBtnX && mouseX < distBtnX + btnSize &&
+            mouseY >= distBtnY && mouseY < distBtnY + btnSize) {
 
             customSortEnabled = false;
             currentSortMode = currentSortMode.toggle();
@@ -331,57 +396,48 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
         int customBtnY = topPos + 28;
 
         if (button == 0 &&
-        	    mouseX >= customBtnX && mouseX < customBtnX + btnSize &&
-        	    mouseY >= customBtnY && mouseY < customBtnY + btnSize) {
+            mouseX >= customBtnX && mouseX < customBtnX + btnSize &&
+            mouseY >= customBtnY && mouseY < customBtnY + btnSize) {
 
-        	if (customSortEnabled) {
-        	    customSortEnabled = false;
+            if (customSortEnabled) {
+                customSortEnabled = false;
+                if (!menu.getCustomSortedLinkers().isEmpty()) {
+                    List<BlockPos> sorted = menu.getCustomSortedLinkers().stream()
+                        .map(LinkedTargetEntryRecord::pos)
+                        .toList();
+                    menu.blockEntity.setSortedTargetPositions(sorted);
+                }
+                updateLinkers(menu.getCustomSortedLinkers());
+            } else {
+                customSortEnabled = true;
+                alphabeticalSortEnabled = false;
+                currentSortMode = SortMode.DISTANCE_ASCENDING;
 
-        	    System.out.println("[Screen] CustomSort deaktiviert, nutze gespeicherte Sortierung:");
+                List<BlockPos> savedOrder = menu.blockEntity.getSortedTargetPositions();
+                if (!savedOrder.isEmpty()) {
+                    List<LinkedTargetEntryRecord> sortedList = new ArrayList<>();
+                    List<LinkedTargetEntryRecord> unsorted = new ArrayList<>(menu.getLinkers());
 
-        	    if (!menu.getCustomSortedLinkers().isEmpty()) {
-        	        List<BlockPos> sorted = menu.getCustomSortedLinkers().stream()
-        	            .map(LinkedTargetEntryRecord::pos)
-        	            .toList();
-        	        menu.blockEntity.setSortedTargetPositions(sorted);
-        	        System.out.println("[Screen] Direkt gespeichert beim Ausschalten: " + sorted);
-        	    }
+                    for (BlockPos pos : savedOrder) {
+                        for (Iterator<LinkedTargetEntryRecord> it = unsorted.iterator(); it.hasNext(); ) {
+                            LinkedTargetEntryRecord entry = it.next();
+                            if (entry.pos().equals(pos)) {
+                                sortedList.add(entry);
+                                it.remove();
+                                break;
+                            }
+                        }
+                    }
+                    sortedList.addAll(unsorted);
+                    menu.setCustomSortedLinkers(sortedList);
+                } else {
+                    menu.setCustomSortedLinkers(new ArrayList<>(menu.getLinkers()));
+                }
 
-        	    updateLinkers(menu.getCustomSortedLinkers());
-        	} else {
-        	    	
-        	        customSortEnabled = true;
-        	        alphabeticalSortEnabled = false;
-        	        currentSortMode = SortMode.DISTANCE_ASCENDING;
-
-        	        List<BlockPos> savedOrder = menu.blockEntity.getSortedTargetPositions();
-        	        System.out.println("[Screen] CustomSort aktiviert, geladene gespeicherte Reihenfolge: " + savedOrder);
-
-        	        if (!savedOrder.isEmpty()) {
-        	            List<LinkedTargetEntryRecord> sortedList = new ArrayList<>();
-        	            List<LinkedTargetEntryRecord> unsorted = new ArrayList<>(menu.getLinkers());
-
-        	            for (BlockPos pos : savedOrder) {
-        	                for (Iterator<LinkedTargetEntryRecord> it = unsorted.iterator(); it.hasNext(); ) {
-        	                    LinkedTargetEntryRecord entry = it.next();
-        	                    if (entry.pos().equals(pos)) {
-        	                        sortedList.add(entry);
-        	                        it.remove();
-        	                        break;
-        	                    }
-        	                }
-        	            }
-        	            sortedList.addAll(unsorted);
-
-        	            menu.setCustomSortedLinkers(sortedList);
-        	        } else {
-        	            menu.setCustomSortedLinkers(new ArrayList<>(menu.getLinkers()));
-        	        }
-
-        	        updateLinkers(menu.getCustomSortedLinkers());
-        	    }
-        	    return true;
-        	}
+                updateLinkers(menu.getCustomSortedLinkers());
+            }
+            return true;
+        }
 
         if (button == 1 && customSortEnabled) {
             int relMouseX = (int)(mouseX - leftPos);
@@ -410,38 +466,6 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
                 }
             }
         }
-
-        if (button == 0 && !menu.linkedNames.isEmpty()) {
-            int relMouseX = (int)(mouseX - leftPos);
-            int relMouseY = (int)(mouseY - topPos);
-
-            int x = 28;
-            int y = 24;
-            int btnWidth = 129;
-            int btnHeight = 14;
-            int spacing = btnHeight + 6;
-
-            for (int i = 0; i < maxVisibleButtons; i++) {
-                int index = i + scrollOffset;
-                if (index >= menu.linkedNames.size()) break;
-
-                int btnX = x;
-                int btnY = y + i * spacing;
-
-                if (relMouseX >= btnX && relMouseX < btnX + btnWidth && relMouseY >= btnY && relMouseY < btnY + btnHeight) {
-                    BlockPos start = menu.blockEntity.getBlockPos();
-                    BlockPos target = menu.getLinkers().get(index).pos();
-
-                    NetworkHandler.sendTravelStartPacket(start, target);
-
-                    this.minecraft.player.displayClientMessage(
-                        Component.literal("Starte Fahrt zum Link " + menu.linkedNames.get(index).getString()), true);
-
-                    return true;
-                }
-            }
-        }
-
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
@@ -490,6 +514,7 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
 
         if (isDraggingScrollbar) {
         }
+        
         if (isDraggingScrollbar) {
             int scrollTrackStart = topPos + 18;
             int scrollTrackEnd = topPos + 204;
@@ -505,7 +530,6 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
         }
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
-    
     
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {

@@ -8,19 +8,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
-import plopp.pipecraft.Network.LinkedTargetEntry;
-import plopp.pipecraft.Network.LinkedTargetEntryRecord;
 import plopp.pipecraft.Network.NetworkHandler;
-import plopp.pipecraft.Network.ViaductLinkerListPacket;
-import plopp.pipecraft.Network.ViaductLinkerWorldData;
+import plopp.pipecraft.Network.data.ViaductLinkerWorldData;
+import plopp.pipecraft.Network.linker.LinkedTargetEntry;
+import plopp.pipecraft.Network.linker.LinkedTargetEntryRecord;
+import plopp.pipecraft.Network.linker.ViaductLinkerListPacket;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerMenu;
 
 public class ViaductLinkerManager {

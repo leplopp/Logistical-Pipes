@@ -1,4 +1,4 @@
-package plopp.pipecraft.Network;
+package plopp.pipecraft.Network.data;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -9,6 +9,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
+import plopp.pipecraft.Network.linker.LinkedTargetEntryRecord;
 
 public class ViaductLinkerWorldData extends SavedData {
 	

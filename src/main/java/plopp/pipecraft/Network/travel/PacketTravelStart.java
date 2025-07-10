@@ -12,6 +12,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import plopp.pipecraft.PipeCraftIndex;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
+import plopp.pipecraft.gui.viaductlinker.ViaductLinkerMenu;
 import plopp.pipecraft.logic.ViaductTravel;
 
 public record PacketTravelStart(BlockPos startPos, BlockPos targetPos) implements CustomPacketPayload {
@@ -48,11 +49,9 @@ public record PacketTravelStart(BlockPos startPos, BlockPos targetPos) implement
                 } else {
                     System.out.println("[TravelStart] Kein Linker an startPos gefunden!");
                 }
-
+                      
                 ViaductTravel.start(serverPlayer, packet.startPos(), packet.targetPos(), 32); //speed
-
                 serverPlayer.displayClientMessage(Component.literal("Fahrt gestartet."), true);
-                serverPlayer.closeContainer();
             });
         }
 }
