@@ -13,11 +13,12 @@ import java.util.UUID;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Position;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -25,6 +26,9 @@ import net.minecraft.world.phys.Vec3;
 import plopp.pipecraft.Blocks.BlockRegister;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
+import plopp.pipecraft.Network.NetworkHandler;
+import plopp.pipecraft.Network.travel.ClientTravelDataManager;
+import plopp.pipecraft.Network.travel.TravelStatePacket;
 
 public class ViaductTravel {
 	
@@ -34,7 +38,6 @@ public class ViaductTravel {
     private static final Set<UUID> jumpTrigger = new HashSet<>();
     public static final int MAX_CHARGE = 30; //charge time
     private static final Set<UUID> resetModelSet = new HashSet<>();
-    public static final Map<UUID, List<ItemStack>> storedArmor = new HashMap<>();
     private static final Map<UUID, Float> travelYawMap = new HashMap<>();
     private static final Map<UUID, VerticalDirection> verticalDirMap = new HashMap<>();
     public enum VerticalDirection {
@@ -46,6 +49,7 @@ public class ViaductTravel {
 	}
 
 	public static boolean consumeResetModel(UUID id) {
+		
     return resetModelSet.remove(id);
 	}
     
@@ -69,44 +73,186 @@ public class ViaductTravel {
     }
     
     public static boolean isTravelActive(Player player) {
-        return activeTravels.containsKey(player.getUUID());
-        
+        if (player.level().isClientSide()) {
+            TravelStatePacket travelData = ClientTravelDataManager.getTravelData(player.getUUID());
+            return travelData != null && travelData.isActive();
+        } else {
+            return activeTravels.containsKey(player.getUUID());
+        }
     }
     
-    public static float getTravelPitch(UUID uuid) {
-        return travelPitchMap.getOrDefault(uuid, 0f);
+    public static float getTravelYaw(UUID uuid, Level level) {
+        if (level != null && level.isClientSide()) {
+            TravelStatePacket travelData = ClientTravelDataManager.getTravelData(uuid);
+            return travelData != null ? travelData.getTravelYaw() : 0f;
+        } else {
+            return travelYawMap.getOrDefault(uuid, 0f);
+        }
+    }
+    
+    public static float getTravelPitch(UUID uuid, Level level) {
+        if (level != null && level.isClientSide()) {
+            TravelStatePacket travelData = ClientTravelDataManager.getTravelData(uuid);
+            return travelData != null ? travelData.getTravelPitch() : 0f;
+        } else {
+            return travelPitchMap.getOrDefault(uuid, 0f);
+        }
+    }
+    
+    public static VerticalDirection getVerticalDirection(UUID uuid, Level level) {
+        if (level != null && level.isClientSide()) {
+            TravelStatePacket travelData = ClientTravelDataManager.getTravelData(uuid);
+            return travelData != null ? travelData.getVerticalDirection() : VerticalDirection.NONE;
+        } else {
+            return verticalDirMap.getOrDefault(uuid, VerticalDirection.NONE);
+        }
+    }
+    
+   public static boolean isCharging(Player player) {
+        TravelData data = activeTravels.get(player.getUUID());
+        return data != null && data.isCharging;
+    }
+
+   public static int getChargeProgress(Player player) {
+	    if (player.level().isClientSide()) {
+	        return ClientTravelDataManager.getChargeProgress(player.getUUID());
+	    }
+
+	    TravelData data = activeTravels.get(player.getUUID());
+	    if (data != null) {
+	        if (data.pathFinder == null || (data.pathFinder.getResult() != null && !data.pathFinder.getResult().isEmpty())) {
+	            return 100;
+	        }
+	        return (int) data.chargeProgress;
+	    }
+	    return 0;
+	}
+
+    public static class TravelData {
+        public List<BlockPos> path = new ArrayList<>();
+        public int progressIndex = 0;
+        public double chunkProgress = 0.0;
+        public int ticksPerChunk;
+        public int tickCounter = 0;
+        public int maxChargeTicks = 600; // 30 Sekunden bei 20 TPS
+        public float chargeProgress = 0f;
+        public int chargeTickCounter = 0;
+        public float ticksPerPercent = 1f; // z. B. 1 % alle x Ticks
+        public int ticksToCharge = 100;           // Zielzeit (angepasst)
+        public int estimatedTicksToCharge = 0;  // Startwert, zählt direkt los
+        public BlockPos startPos;
+        public BlockPos targetPos;
+        
+        public boolean isCharging = true;
+        public ViaductPathFinder pathFinder;
+
+        public TravelData(Level level, BlockPos start, BlockPos end, int ticksPerChunk) {
+            this.ticksPerChunk = ticksPerChunk;
+            this.path.add(start);
+            this.pathFinder = new ViaductPathFinder(level, start, end);
+            this.startPos = start;
+            this.targetPos = end;
+        }
     }
     
     public static void start(Player player, BlockPos startPos, BlockPos targetPos, int ticksPerChunk) {
-        System.out.println("[ViaductTravel] start() called with start=" + startPos + ", target=" + targetPos);
         Level level = player.level();
 
-        List<BlockPos> path = findViaductPath(level, startPos, targetPos);
+        TravelData data = new TravelData(level, startPos, targetPos, ticksPerChunk);
 
-        if (!path.isEmpty()) {
-            UUID id = player.getUUID();
-            activeTravels.put(id, new TravelData(path, ticksPerChunk));
-
-            if (!player.level().isClientSide()) {
-                player.setInvulnerable(true);
-                player.setShiftKeyDown(false);
-                player.noPhysics = true;
-                player.setNoGravity(true);
-                player.setDeltaMovement(Vec3.ZERO);
-
-                ItemStack helmet = player.getInventory().armor.get(3);
-                ItemStack chestplate = player.getInventory().armor.get(2);
-                ItemStack leggings = player.getInventory().armor.get(1);
-                ItemStack boots = player.getInventory().armor.get(0);
-
-                storedArmor.put(player.getUUID(), List.of(helmet, chestplate, leggings, boots));
-                player.getInventory().armor.set(3, ItemStack.EMPTY);
-                player.getInventory().armor.set(2, ItemStack.EMPTY);
-                player.getInventory().armor.set(1, ItemStack.EMPTY);
-                player.getInventory().armor.set(0, ItemStack.EMPTY);
+        // Schnellcheck: Ziel ist direkt benachbart?
+        boolean isTargetNextToStart = false;
+        for (Direction dir : Direction.values()) {
+            BlockPos neighbor = startPos.relative(dir);
+            if (neighbor.equals(targetPos)) {
+                isTargetNextToStart = true;
+                break;
             }
         }
+
+        if (isTargetNextToStart) {
+            data.chargeProgress = 100;
+            data.isCharging = false;
+            data.path = List.of(startPos, targetPos);
+            data.progressIndex = 0;
+            data.pathFinder = null; // sehr wichtig, damit nicht wieder gesucht wird
+        }
+        activeTravels.put(player.getUUID(), data);
+
+        if (!player.level().isClientSide()) {
+            player.setInvulnerable(true);
+            player.setShiftKeyDown(false);
+            player.noPhysics = true;
+            player.setNoGravity(true);
+            player.setDeltaMovement(Vec3.ZERO);
+        }
+
+        if (player instanceof ServerPlayer serverPlayer) {
+            NetworkHandler.sendTravelStateToAll(serverPlayer, false);
+        }
+        Direction travelDir = null;
+        Direction verticalDir = Direction.UP;
+        BlockPos viaduct = null;
+
+        // Finde angrenzenden Viaduct-Block
+        for (Direction dir : Direction.values()) {
+            BlockPos candidate = startPos.relative(dir);
+            BlockState state = level.getBlockState(candidate);
+            if (state.getBlock() instanceof BlockViaduct) {
+                travelDir = dir;
+                viaduct = candidate;
+                break;
+            }
+        }
+
+        if (viaduct != null && travelDir != null) {
+            double x = viaduct.getX() + 0.5;
+            double y = switch (travelDir) {
+                case UP, DOWN -> viaduct.getY() - 0.5;
+                default       -> viaduct.getY() - 1;  // keine +0.5 → korrekt im Block liegen
+            };
+            double z = viaduct.getZ() + 0.5;
+
+            float yaw;
+            float pitch;
+            VerticalDirection vdir;
+
+            if (travelDir == Direction.UP) {
+                yaw = 0f;
+                pitch = 90f; // ← korrigiert
+                vdir = VerticalDirection.UP;
+            } else if (travelDir == Direction.DOWN) {
+                yaw = 0f;
+                pitch = -90f; // ← korrigiert
+                vdir = VerticalDirection.DOWN;
+            } else {
+                pitch = 0f;
+                vdir = VerticalDirection.NONE;
+                yaw = switch (travelDir) {
+                    case NORTH -> 180f;
+                    case SOUTH -> 0f;
+                    case WEST  -> 90f;
+                    case EAST  -> -90f;
+                    default    -> 0f;
+                };
+            }
+
+
+            player.teleportTo(x, y, z);
+            player.setYRot(yaw);
+            player.setXRot(pitch);
+
+            // Speichere Rotation für Rendering
+            travelYawMap.put(player.getUUID(), yaw);
+            travelPitchMap.put(player.getUUID(), pitch);
+            verticalDirMap.put(player.getUUID(), vdir);
+        } else {
+            // fallback
+            Vec3 pos = new Vec3(startPos.getX() + 0.5, startPos.getY(), startPos.getZ() + 0.5);
+            player.teleportTo(pos.x, pos.y, pos.z);
+        }
     }
+
   
     public static void tick(Player player) {
         UUID id = player.getUUID();
@@ -120,19 +266,45 @@ public class ViaductTravel {
             }
         }
 
+        if (data.isCharging) {
+            data.pathFinder.tick(50);
+            List<BlockPos> result = data.pathFinder.getResult();
+
+            // ✅ Wenn Pfad gefunden: sofort laden und abbrechen
+            if (!result.isEmpty()) {
+                data.path = result;
+                data.chargeProgress = 100f;
+                data.isCharging = false;
+                data.progressIndex = 0;
+                data.chunkProgress = 0;
+                data.tickCounter = 0;
+                data.pathFinder = null; // ⬅️ ganz wichtig, verhindert weiteres "tick()"
+                return;
+            }
+
+            // ⏳ Pfad noch nicht gefunden → langsam laden
+            double distance = Vec3.atCenterOf(data.startPos).distanceToSqr(Vec3.atCenterOf(data.targetPos));
+            double maxDistance = 512 * 512;
+            double speed = 2.0 - 0.1 * Math.min(distance / maxDistance, 1.0);
+
+            if (data.chargeProgress < 99) {
+                data.chargeProgress += speed;
+            }
+
+            data.tickCounter++;
+        }
+    
+ 
         List<BlockPos> path = data.path;
         int currentIndex = data.progressIndex;
         int lastIndex = path.size() - 1;
-        if (currentIndex >= lastIndex) return;
-
-        if (data.ticksPerChunk <= 0) return;
+        if (currentIndex >= lastIndex || data.ticksPerChunk <= 0) return;
 
         data.tickCounter++;
         data.chunkProgress += (1.0 / data.ticksPerChunk);
 
         int chunkSize = 16;
         int stepsLeft = Math.min(chunkSize, lastIndex - currentIndex);
-
         double totalStepProgress = data.chunkProgress * stepsLeft;
         int subIndex = (int) totalStepProgress;
         double lerpProgress = totalStepProgress - subIndex;
@@ -146,7 +318,6 @@ public class ViaductTravel {
 
         double lookAheadProgress = lerpProgress + 0.1;
         int lookAheadSubIndex = subIndex;
-
         while (lookAheadProgress > 1.0) {
             lookAheadProgress -= 1.0;
             lookAheadSubIndex++;
@@ -160,14 +331,16 @@ public class ViaductTravel {
 
         updatePlayerDirection(player, lerped, lookTarget);
 
-        double y = (toIndex == lastIndex && data.chunkProgress >= 1.0) ? to.y + 1.0 : lerped.y - 1;
+        if (player instanceof ServerPlayer serverPlayer) {
+            NetworkHandler.sendTravelStateToAll(serverPlayer, false);
+        }
 
         if (player instanceof ServerPlayer sp && sp.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
             stop(player, false);
             return;
-        } else {
-            player.teleportTo(lerped.x, y, lerped.z);
         }
+
+        player.teleportTo(lerped.x, lerped.y - 1, lerped.z);
 
         if (data.chunkProgress >= 1.0) {
             data.progressIndex += stepsLeft;
@@ -204,15 +377,7 @@ public class ViaductTravel {
     	}
     	verticalDirMap.put(player.getUUID(), dir);
     }
-
-    public static float getTravelYaw(UUID uuid) {
-        return travelYawMap.getOrDefault(uuid, 0f);
-    }
-
-    public static VerticalDirection getVerticalDirection(UUID uuid) {
-        return verticalDirMap.getOrDefault(uuid, VerticalDirection.NONE);
-    }
-    
+/*
     public static List<BlockPos> findViaductPath(Level level, BlockPos start, BlockPos end) {
         Set<BlockPos> visited = new HashSet<>();
         Map<BlockPos, BlockPos> cameFrom = new HashMap<>();
@@ -260,7 +425,7 @@ public class ViaductTravel {
 
         return List.of();
     }
-    
+    */
     public static BlockPos findTarget(Level level, BlockPos from) {
         Set<BlockPos> visited = new HashSet<>();
         Queue<BlockPos> queue = new ArrayDeque<>();
@@ -312,24 +477,14 @@ public class ViaductTravel {
     
     public static void stop(Player player, boolean includeTeleport) {
         UUID id = player.getUUID();
-
+        
         travelYawMap.remove(id);
         verticalDirMap.remove(id);
         ViaductTravel.markResetModel(player.getUUID());
         player.refreshDimensions();
-
         TravelData data = activeTravels.remove(id);
         List<BlockPos> path = data != null ? data.path : null;
-
-        List<ItemStack> armor = storedArmor.remove(player.getUUID());
-
-        if (armor != null && armor.size() == 4) {
-            player.getInventory().armor.set(3, armor.get(0)); 
-            player.getInventory().armor.set(2, armor.get(1)); 
-            player.getInventory().armor.set(1, armor.get(2)); 
-            player.getInventory().armor.set(0, armor.get(3)); 
-        }
-
+    
         player.noPhysics = false;
         player.setPose(Pose.STANDING);
         player.setInvisible(false);
@@ -411,7 +566,6 @@ public class ViaductTravel {
             BlockState belowState = level.getBlockState(below);
 
             if (belowState.getBlock() instanceof BlockViaduct) {
-                System.out.println("===> SPRINGE! Viaduct unter Stone bei " + below);
 
                 if (player.level().isClientSide() && player instanceof LocalPlayer) {
                     ((LocalPlayer) player).jumpFromGround();
@@ -420,18 +574,10 @@ public class ViaductTravel {
                 }
             }
         }
-    }
-  
-    public static class TravelData {
-        public final List<BlockPos> path;
-        public int progressIndex = 0;
-        public double chunkProgress = 0.0;
-        public int ticksPerChunk;
-        public int tickCounter = 0;
-
-        public TravelData(List<BlockPos> path, int ticksPerChunk) {
-            this.path = path;
-            this.ticksPerChunk = ticksPerChunk;
+        
+        if (player instanceof ServerPlayer serverPlayer) {
+        	NetworkHandler.sendTravelStateToAll(serverPlayer, true);
+            
         }
     }
 }

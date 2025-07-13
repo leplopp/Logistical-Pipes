@@ -44,21 +44,23 @@ public class PipeCraftIndex
 
 /*ideen
  * 
- *  viaduct											<- Beta						/ player model auf server /models / texture /hitbox vollenden /sounds hinzufügen
- *  viaduct Linker with gui 						<- Pre Release				/ texture & model /hitbox vollenden /sounds hinzufügen / bug manchmal resettet sich die speicherung zummindest halb
- *  viaduct player detector 						<- concept
+ *  viaduct											<- Pre Release				/ models & textur /hitbox vollenden /sounds hinzufügen
+ *  viaduct Linker with gui 						<- Pre Release				/ textur & model /hitbox vollenden /sounds hinzufügen / bug manchmal resettet sich die speicherung wenn man zu schnell klickt
  *  viaduct	glowing option 							<- Released
+ *  viaduct player detector 					    <- concept
  *  viaduct Speed controller						<- concept
+ *  viaduct Dimension Teleporter					<- concept
  *   	
  *  viaduct facade for all pipes & cables			<- concept
  *   
  *  item & fluid pipes: 							
  *   
  *  sorter pipe										<- concept
- *  outout/inout pipe								<- concept
+ *  in & output pipe								<- concept
  *  hopper pipe										<- concept
  *  speed up pipe									<- concept
  *  detector pipe									<- concept
  *  ItemFluid pipe									<- concept
+ *  Dimension pipe									<- concept
  *  
  */

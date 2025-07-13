@@ -34,14 +34,12 @@ public class ViaductLinkerManager {
 	        if (!newRecord.equals(existing)) {
 	            allLinkersData.put(pos, newRecord);
 	            knownLinkers.put(pos, newRecord);
-	            System.out.println("[ViaductLinkerManager] Updated: " + pos + " | Total=" + allLinkersData.size());
 	        }
 	    }
 
 	    public static void removeLinker(BlockPos pos) {
 	        knownLinkers.remove(pos);
 	        allLinkersData.remove(pos);
-	        System.out.println("[ViaductLinkerManager] removeLinker: pos=" + pos + " total allLinkers=" + allLinkersData.size());
 	    }
 
 	    public static Set<BlockPos> getAllLinkers() {
@@ -56,6 +54,7 @@ public class ViaductLinkerManager {
 	        allLinkersData.clear();
 	        allLinkersData.putAll(data.getLinkers());
 	    }
+	    
 	    public static void setOpenMenu(ViaductLinkerMenu menu) {
 	        openMenu = menu;
 	    }
@@ -75,7 +74,6 @@ public class ViaductLinkerManager {
 	        BlockEntityViaductLinker currentLinker = openMenu.blockEntity;
 	        if (currentLinker == null) return;
 
-	        // Nur für den geöffneten Linker die Ziele neu suchen
 	        List<LinkedTargetEntry> newTargets = currentLinker.findLinkedTargetsThroughViaducts(true);
 	        if (!currentLinker.getLinkedTargets().equals(newTargets)) {
 	            currentLinker.getLinkedTargets().clear();
@@ -86,7 +84,6 @@ public class ViaductLinkerManager {
 	                serverLevel.sendBlockUpdated(currentLinker.getBlockPos(), level.getBlockState(currentLinker.getBlockPos()), level.getBlockState(currentLinker.getBlockPos()), 3);
 	            }
 
-	            // Gefilterte Liste der verbundenen Linker für das GUI
 	            Set<BlockPos> connectedPositions = currentLinker.getLinkedTargets().stream()
 	                .map(t -> t.pos)
 	                .collect(Collectors.toSet());
@@ -103,7 +100,7 @@ public class ViaductLinkerManager {
 	                if (openMenu.serverPlayer != null) {
 	                    NetworkHandler.sendToClient(openMenu.serverPlayer, new ViaductLinkerListPacket(filtered));
 	                }
-	            }
-	        }
-	    }
-	}
+	           }
+	      }
+	 }
+}

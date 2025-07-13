@@ -1,15 +1,20 @@
 package plopp.pipecraft;
 
-import java.util.List;
 import java.util.UUID;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -20,13 +25,34 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerChangeGameModeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
+import plopp.pipecraft.Network.NetworkHandler;
 import plopp.pipecraft.logic.ViaductTravel;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 
 @EventBusSubscriber(modid = PipeCraftIndex.MODID)
 public class CommonEvents {	
+	
+	@SubscribeEvent
+	public static void onLevelTick(LevelTickEvent.Post event) {
+	    if (!(event.getLevel() instanceof ServerLevel level)) return;
 
+	    for (ServerPlayer player : level.players()) {
+	        if (ViaductTravel.isTravelActive(player)) {
+	            int progress = ViaductTravel.getChargeProgress(player);
+	            if (progress < 100) {
+	                NetworkHandler.sendTravelStateToAll(player, false);
+	            }
+	        }
+	    }
+	}
+	
 	@SubscribeEvent
 	public static void onPlayerTick(PlayerTickEvent.Post event) {
 	    Player player = event.getEntity();
@@ -44,33 +70,36 @@ public class CommonEvents {
 	
 	@SubscribeEvent
 	public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
-	    Player player = event.getEntity();
-	    UUID id = player.getUUID();
+	    Player joiningPlayer = event.getEntity();
+	    MinecraftServer server = joiningPlayer.getServer();
+	    if (!(joiningPlayer instanceof ServerPlayer serverJoiningPlayer) || server == null) return;
 
-	    if (ViaductTravel.activeTravels.containsKey(id)) {
-	        player.getServer().execute(() -> {
-	            // Wiederherstellen von Reisezustand
-	            player.setInvulnerable(true);
-	            player.setSwimming(false);
-	            player.noPhysics = true;
-	            player.setNoGravity(true);
-	            player.setDeltaMovement(Vec3.ZERO);
+	    if (ViaductTravel.activeTravels.containsKey(joiningPlayer.getUUID())) {
+	        server.execute(() -> {
+	            joiningPlayer.setInvulnerable(true);
+	            joiningPlayer.setSwimming(false);
+	            joiningPlayer.noPhysics = true;
+	            joiningPlayer.setNoGravity(true);
+	            joiningPlayer.setDeltaMovement(Vec3.ZERO);
 
-	            // Armor etc. wie gehabt
-	            ItemStack helmet = player.getInventory().armor.get(3);
-	            ItemStack chestplate = player.getInventory().armor.get(2);
-	            ItemStack leggings = player.getInventory().armor.get(1);
-	            ItemStack boots = player.getInventory().armor.get(0);
-	            ViaductTravel.storedArmor.put(player.getUUID(), List.of(helmet, chestplate, leggings, boots));
-	            player.getInventory().armor.set(3, ItemStack.EMPTY);
-	            player.getInventory().armor.set(2, ItemStack.EMPTY);
-	            player.getInventory().armor.set(1, ItemStack.EMPTY);
-	            player.getInventory().armor.set(0, ItemStack.EMPTY);
+	            ViaductTravel.resume(joiningPlayer);
 
-	            // ✳️ Hier: Reise fortsetzen
-	            ViaductTravel.resume(player);
+	            for (ServerPlayer other : server.getPlayerList().getPlayers()) {
+	                if (!other.getUUID().equals(joiningPlayer.getUUID())) {
+	                    NetworkHandler.sendTravelStateToAll(other, false);
+	                }
+	            }
 	        });
 	    }
+
+	    server.execute(() -> {
+	        for (ServerPlayer other : server.getPlayerList().getPlayers()) {
+	            if (!other.getUUID().equals(joiningPlayer.getUUID())
+	                && ViaductTravel.isTravelActive(other)) {
+	                NetworkHandler.sendTravelStateToAll(serverJoiningPlayer, false);
+	            }
+	        }
+	    });
 	}
     
 	    @SubscribeEvent
@@ -79,20 +108,13 @@ public class CommonEvents {
 	        UUID id = player.getUUID();
 	        
 	        if (ViaductTravel.activeTravels.containsKey(id)) {
-	            player.setInvisible(false);
 	            player.setInvulnerable(false);
 	            player.setNoGravity(false);
 	            player.noPhysics = false;
-	            List<ItemStack> armor = ViaductTravel.storedArmor.remove(player.getUUID());
-	            if (armor != null && armor.size() == 4) {
-	                player.getInventory().armor.set(3, armor.get(0)); 
-	                player.getInventory().armor.set(2, armor.get(1)); 
-	                player.getInventory().armor.set(1, armor.get(2)); 
-	                player.getInventory().armor.set(0, armor.get(3)); 
-	            }
+	           
 	        }
 	    }
-	    
+
 	    @SubscribeEvent
 	    public static void onBlockBreak(PlayerEvent.BreakSpeed event) {
 	        Player player = event.getEntity();
@@ -127,9 +149,82 @@ public class CommonEvents {
 
 	    @SubscribeEvent
 	    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-	        Player player = event.getEntity();
+	        if (!(event.getEntity() instanceof Player player)) return;
+
 	        if (ViaductTravel.isTravelActive(player)) {
 	            event.setCanceled(true);
+	            event.setCancellationResult(InteractionResult.FAIL); 
+	            return;
+	        }
+
+	        Level level = event.getLevel();
+	        BlockPos pos = event.getPos();
+	        InteractionHand hand = event.getHand();
+	        ItemStack stack = player.getItemInHand(hand);
+	        BlockState state = level.getBlockState(pos);
+
+	        if (level.isClientSide) return;
+	        if (!(state.getBlock() instanceof BlockViaduct)) return;
+
+	        if (stack.getItem() == Items.GLOWSTONE_DUST) {
+	            int currentLevel = state.getValue(BlockViaduct.LIGHT_LEVEL);
+	            if (player.isShiftKeyDown()) {
+	                if (currentLevel < 15) {
+	                    int toConsume = 1;
+	                    BlockState newState = state.setValue(BlockViaduct.LIGHT_LEVEL, currentLevel + toConsume);
+	                    level.setBlock(pos, newState, 3);
+	                    if (!player.isCreative()) stack.shrink(toConsume);
+	                    player.displayClientMessage(Component.literal("Lichtlevel erhöht auf " + (currentLevel + toConsume)), true);
+	                    event.setCancellationResult(InteractionResult.SUCCESS);
+	                    event.setCanceled(true);
+	                    return;
+	                } else {
+	                    player.displayClientMessage(Component.literal("Lichtlevel ist bereits auf Maximum (15)."), true);
+	                    event.setCancellationResult(InteractionResult.FAIL);
+	                    event.setCanceled(true);
+	                    return;
+	                }
+	            } else {
+	                if (currentLevel < 15) {
+	                    int maxIncrease = 15 - currentLevel;
+	                    int toConsume = Math.min(stack.getCount(), maxIncrease);
+	                    int newLevel = currentLevel + toConsume;
+	                    BlockState newState = state.setValue(BlockViaduct.LIGHT_LEVEL, newLevel);
+	                    level.setBlock(pos, newState, 3);
+	                    if (!player.isCreative()) stack.shrink(toConsume);
+	                    player.displayClientMessage(Component.literal("Lichtlevel erhöht auf " + newLevel), true);
+	                    event.setCancellationResult(InteractionResult.SUCCESS);
+	                    event.setCanceled(true);
+	                    return;
+	                } else {
+	                    player.displayClientMessage(Component.literal("Lichtlevel ist bereits auf Maximum (15)."), true);
+	                    event.setCancellationResult(InteractionResult.FAIL);
+	                    event.setCanceled(true);
+	                    return;
+	                }
+	            }
+	        }
+
+	        if (stack.getItem() == Items.BRUSH) {
+	            int currentLevel = state.getValue(BlockViaduct.LIGHT_LEVEL);
+	            if (currentLevel > 0) {
+	                BlockState newState = state.setValue(BlockViaduct.LIGHT_LEVEL, 0);
+	                level.setBlock(pos, newState, 3);
+	                ItemStack glowstoneReturn = new ItemStack(Items.GLOWSTONE_DUST, currentLevel);
+	                boolean added = player.getInventory().add(glowstoneReturn);
+	                if (!added) {
+	                    player.drop(glowstoneReturn, false);
+	                }
+	                player.displayClientMessage(Component.literal("Lichtlevel auf 0 zurückgesetzt. Glowstone zurückgegeben: " + currentLevel), true);
+	                event.setCancellationResult(InteractionResult.SUCCESS);
+	                event.setCanceled(true);
+	                return;
+	            } else {
+	                player.displayClientMessage(Component.literal("Lichtlevel ist bereits 0."), true);
+	                event.setCancellationResult(InteractionResult.FAIL);
+	                event.setCanceled(true);
+	                return;
+	            }
 	        }
 	    }
 	    

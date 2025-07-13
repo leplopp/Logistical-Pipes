@@ -153,12 +153,11 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
     }
 
     public void updateLinkersData(List<LinkedTargetEntryRecord> newLinkers) {
-        // Entferne alle alten nicht mehr vorhandenen Linker
+
         List<LinkedTargetEntryRecord> filteredSorted = customSortedLinkers.stream()
             .filter(e -> newLinkers.stream().anyMatch(n -> n.pos().equals(e.pos())))
             .toList();
 
-        // Füge neue Linker (z. B. sehr weit entfernte) hinten an, wenn sie noch nicht enthalten sind
         List<LinkedTargetEntryRecord> result = new ArrayList<>(filteredSorted);
 
         for (LinkedTargetEntryRecord entry : newLinkers) {

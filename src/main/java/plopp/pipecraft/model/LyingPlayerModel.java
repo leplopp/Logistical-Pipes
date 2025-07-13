@@ -5,6 +5,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.player.AbstractClientPlayer;
+import plopp.pipecraft.Network.travel.ClientTravelDataManager;
+import plopp.pipecraft.Network.travel.TravelStatePacket;
 import plopp.pipecraft.logic.ViaductTravel;
 import plopp.pipecraft.logic.ViaductTravel.VerticalDirection;
 
@@ -17,56 +19,34 @@ public class LyingPlayerModel<T extends AbstractClientPlayer> extends PlayerMode
     public void setupAnim(T player, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
         super.setupAnim(player, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
         
-        if (player.level().isClientSide() && Minecraft.getInstance().options.getCameraType() == CameraType.FIRST_PERSON) {
+        if (!ClientTravelDataManager.hasData(player.getUUID())) {
             return;
         }
+        
+        TravelStatePacket travelData = ClientTravelDataManager.getTravelData(player.getUUID());
         if (ViaductTravel.consumeResetModel(player.getUUID())) {
-
-            this.body.xRot = 0;
-            this.body.yRot = 0;
-            this.body.zRot = 0;
-
-            this.head.xRot = 0;
-            this.head.yRot = 0;
-            this.head.zRot = 0;
-
-            this.rightArm.xRot = 0;
-            this.rightArm.yRot = 0;
-            this.rightArm.zRot = 0;
-            this.rightArm.x = -5;
-            this.rightArm.y = 2;
-            this.rightArm.z = 0;
-
-            this.leftArm.xRot = 0;
-            this.leftArm.yRot = 0;
-            this.leftArm.zRot = 0;
-            this.leftArm.x = 5;
-            this.leftArm.y = 2;
-            this.leftArm.z = 0;
-
-            this.leftLeg.xRot = 0;
-            this.leftLeg.yRot = 0;
-            this.leftLeg.zRot = 0;
-            this.leftLeg.y = 12;
-            this.leftLeg.z = 0;
-
-            this.rightLeg.xRot = 0;
-            this.rightLeg.yRot = 0;
-            this.rightLeg.zRot = 0;
-            this.rightLeg.y = 12;
-            this.rightLeg.z = 0;
-
-            this.hat.visible = true;
-            this.jacket.visible = true;
-            this.leftSleeve.visible = true;
-            this.rightSleeve.visible = true;
-            this.leftPants.visible = true;
-            this.rightPants.visible = true;
-
+            resetModelToDefaultPose();
             return;
         }
 
-        VerticalDirection vdir = ViaductTravel.getVerticalDirection(player.getUUID());
+        if (travelData == null || !travelData.isActive()) {
+            return;
+        }
+        
+        if (player.level().isClientSide() &&
+        	    Minecraft.getInstance().options.getCameraType() == CameraType.FIRST_PERSON &&
+        	    player == Minecraft.getInstance().player) {
+        	    return;
+        	}
+        
+        
+        if (ViaductTravel.consumeResetModel(player.getUUID())) {
+            resetModelToDefaultPose();
+            return;
+        }
+        
+        VerticalDirection vdir = ViaductTravel.getVerticalDirection(player.getUUID(),  player.level());
+        
         if (vdir != VerticalDirection.NONE) {
             boolean upsideDown = vdir == VerticalDirection.DOWN;
 
@@ -77,6 +57,10 @@ public class LyingPlayerModel<T extends AbstractClientPlayer> extends PlayerMode
             this.head.xRot = upsideDown ? (float) Math.toRadians(90) : (float) Math.toRadians(-90);
             this.head.yRot = 0;
             this.head.zRot = 0;
+            
+            this.head.x = 0f;
+            this.head.y = 0f;
+            this.head.z = upsideDown ? 1f : -1f; 
 
             this.rightArm.xRot = upsideDown ? (float) Math.toRadians(0) : (float) Math.toRadians(180);
             this.rightArm.yRot = upsideDown ? 0 : (float) Math.toRadians(-10);
@@ -110,8 +94,8 @@ public class LyingPlayerModel<T extends AbstractClientPlayer> extends PlayerMode
             return;
         }
         
-        if (ViaductTravel.isTravelActive(player)) {
-            float yaw = ViaductTravel.getTravelYaw(player.getUUID());
+        if (travelData.isActive()) {
+        	float yaw = ViaductTravel.getTravelYaw(player.getUUID(),  player.level());
 
             float correctedYaw = yaw - 180f;
             float radiansYaw = (float) Math.toRadians(correctedYaw);
@@ -204,5 +188,55 @@ public class LyingPlayerModel<T extends AbstractClientPlayer> extends PlayerMode
             this.leftPants.visible = false;
             this.rightPants.visible = false;
         }
+    }
+    
+    public void resetModelToDefaultPose() {
+    	   System.out.println("Reset Model Pose for: " + this.getClass().getSimpleName());
+        this.body.xRot = 0f;
+        this.body.yRot = 0f;
+        this.body.zRot = 0f;
+        this.body.x = 0f;
+        this.body.y = 0f;
+        this.body.z = 0f;
+
+        this.head.xRot = 0f;
+        this.head.yRot = 0f;
+        this.head.zRot = 0f;
+        this.head.x = 0f;
+        this.head.y = 0f;
+        this.head.z = 0f;
+        
+        this.rightArm.xRot = 0;
+        this.rightArm.yRot = 0;
+        this.rightArm.zRot = 0;
+        this.rightArm.x = -5;
+        this.rightArm.y = 2;
+        this.rightArm.z = 0;
+
+        this.leftArm.xRot = 0;
+        this.leftArm.yRot = 0;
+        this.leftArm.zRot = 0;
+        this.leftArm.x = 5;
+        this.leftArm.y = 2;
+        this.leftArm.z = 0;
+
+        this.leftLeg.xRot = 0;
+        this.leftLeg.yRot = 0;
+        this.leftLeg.zRot = 0;
+        this.leftLeg.y = 12;
+        this.leftLeg.z = 0;
+
+        this.rightLeg.xRot = 0;
+        this.rightLeg.yRot = 0;
+        this.rightLeg.zRot = 0;
+        this.rightLeg.y = 12;
+        this.rightLeg.z = 0;
+
+        this.hat.visible = true;
+        this.jacket.visible = true;
+        this.leftSleeve.visible = true;
+        this.rightSleeve.visible = true;
+        this.leftPants.visible = true;
+        this.rightPants.visible = true;
     }
 }
