@@ -2,6 +2,7 @@
 	"loader": "pipecraft:viaduct_model",
   "model": "logisticpipes:models/block/viaduct/viaduct_connected_side.obj",
   "textures": {
+	"particle": "logisticpipes:block/viaduct_particle",
 	"white": "logisticpipes:block/viaduct_white",
 	 "orange": "logisticpipes:block/viaduct_orange",
 	 "magenta": "logisticpipes:block/viaduct_magenta",

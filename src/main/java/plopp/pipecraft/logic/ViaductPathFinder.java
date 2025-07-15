@@ -16,7 +16,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import plopp.pipecraft.Blocks.BlockRegister;
 import plopp.pipecraft.Blocks.ViaductBlockRegistry;
-import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 
 public class ViaductPathFinder {
 	
@@ -104,7 +103,6 @@ public class ViaductPathFinder {
 	                    boolean currentIsLinker = currentState.is(BlockRegister.VIADUCTLINKER);
 	                    boolean neighborIsLinker = state.is(BlockRegister.VIADUCTLINKER);
 
-	                    // Zwei Linker dürfen nicht direkt verbunden sein!
 	                    if (!(currentIsLinker && neighborIsLinker)) {
 	                        if (ViaductBlockRegistry.isViaduct(state) || neighborIsLinker) {
 	                            visited.add(neighbor);

@@ -1,4 +1,4 @@
-package plopp.pipecraft.model;
+package plopp.pipecraft.model.obj;
 
 import net.minecraft.client.renderer.block.model.ItemOverrides;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -14,33 +14,30 @@ import net.neoforged.neoforge.client.model.obj.ObjLoader;
 import net.neoforged.neoforge.client.model.obj.ObjModel;
 
 import java.util.EnumMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 
 @OnlyIn(Dist.CLIENT)
 public class ViaductModelGeometry implements IUnbakedGeometry<ViaductModelGeometry> {
 
     private final ResourceLocation objModel;
     private final Map<DyeColor, ResourceLocation> colorTextures;
+    private final ResourceLocation particleTexture;
 
-    public ViaductModelGeometry(ResourceLocation objModel, Map<DyeColor, ResourceLocation> colorTextures) {
+    public ViaductModelGeometry(ResourceLocation objModel, Map<DyeColor, ResourceLocation> colorTextures, ResourceLocation particleTexture) {
         this.objModel = objModel;
         this.colorTextures = colorTextures;
+        this.particleTexture = particleTexture;
     }
-
 
     @Override
     public BakedModel bake(IGeometryBakingContext context, ModelBaker baker,
                            Function<Material, TextureAtlasSprite> spriteGetter,
                            ModelState modelState, ItemOverrides overrides) {
 
-        // Funktion zum Baken eines Modells mit einer spezifischen Textur
         Function<ResourceLocation, BakedModel> modelGenerator = (ResourceLocation texture) -> {
             Function<Material, TextureAtlasSprite> wrappedGetter = mat -> {
-                // Ersetze spezielle Platzhalter-Texturen durch die farbspezifische Textur
+
                 if ("placeholder".equals(mat.texture().getPath())) {
                     return spriteGetter.apply(new Material(TextureAtlas.LOCATION_BLOCKS, texture));
                 }
@@ -52,17 +49,19 @@ public class ViaductModelGeometry implements IUnbakedGeometry<ViaductModelGeomet
             return model.bake(context, baker, wrappedGetter, modelState, overrides);
         };
 
-        // Base-Model (z. B. white oder fallback)
+
         ResourceLocation whiteTex = colorTextures.getOrDefault(DyeColor.WHITE, ResourceLocation.fromNamespaceAndPath("minecraft", "missingno"));
         BakedModel fallbackModel = modelGenerator.apply(whiteTex);
 
         Map<DyeColor, TextureAtlasSprite> particleSprites = new EnumMap<>(DyeColor.class);
         for (Map.Entry<DyeColor, ResourceLocation> entry : colorTextures.entrySet()) {
-            ResourceLocation tex = entry.getValue();
-            TextureAtlasSprite sprite = spriteGetter.apply(new Material(TextureAtlas.LOCATION_BLOCKS, tex));
+            TextureAtlasSprite sprite = spriteGetter.apply(new Material(TextureAtlas.LOCATION_BLOCKS, entry.getValue()));
             particleSprites.put(entry.getKey(), sprite);
         }
 
-        return new DynamicColorWrappedModel(modelGenerator, colorTextures, fallbackModel, modelState, particleSprites);
+        TextureAtlasSprite fixedParticleSprite = spriteGetter.apply(new Material(TextureAtlas.LOCATION_BLOCKS, particleTexture));
+
+        return new DynamicColorWrappedModel(modelGenerator, colorTextures, fallbackModel, modelState, particleSprites, fixedParticleSprite);
     }
+
 }

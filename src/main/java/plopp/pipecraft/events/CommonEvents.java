@@ -1,13 +1,10 @@
-package plopp.pipecraft;
+package plopp.pipecraft.events;
 
 import java.util.ArrayDeque;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -15,6 +12,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ArmorItem;
@@ -24,8 +22,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
@@ -37,7 +37,9 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import plopp.pipecraft.PipeCraftIndex;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
 import plopp.pipecraft.Network.NetworkHandler;
 import plopp.pipecraft.logic.ViaductTravel;
 import net.minecraft.world.InteractionHand;
@@ -154,14 +156,14 @@ public class CommonEvents {
 	            event.setCanceled(true);
 	        }
 	    }
-
-	    @SubscribeEvent
+	    
+	    @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
 	    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
 	        if (!(event.getEntity() instanceof Player player)) return;
 
 	        if (ViaductTravel.isTravelActive(player)) {
 	            event.setCanceled(true);
-	            event.setCancellationResult(InteractionResult.FAIL); 
+	            event.setCancellationResult(InteractionResult.FAIL);
 	            return;
 	        }
 
@@ -170,11 +172,42 @@ public class CommonEvents {
 	        InteractionHand hand = event.getHand();
 	        ItemStack stack = player.getItemInHand(hand);
 	        BlockState state = level.getBlockState(pos);
+	        Block block = state.getBlock();
 
 	        if (level.isClientSide) return;
-	        if (!(state.getBlock() instanceof BlockViaduct)) return;
 
-	        if (stack.getItem() == Items.GLOWSTONE_DUST) {
+	        boolean isViaduct = block instanceof BlockViaduct;
+	        boolean isLinker = block instanceof BlockViaductLinker;
+
+	        if ((isViaduct && state.hasProperty(BlockViaduct.TRANSPARENT)) ||
+	            (isLinker && state.hasProperty(BlockViaductLinker.TRANSPARENT))) {
+
+	        	   if (stack.is(ItemTags.WOOL)) {
+	        	        BlockState newState = state.setValue(
+	        	            isViaduct ? BlockViaduct.TRANSPARENT : BlockViaductLinker.TRANSPARENT,
+	        	            false
+	        	        );
+	        	        level.setBlock(pos, newState, 3);
+	        	        player.displayClientMessage(Component.literal("Transparenz deaktiviert."), true);
+	        	        event.setCancellationResult(InteractionResult.SUCCESS);
+	        	        event.setCanceled(true);
+	        	        return;
+	        	    }
+
+	        	    if (stack.is(Items.GLASS)) {
+	        	        BlockState newState = state.setValue(
+	        	            isViaduct ? BlockViaduct.TRANSPARENT : BlockViaductLinker.TRANSPARENT,
+	        	            true
+	        	        );
+	        	        level.setBlock(pos, newState, 3);
+	        	        player.displayClientMessage(Component.literal("Transparenz aktiviert."), true);
+	        	        event.setCancellationResult(InteractionResult.SUCCESS);
+	        	        event.setCanceled(true);
+	        	        return;
+	        	    }
+	        	}
+
+	        if (isViaduct && stack.getItem() == Items.GLOWSTONE_DUST) {
 	            int currentLevel = state.getValue(BlockViaduct.LIGHT_LEVEL);
 	            if (player.isShiftKeyDown()) {
 	                if (currentLevel < 15) {
@@ -213,7 +246,7 @@ public class CommonEvents {
 	            }
 	        }
 
-	        if (stack.getItem() == Items.BRUSH) {
+	        if (isViaduct && stack.getItem() == Items.BRUSH) {
 	            int currentLevel = state.getValue(BlockViaduct.LIGHT_LEVEL);
 	            if (currentLevel > 0) {
 	                BlockState newState = state.setValue(BlockViaduct.LIGHT_LEVEL, 0);
@@ -234,15 +267,12 @@ public class CommonEvents {
 	                return;
 	            }
 	        }
-	        
-	        // FÄRBEN
-	        ItemStack stack1 = event.getItemStack();
-	        if (stack1.getItem() instanceof DyeItem dyeItem) {
-	            DyeColor clickedColor = dyeItem.getDyeColor();
-	            DyeColor currentColor = state.getValue(BlockViaduct.COLOR);
 
-	            if (player.isShiftKeyDown()) {
-	                int maxBlocks = stack1.getCount();
+	        if (stack.getItem() instanceof DyeItem dyeItem) {
+	            DyeColor clickedColor = dyeItem.getDyeColor();
+
+	            if (player.isShiftKeyDown() && isViaduct) {
+	                int maxBlocks = stack.getCount();
 	                Set<BlockPos> visited = new HashSet<>();
 	                Queue<BlockPos> queue = new ArrayDeque<>();
 	                int colored = 0;
@@ -258,11 +288,9 @@ public class CommonEvents {
 	                    if (!currentState.hasProperty(BlockViaduct.COLOR)) continue;
 	                    if (currentState.getValue(BlockViaduct.COLOR) == clickedColor) continue;
 
-	                    // Färben
 	                    level.setBlock(currentPos, currentState.setValue(BlockViaduct.COLOR, clickedColor), 3);
 	                    colored++;
 
-	                    // Nachbarn hinzufügen
 	                    for (Direction dir : Direction.values()) {
 	                        BlockPos neighbor = currentPos.relative(dir);
 	                        if (!visited.contains(neighbor)) {
@@ -279,7 +307,7 @@ public class CommonEvents {
 	                }
 
 	                if (colored > 0 && !player.isCreative()) {
-	                    stack1.shrink(colored);
+	                    stack.shrink(colored);
 	                }
 
 	                player.displayClientMessage(
@@ -291,17 +319,37 @@ public class CommonEvents {
 	                return;
 	            }
 
-	            // Einzelblock färben
-	            if (currentColor != clickedColor) {
-	                BlockState newState = state.setValue(BlockViaduct.COLOR, clickedColor);
+	            if ((isViaduct && state.hasProperty(BlockViaduct.COLOR)) || (isLinker && state.hasProperty(BlockViaductLinker.COLOR))) {
+
+	                DyeColor currentColor;
+	                BlockState newState;
+
+	                if (isViaduct) {
+	                    currentColor = state.getValue(BlockViaduct.COLOR);
+	                    if (currentColor != clickedColor) {
+	                        newState = state.setValue(BlockViaduct.COLOR, clickedColor);
+	                    } else {
+	                        player.displayClientMessage(Component.literal("Der Block ist bereits " + clickedColor.getName() + "."), true);
+	                        event.setCancellationResult(InteractionResult.FAIL);
+	                        event.setCanceled(true);
+	                        return;
+	                    }
+	                } else { 
+	                    currentColor = state.getValue(BlockViaductLinker.COLOR);
+	                    if (currentColor != clickedColor) {
+	                        newState = state.setValue(BlockViaductLinker.COLOR, clickedColor);
+	                    } else {
+	                        player.displayClientMessage(Component.literal("Der Linker ist bereits " + clickedColor.getName() + "."), true);
+	                        event.setCancellationResult(InteractionResult.FAIL);
+	                        event.setCanceled(true);
+	                        return;
+	                    }
+	                }
+
 	                level.setBlock(pos, newState, 3);
-	                if (!player.isCreative()) stack1.shrink(1);
+	                if (!player.isCreative()) stack.shrink(1);
 	                player.displayClientMessage(Component.literal("Farbe auf " + clickedColor.getName() + " gesetzt."), true);
 	                event.setCancellationResult(InteractionResult.SUCCESS);
-	                event.setCanceled(true);
-	            } else {
-	                player.displayClientMessage(Component.literal("Der Block ist bereits " + clickedColor.getName() + "."), true);
-	                event.setCancellationResult(InteractionResult.FAIL);
 	                event.setCanceled(true);
 	            }
 	        }

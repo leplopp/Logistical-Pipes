@@ -126,37 +126,6 @@ public class ViaductTravel {
 	    return 0;
 	}
 
-    public static class TravelData {
-        public List<BlockPos> path = new ArrayList<>();
-        public int progressIndex = 0;
-        public double chunkProgress = 0.0;
-        public int ticksPerChunk;
-        public int tickCounter = 0;
-        public int maxChargeTicks = 600; 
-        public float chargeProgress = 0f;
-        public int chargeTickCounter = 0;
-        public float ticksPerPercent = 1f; 
-        public int ticksToCharge = 100;          
-        public int estimatedTicksToCharge = 0; 
-        public BlockPos startPos;
-        public BlockPos targetPos;
-        public double lockedX;
-        public double lockedY;
-        public double lockedZ;
-    
-        public boolean isCharging = true;
-        public ViaductPathFinder pathFinder;
-
-        public TravelData(Level level, BlockPos start, BlockPos end, int ticksPerChunk) {
-            this.ticksPerChunk = ticksPerChunk;
-            this.path.add(start);
-            this.pathFinder = new ViaductPathFinder(level, start, end);
-            this.startPos = start;
-            this.targetPos = end;
-            
-        }
-    }
-    
     public static void start(Player player, BlockPos startPos, BlockPos targetPos, int ticksPerChunk) {
         Level level = player.level();
 
@@ -220,11 +189,11 @@ public class ViaductTravel {
 
             if (travelDir == Direction.UP) {
                 yaw = 0f;
-                pitch = 90f; // ← korrigiert
+                pitch = 90f; 
                 vdir = VerticalDirection.UP;
             } else if (travelDir == Direction.DOWN) {
                 yaw = 0f;
-                pitch = -90f; // ← korrigiert
+                pitch = -90f; 
                 vdir = VerticalDirection.DOWN;
             } else {
                 pitch = 0f;
@@ -311,7 +280,6 @@ public class ViaductTravel {
             return; 
         }
 
- 
         List<BlockPos> path = data.path;
         int currentIndex = data.progressIndex;
         int lastIndex = path.size() - 1;
@@ -428,10 +396,8 @@ public class ViaductTravel {
                 boolean neighborIsLinker = neighborState.is(BlockRegister.VIADUCTLINKER);
 
                 if (neighborIsLinker && currentIsLinker) {
-                    // Prüfe, ob zwischen current und neighbor ein Viaduct-Block liegt (also ob neighbor selbst Viaduct ist)
-                    // Wenn nicht, Verbindung abbrechen
                     if (!ViaductBlockRegistry.isViaduct(neighborState)) {
-                        continue; // nicht verbinden
+                        continue; 
                     }
                 }
 
@@ -441,9 +407,9 @@ public class ViaductTravel {
                 }
             }
         }
-
         return null;
     }
+    
     public static void resume(Player player) {
         UUID id = player.getUUID();
         TravelData data = activeTravels.get(id);
@@ -546,7 +512,6 @@ public class ViaductTravel {
             if (targetState.is(BlockRegister.VIADUCTLINKER)) {
                 Direction facing = targetState.getValue(BlockViaductLinker.FACING);
 
-                // Nur wenn der Linker nach oben zeigt, springe
                 if (facing == Direction.UP) {
                     if (player.level().isClientSide() && player instanceof LocalPlayer localPlayer) {
                         localPlayer.jumpFromGround();
@@ -559,6 +524,37 @@ public class ViaductTravel {
         
         if (player instanceof ServerPlayer serverPlayer) {
         	NetworkHandler.sendTravelStateToAll(serverPlayer, true);
+            
+        }
+    }
+    
+    public static class TravelData {
+        public List<BlockPos> path = new ArrayList<>();
+        public int progressIndex = 0;
+        public double chunkProgress = 0.0;
+        public int ticksPerChunk;
+        public int tickCounter = 0;
+        public int maxChargeTicks = 600; 
+        public float chargeProgress = 0f;
+        public int chargeTickCounter = 0;
+        public float ticksPerPercent = 1f; 
+        public int ticksToCharge = 100;          
+        public int estimatedTicksToCharge = 0; 
+        public BlockPos startPos;
+        public BlockPos targetPos;
+        public double lockedX;
+        public double lockedY;
+        public double lockedZ;
+    
+        public boolean isCharging = true;
+        public ViaductPathFinder pathFinder;
+
+        public TravelData(Level level, BlockPos start, BlockPos end, int ticksPerChunk) {
+            this.ticksPerChunk = ticksPerChunk;
+            this.path.add(start);
+            this.pathFinder = new ViaductPathFinder(level, start, end);
+            this.startPos = start;
+            this.targetPos = end;
             
         }
     }

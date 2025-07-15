@@ -1,4 +1,4 @@
-package plopp.pipecraft.model;
+package plopp.pipecraft.model.obj;
 
 import java.util.EnumMap;
 import java.util.Locale;
@@ -22,17 +22,24 @@ public class ViaductModelLoader implements IGeometryLoader<ViaductModelGeometry>
         ResourceLocation model = ResourceLocation.parse(GsonHelper.getAsString(json, "model"));
 
         Map<DyeColor, ResourceLocation> colorTextures = new EnumMap<>(DyeColor.class);
+        
+        ResourceLocation particleTexture = ResourceLocation.fromNamespaceAndPath("minecraft", "missingno");
         JsonObject texObj = GsonHelper.getAsJsonObject(json, "textures");
 
         for (Map.Entry<String, JsonElement> entry : texObj.entrySet()) {
-            try {
-                DyeColor dyeColor = DyeColor.valueOf(entry.getKey().toUpperCase(Locale.ROOT));
-                colorTextures.put(dyeColor, ResourceLocation.parse(entry.getValue().getAsString()));
-            } catch (IllegalArgumentException ignored) {
-                // Falls kein gültiger Farbname, einfach überspringen
+            String key = entry.getKey();
+            String val = entry.getValue().getAsString();
+
+            if (key.equals("particle")) {
+                particleTexture = ResourceLocation.parse(val);
+            } else {
+                try {
+                    DyeColor dye = DyeColor.valueOf(key.toUpperCase(Locale.ROOT));
+                    colorTextures.put(dye, ResourceLocation.parse(val));
+                } catch (IllegalArgumentException ignored) {}
             }
         }
 
-        return new ViaductModelGeometry(model, colorTextures);
+        return new ViaductModelGeometry(model, colorTextures, particleTexture);
     }
 }

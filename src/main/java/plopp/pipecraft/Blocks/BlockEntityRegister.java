@@ -18,10 +18,7 @@ public class BlockEntityRegister {
 		            BlockEntityType.Builder.of(BlockEntityViaductLinker::new, BlockRegister.VIADUCTLINKER.get()).build(null)
 		        );
 
-
-
 		    public static void register(IEventBus bus) {
 		        BLOCK_ENTITIES.register(bus);
-		    }
-		
+		    }		
 }

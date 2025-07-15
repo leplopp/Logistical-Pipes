@@ -1,11 +1,8 @@
 package plopp.pipecraft.Blocks;
 
 import com.google.common.base.Supplier;
-import com.mojang.serialization.Lifecycle;
-
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.bus.api.IEventBus;
@@ -18,16 +15,14 @@ import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
 
 public class BlockRegister {
 	
-	public static final DeferredRegister<Block> BLOCKS =
-	        DeferredRegister.createBlocks(PipeCraftIndex.MODID);
-    public static final DeferredRegister.Items ITEMS =
-            DeferredRegister.createItems(PipeCraftIndex.MODID);
+	public static final DeferredRegister<Block> BLOCKS =DeferredRegister.createBlocks(PipeCraftIndex.MODID);
+    public static final DeferredRegister.Items ITEMS =DeferredRegister.createItems(PipeCraftIndex.MODID);
     
     public static final DeferredBlock<Block> VIADUCTLINKER = registerBlock("viaduct_linker",
             () -> new BlockViaductLinker(BlockBehaviour.Properties.of()
                     .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS).noOcclusion()));
 
-  public static final DeferredBlock<Block> VIADUCT = registerBlock("viaduct",
+    public static final DeferredBlock<Block> VIADUCT = registerBlock("viaduct",
             () -> new BlockViaduct(BlockBehaviour.Properties.of()
                     .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS)));
     
@@ -45,11 +40,11 @@ public class BlockRegister {
 	        BLOCKS.register(bus);
 	        ITEMS.register(bus);
 
+	        //register travel through blocks 
 	        bus.addListener((FMLCommonSetupEvent event) -> {
 	            event.enqueueWork(() -> {
 	                ViaductBlockRegistry.registerViaductBlock(VIADUCT.get());
 	                ViaductBlockRegistry.registerViaductBlock(VIADUCTLINKER.get());
-	                ViaductBlockRegistry.registerViaductBlock(Blocks.STONE); // Vanilla-Testblock
 	            });
 	        });
 	    }

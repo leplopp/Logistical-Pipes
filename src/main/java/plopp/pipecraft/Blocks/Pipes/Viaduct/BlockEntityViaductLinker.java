@@ -310,9 +310,7 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
 
                 BlockState currentState = level.getBlockState(current);
 
-                // Prüfe, ob current ein Viaduct-Block ist (oder linker)
                 if (!ViaductBlockRegistry.isViaduct(currentState)) {
-                    // current ist kein Viaduct, also abbrechen oder weiter
                     continue;
                 }
 
@@ -326,7 +324,6 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
                     if (be instanceof BlockEntityViaductLinker linker && !neighbor.equals(startPos)) {
                         BlockState currentState1 = level.getBlockState(current);
 
-                        // Nur hinzufügen, wenn der aktuelle Block KEIN Linker ist
                         if (!currentState1.is(BlockRegister.VIADUCTLINKER)) {
                             String name = linker.getCustomName();
                             foundLinkers.add(new LinkedTargetEntry(neighbor, name));

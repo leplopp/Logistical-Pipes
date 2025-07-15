@@ -1,4 +1,4 @@
-package plopp.pipecraft;
+package plopp.pipecraft.events;
 
 import java.lang.reflect.Field;
 import net.minecraft.client.model.geom.ModelLayers;
@@ -14,12 +14,12 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import plopp.pipecraft.PipeCraftIndex;
 import plopp.pipecraft.gui.MenuTypeRegister;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerIDScreen;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerScreen;
 import plopp.pipecraft.model.LyingPlayerModel;
-import plopp.pipecraft.model.ViaductModelLoader;
-import net.neoforged.neoforge.client.event.ModelEvent.RegisterGeometryLoaders;
+import plopp.pipecraft.model.obj.ViaductModelLoader;
 
 @EventBusSubscriber(modid = PipeCraftIndex.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class ClientEvent {

@@ -1,4 +1,4 @@
-package plopp.pipecraft;
+package plopp.pipecraft.events;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,6 +16,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import plopp.pipecraft.PipeCraftIndex;
 import plopp.pipecraft.logic.ViaductTravel;
 
 @EventBusSubscriber(modid = PipeCraftIndex.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)

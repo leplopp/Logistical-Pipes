@@ -10,6 +10,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -24,6 +25,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
@@ -44,6 +46,8 @@ public class BlockViaductLinker extends Block implements EntityBlock {
     public static final BooleanProperty CONNECTED_UP = BooleanProperty.create("connected_up");
     public static final BooleanProperty CONNECTED_DOWN = BooleanProperty.create("connected_down");
     public static final DirectionProperty FACING = DirectionProperty.create("facing", Direction.values());
+    public static final EnumProperty<DyeColor> COLOR = EnumProperty.create("color", DyeColor.class);
+    public static final BooleanProperty TRANSPARENT = BooleanProperty.create("transparent");
     
     @SuppressWarnings("unchecked")
 	@Nullable
@@ -63,6 +67,8 @@ public class BlockViaductLinker extends Block implements EntityBlock {
                 .setValue(CONNECTED_WEST, false)
         		.setValue(CONNECTED_UP, false)
         		.setValue(CONNECTED_DOWN, false)
+                .setValue(COLOR, DyeColor.WHITE)
+                .setValue(TRANSPARENT, true)
         		.setValue(FACING, Direction.NORTH));
     }
     
@@ -81,33 +87,32 @@ public class BlockViaductLinker extends Block implements EntityBlock {
     
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-    	builder.add(CONNECTED_NORTH, CONNECTED_SOUTH, CONNECTED_EAST, CONNECTED_WEST, CONNECTED_UP, CONNECTED_DOWN, FACING);
+    	builder.add(CONNECTED_NORTH, CONNECTED_SOUTH, CONNECTED_EAST, CONNECTED_WEST, CONNECTED_UP, CONNECTED_DOWN, FACING, COLOR, TRANSPARENT);
     }
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
         return level.isClientSide ? null : createTickerHelper(type, BlockEntityRegister.VIADUCT_LINKER.get(), BlockEntityViaductLinker::serverTick);
     }
+    
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Level level = context.getLevel();
         BlockPos pos = context.getClickedPos();
         Direction facing = context.getNearestLookingDirection().getOpposite();
 
-        // Verhindere, dass linker direkt an Viaduct oder anderem Linker angrenzt
         for (Direction dir : Direction.values()) {
             BlockPos neighborPos = pos.relative(dir);
             BlockState neighborState = level.getBlockState(neighborPos);
 
-            // Kein linker direkt neben anderem linker erlaubt
             if (neighborState.getBlock() instanceof BlockViaductLinker) {
-                return null; // Platzierung verhindern
+                return null; // Kein Linker direkt daneben erlaubt
             }
+        }
 
-            // Optional: Auch keine Platzierung direkt neben Viaduct, falls nötig
-            if (neighborState.getBlock() instanceof BlockViaduct) {
-                // Optional: hier nichts tun oder return null; je nach gewünschtem Verhalten
-                // Ich lasse es offen, weil du geschrieben hast "immer ein Viaduct oder anderer Block außer Linker dazwischen"
-            }
+        BlockPos frontPos = pos.relative(facing);
+        BlockState frontState = level.getBlockState(frontPos);
+        if (frontState.getBlock() instanceof BlockViaduct) {
+            return null; 
         }
 
         return this.defaultBlockState().setValue(FACING, facing);

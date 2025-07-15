@@ -3,10 +3,15 @@ package plopp.pipecraft.Blocks.Pipes.Viaduct;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -17,6 +22,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -34,6 +40,7 @@ public class BlockViaduct extends Block{
     public static final BooleanProperty CONNECTED_DOWN = BooleanProperty.create("connected_down");
     public static final IntegerProperty LIGHT_LEVEL = IntegerProperty.create("light_level", 0, 15);
     public static final EnumProperty<DyeColor> COLOR = EnumProperty.create("color", DyeColor.class);
+    public static final BooleanProperty TRANSPARENT = BooleanProperty.create("transparent");
     
     public BlockViaduct(Properties properties) {
         super(properties);
@@ -45,6 +52,7 @@ public class BlockViaduct extends Block{
                 .setValue(CONNECTED_UP, false)
                 .setValue(CONNECTED_DOWN, false)
                 .setValue(COLOR, DyeColor.WHITE)
+                .setValue(TRANSPARENT, true)
                 .setValue(LIGHT_LEVEL, 0));  
     }
   
@@ -61,6 +69,15 @@ public class BlockViaduct extends Block{
         };
     }
     
+    @Override
+    public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
+        ItemStack stack = player.getItemInHand(InteractionHand.MAIN_HAND);
+        if (stack.is(ItemTags.WOOL) || stack.is(Items.GLASS)) {
+            return InteractionResult.CONSUME; 
+        }
+        return InteractionResult.PASS;
+    }
+    
     public static boolean isConnectedTo(BlockState state, Direction dir) {
         return switch (dir) {
             case NORTH -> state.getValue(BlockViaduct.CONNECTED_NORTH);
@@ -74,7 +91,7 @@ public class BlockViaduct extends Block{
     
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(CONNECTED_NORTH, CONNECTED_SOUTH, CONNECTED_EAST, CONNECTED_WEST, CONNECTED_UP, CONNECTED_DOWN, LIGHT_LEVEL, COLOR );
+        builder.add(CONNECTED_NORTH, CONNECTED_SOUTH, CONNECTED_EAST, CONNECTED_WEST, CONNECTED_UP, CONNECTED_DOWN, LIGHT_LEVEL, COLOR, TRANSPARENT);
     }
     
     @Override
@@ -92,8 +109,7 @@ public class BlockViaduct extends Block{
                 Direction neighborFacing = neighborState.getValue(BlockViaductLinker.FACING);
 
                 if (neighborPos.relative(neighborFacing).equals(pos)) {
-                    // Statt null einfach defaultBlockState zurückgeben:
-                    return this.defaultBlockState();
+                    return null;
                 }
             }
         }
