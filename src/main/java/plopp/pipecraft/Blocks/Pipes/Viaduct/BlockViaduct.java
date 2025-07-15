@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -14,6 +15,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
@@ -31,6 +33,7 @@ public class BlockViaduct extends Block{
     public static final BooleanProperty CONNECTED_UP = BooleanProperty.create("connected_up");
     public static final BooleanProperty CONNECTED_DOWN = BooleanProperty.create("connected_down");
     public static final IntegerProperty LIGHT_LEVEL = IntegerProperty.create("light_level", 0, 15);
+    public static final EnumProperty<DyeColor> COLOR = EnumProperty.create("color", DyeColor.class);
     
     public BlockViaduct(Properties properties) {
         super(properties);
@@ -41,6 +44,7 @@ public class BlockViaduct extends Block{
                 .setValue(CONNECTED_WEST, false)
                 .setValue(CONNECTED_UP, false)
                 .setValue(CONNECTED_DOWN, false)
+                .setValue(COLOR, DyeColor.WHITE)
                 .setValue(LIGHT_LEVEL, 0));  
     }
   
@@ -70,7 +74,7 @@ public class BlockViaduct extends Block{
     
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(CONNECTED_NORTH, CONNECTED_SOUTH, CONNECTED_EAST, CONNECTED_WEST, CONNECTED_UP, CONNECTED_DOWN, LIGHT_LEVEL);
+        builder.add(CONNECTED_NORTH, CONNECTED_SOUTH, CONNECTED_EAST, CONNECTED_WEST, CONNECTED_UP, CONNECTED_DOWN, LIGHT_LEVEL, COLOR );
     }
     
     @Override
@@ -88,7 +92,8 @@ public class BlockViaduct extends Block{
                 Direction neighborFacing = neighborState.getValue(BlockViaductLinker.FACING);
 
                 if (neighborPos.relative(neighborFacing).equals(pos)) {
-                    return null;
+                    // Statt null einfach defaultBlockState zurückgeben:
+                    return this.defaultBlockState();
                 }
             }
         }

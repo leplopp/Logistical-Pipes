@@ -9,19 +9,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-
 import javax.annotation.Nullable;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import plopp.pipecraft.Blocks.BlockRegister;
+import plopp.pipecraft.Blocks.ViaductBlockRegistry;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 
 public class ViaductPathFinder {
-	 private final Level level;
+	
+	 	private final Level level;
 	 	public final BlockPos end;
 	    public final Set<BlockPos> visited = new HashSet<>();
 	    private final Map<BlockPos, BlockPos> cameFrom = new HashMap<>();
@@ -43,17 +42,19 @@ public class ViaductPathFinder {
 	        queue.add(startViaduct);
 	        visited.add(startViaduct);
 	    }
+	    
 	    @Nullable
 	    private BlockPos findConnectedViaduct(BlockPos linkerPos) {
 	        for (Direction dir : Direction.values()) {
 	            BlockPos neighbor = linkerPos.relative(dir);
 	            BlockState state = level.getBlockState(neighbor);
-	            if (state.getBlock() instanceof BlockViaduct) {
+	            if (ViaductBlockRegistry.isViaduct(state) || state.is(BlockRegister.VIADUCTLINKER)) {
 	                return neighbor;
 	            }
 	        }
 	        return null;
 	    }
+	    
 	    public boolean isComplete() {
 	        return pathComplete || queue.isEmpty();
 	    }
@@ -66,7 +67,6 @@ public class ViaductPathFinder {
 	        for (int i = 0; i < maxSteps && !queue.isEmpty(); i++) {
 	            BlockPos current = queue.poll();
 
-	            // Früher Abbruch, wenn ein Ziel-Linker (ViaductLinker) gefunden wurde
 	            if (isViaductTarget(current)) {
 	                List<BlockPos> path = new ArrayList<>();
 	                BlockPos step = current;
@@ -75,14 +75,12 @@ public class ViaductPathFinder {
 	                    step = cameFrom.get(step);
 	                }
 	                Collections.reverse(path);
-	                if (path.size() >= 3) {
 	                    result = path;
-	                }
+	                
 	                pathComplete = true;
 	                return;
 	            }
 
-	            // Original-Abbruch, falls das exakte Endziel erreicht wurde
 	            if (current.equals(end)) {
 	                List<BlockPos> path = new ArrayList<>();
 	                BlockPos step = current;
@@ -91,9 +89,8 @@ public class ViaductPathFinder {
 	                    step = cameFrom.get(step);
 	                }
 	                Collections.reverse(path);
-	                if (path.size() >= 3) {
 	                    result = path;
-	                }
+	                
 	                pathComplete = true;
 	                return;
 	            }
@@ -102,11 +99,18 @@ public class ViaductPathFinder {
 	                BlockPos neighbor = current.relative(dir);
 	                if (!visited.contains(neighbor)) {
 	                    BlockState state = level.getBlockState(neighbor);
-	                    if ((state.getBlock() instanceof BlockViaduct || neighbor.equals(end))
-	                            && !(state.is(BlockRegister.VIADUCTLINKER) && !neighbor.equals(end))) {
-	                        visited.add(neighbor);
-	                        cameFrom.put(neighbor, current);
-	                        queue.add(neighbor);
+	                    BlockState currentState = level.getBlockState(current);
+
+	                    boolean currentIsLinker = currentState.is(BlockRegister.VIADUCTLINKER);
+	                    boolean neighborIsLinker = state.is(BlockRegister.VIADUCTLINKER);
+
+	                    // Zwei Linker dürfen nicht direkt verbunden sein!
+	                    if (!(currentIsLinker && neighborIsLinker)) {
+	                        if (ViaductBlockRegistry.isViaduct(state) || neighborIsLinker) {
+	                            visited.add(neighbor);
+	                            cameFrom.put(neighbor, current);
+	                            queue.add(neighbor);
+	                        }
 	                    }
 	                }
 	            }
@@ -114,13 +118,6 @@ public class ViaductPathFinder {
 	    }
 
 	    private boolean isViaductTarget(BlockPos pos) {
-	        BlockState state = level.getBlockState(pos);
-	        if (state.is(BlockRegister.VIADUCTLINKER)) {
-	            BlockState above = level.getBlockState(pos.above());
-	            BlockState below = level.getBlockState(pos.below());
-	            // Ziel ist ein Linker, auf dem kein Viaduct-Block liegt (weder oben noch unten)
-	            return !(above.getBlock() instanceof BlockViaduct) && !(below.getBlock() instanceof BlockViaduct);
-	        }
-	        return false;
+	        return level.getBlockState(pos).is(BlockRegister.VIADUCTLINKER) && pos.equals(end);
 	    }
 }

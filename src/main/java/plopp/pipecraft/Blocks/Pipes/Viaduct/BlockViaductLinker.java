@@ -93,21 +93,20 @@ public class BlockViaductLinker extends Block implements EntityBlock {
         BlockPos pos = context.getClickedPos();
         Direction facing = context.getNearestLookingDirection().getOpposite();
 
-        BlockPos targetPos = pos.relative(facing);
-        BlockState neighborState = level.getBlockState(targetPos);
-
-        if (neighborState.getBlock() instanceof BlockViaduct || neighborState.getBlock() instanceof BlockViaductLinker) {
-            return null;
-        }
-
+        // Verhindere, dass linker direkt an Viaduct oder anderem Linker angrenzt
         for (Direction dir : Direction.values()) {
             BlockPos neighborPos = pos.relative(dir);
-            BlockState neighbor = level.getBlockState(neighborPos);
+            BlockState neighborState = level.getBlockState(neighborPos);
 
-            if (neighbor.getBlock() instanceof BlockViaductLinker &&
-                neighbor.hasProperty(FACING) &&
-                neighbor.getValue(FACING) == dir.getOpposite()) {
-                return null;
+            // Kein linker direkt neben anderem linker erlaubt
+            if (neighborState.getBlock() instanceof BlockViaductLinker) {
+                return null; // Platzierung verhindern
+            }
+
+            // Optional: Auch keine Platzierung direkt neben Viaduct, falls nötig
+            if (neighborState.getBlock() instanceof BlockViaduct) {
+                // Optional: hier nichts tun oder return null; je nach gewünschtem Verhalten
+                // Ich lasse es offen, weil du geschrieben hast "immer ein Viaduct oder anderer Block außer Linker dazwischen"
             }
         }
 

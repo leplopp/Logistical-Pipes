@@ -7,15 +7,19 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.client.resources.PlayerSkin;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import plopp.pipecraft.gui.MenuTypeRegister;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerIDScreen;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerScreen;
 import plopp.pipecraft.model.LyingPlayerModel;
+import plopp.pipecraft.model.ViaductModelLoader;
+import net.neoforged.neoforge.client.event.ModelEvent.RegisterGeometryLoaders;
 
 @EventBusSubscriber(modid = PipeCraftIndex.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class ClientEvent {
@@ -50,4 +54,10 @@ public class ClientEvent {
             }
         }
     }
+    
+    @SubscribeEvent
+    public static void onRegisterGeometryLoaders(ModelEvent.RegisterGeometryLoaders event) {
+    	  event.register(ResourceLocation.fromNamespaceAndPath("pipecraft", "viaduct_model"), ViaductModelLoader.INSTANCE);
+    }
+   
 }

@@ -1,9 +1,22 @@
 {
-  "loader": "neoforge:obj",
+	"loader": "pipecraft:viaduct_model",
   "model": "logisticpipes:models/block/viaduct/viaduct_connected_side.obj",
-  "flip-v": true,
-  "render_type": "translucent",
   "textures": {
-    "particle": "minecraft:block/glass"
+	"white": "logisticpipes:block/viaduct_white",
+	 "orange": "logisticpipes:block/viaduct_orange",
+	 "magenta": "logisticpipes:block/viaduct_magenta",
+	 "light_blue": "logisticpipes:block/viaduct_light_blue",
+	 "yellow": "logisticpipes:block/viaduct_yellow",
+	 "lime": "logisticpipes:block/viaduct_lime",
+	 "pink": "logisticpipes:block/viaduct_pink",
+	 "gray": "logisticpipes:block/viaduct_gray",
+	 "light_gray": "logisticpipes:block/viaduct_light_gray",
+	 "cyan": "logisticpipes:block/viaduct_cyan",
+	 "purple": "logisticpipes:block/viaduct_purple",
+	 "blue": "logisticpipes:block/viaduct_blue",
+	 "brown": "logisticpipes:block/viaduct_brown",
+	 "green": "logisticpipes:block/viaduct_green",
+	 "red": "logisticpipes:block/viaduct_red",
+	 "black": "logisticpipes:block/viaduct_black"
   }
 }

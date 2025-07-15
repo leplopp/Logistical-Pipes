@@ -4,6 +4,19 @@
 			"when": {
 				"connected_up": false,
 				"connected_down": false,
+				"connected_north": false,
+				"connected_south": false,
+				"connected_east": false,
+				"connected_west": false
+			},
+			"apply": {
+				"model": "logisticpipes:block/viaduct/viaduct"
+			}
+		},
+		{
+			"when": {
+				"connected_up": false,
+				"connected_down": false,
 				"connected_north": true,
 				"connected_east": true,
 				"connected_south": false,
@@ -355,7 +368,7 @@
 				"x": 0,
 				"y": -90
 			}
-		},	
+		},
 		{
 			"when": {
 				"connected_up": true,
@@ -401,18 +414,6 @@
 				"y": 0
 			}
 		},
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
 		{
 			"when": {
 				"connected_up": false,
@@ -542,19 +543,6 @@
 			"apply": {
 				"model": "logisticpipes:block/viaduct/viaduct_connected",
 				"y": 0
-			}
-		},
-		{
-			"when": {
-				"connected_up": false,
-				"connected_down": false,
-				"connected_north": false,
-				"connected_south": false,
-				"connected_east": false,
-				"connected_west": false
-			},
-			"apply": {
-				"model": "logisticpipes:block/viaduct/viaduct"
 			}
 		}
 	]

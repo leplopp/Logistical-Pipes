@@ -2,16 +2,20 @@ package plopp.pipecraft;
 
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
+
+import net.minecraft.world.level.block.Blocks;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.client.model.obj.ObjLoader;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import plopp.pipecraft.Blocks.BlockEntityRegister;
 import plopp.pipecraft.Blocks.BlockRegister;
+import plopp.pipecraft.Blocks.ViaductBlockRegistry;
 import plopp.pipecraft.gui.MenuTypeRegister;
 
 @Mod(PipeCraftIndex.MODID)
@@ -35,7 +39,6 @@ public class PipeCraftIndex
     private void addCreative(BuildCreativeModeTabContentsEvent event){
     	
     }
-
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event)
     {
@@ -46,7 +49,7 @@ public class PipeCraftIndex
  * 
  *  viaduct											<- Pre Release				/ models & textur /hitbox vollenden /sounds hinzufügen
  *  viaduct Linker with gui 						<- Pre Release				/ textur & model /hitbox vollenden /sounds hinzufügen / bug manchmal resettet sich die speicherung wenn man zu schnell klickt
- *  viaduct	glowing option 							<- Released
+ *  viaduct	glowing option 							<- Released					/ brush soll gedrückt halten können
  *  viaduct player detector 					    <- concept
  *  viaduct Speed controller						<- concept
  *  viaduct Dimension Teleporter					<- concept

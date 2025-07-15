@@ -1,12 +1,15 @@
 package plopp.pipecraft.Blocks;
 
 import com.google.common.base.Supplier;
+import com.mojang.serialization.Lifecycle;
 
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import plopp.pipecraft.PipeCraftIndex;
@@ -37,10 +40,17 @@ public class BlockRegister {
     private static <B extends Block> void registerBlockItem(String name, DeferredBlock<B> block) {
         ITEMS.registerSimpleBlockItem(name, block, new Item.Properties());
     }
-    
-    
+
 	 public static void register(IEventBus bus) {
 	        BLOCKS.register(bus);
 	        ITEMS.register(bus);
+
+	        bus.addListener((FMLCommonSetupEvent event) -> {
+	            event.enqueueWork(() -> {
+	                ViaductBlockRegistry.registerViaductBlock(VIADUCT.get());
+	                ViaductBlockRegistry.registerViaductBlock(VIADUCTLINKER.get());
+	                ViaductBlockRegistry.registerViaductBlock(Blocks.STONE); // Vanilla-Testblock
+	            });
+	        });
 	    }
 }

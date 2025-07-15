@@ -30,6 +30,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.extensions.IBlockEntityExtension;
 import plopp.pipecraft.Blocks.BlockEntityRegister;
 import plopp.pipecraft.Blocks.BlockRegister;
+import plopp.pipecraft.Blocks.ViaductBlockRegistry;
 import plopp.pipecraft.Network.linker.LinkedTargetEntry;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerMenu;
 import plopp.pipecraft.logic.ViaductLinkerManager;
@@ -272,6 +273,7 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
             }
         }
     }
+    
     public class AsyncViaductScanner {
         private final Level level;
         private final BlockPos startPos;
@@ -292,7 +294,7 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
             for (Direction dir : Direction.values()) {
                 BlockPos neighbor = startPos.relative(dir);
                 BlockState neighborState = level.getBlockState(neighbor);
-                if (neighborState.getBlock() == BlockRegister.VIADUCT.get()) {
+                if (ViaductBlockRegistry.isViaduct(neighborState)) {
                     toVisit.add(neighbor);
                 }
             }
@@ -308,9 +310,13 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
 
                 BlockState currentState = level.getBlockState(current);
 
-                for (Direction dir : Direction.values()) {
-                    if (!BlockViaduct.isConnectedTo(currentState, dir)) continue;
+                // Prüfe, ob current ein Viaduct-Block ist (oder linker)
+                if (!ViaductBlockRegistry.isViaduct(currentState)) {
+                    // current ist kein Viaduct, also abbrechen oder weiter
+                    continue;
+                }
 
+                for (Direction dir : Direction.values()) {
                     BlockPos neighbor = current.relative(dir);
                     if (visited.contains(neighbor) || toVisit.contains(neighbor)) continue;
 
@@ -318,9 +324,16 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
                     BlockEntity be = level.getBlockEntity(neighbor);
 
                     if (be instanceof BlockEntityViaductLinker linker && !neighbor.equals(startPos)) {
-                        String name = linker.getCustomName();
-                        foundLinkers.add(new LinkedTargetEntry(neighbor, name));
-                    } else if (neighborState.getBlock() == BlockRegister.VIADUCT.get()) {
+                        BlockState currentState1 = level.getBlockState(current);
+
+                        // Nur hinzufügen, wenn der aktuelle Block KEIN Linker ist
+                        if (!currentState1.is(BlockRegister.VIADUCTLINKER)) {
+                            String name = linker.getCustomName();
+                            foundLinkers.add(new LinkedTargetEntry(neighbor, name));
+                            toVisit.add(neighbor);
+                        }
+
+                    } else if (ViaductBlockRegistry.isViaduct(neighborState)) {
                         toVisit.add(neighbor);
                     }
                 }

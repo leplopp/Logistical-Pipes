@@ -2,7 +2,6 @@ package plopp.pipecraft.logic;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -13,9 +12,7 @@ import java.util.UUID;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Position;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -24,6 +21,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import plopp.pipecraft.Blocks.BlockRegister;
+import plopp.pipecraft.Blocks.ViaductBlockRegistry;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
 import plopp.pipecraft.Network.NetworkHandler;
@@ -134,15 +132,18 @@ public class ViaductTravel {
         public double chunkProgress = 0.0;
         public int ticksPerChunk;
         public int tickCounter = 0;
-        public int maxChargeTicks = 600; // 30 Sekunden bei 20 TPS
+        public int maxChargeTicks = 600; 
         public float chargeProgress = 0f;
         public int chargeTickCounter = 0;
-        public float ticksPerPercent = 1f; // z. B. 1 % alle x Ticks
-        public int ticksToCharge = 100;           // Zielzeit (angepasst)
-        public int estimatedTicksToCharge = 0;  // Startwert, zählt direkt los
+        public float ticksPerPercent = 1f; 
+        public int ticksToCharge = 100;          
+        public int estimatedTicksToCharge = 0; 
         public BlockPos startPos;
         public BlockPos targetPos;
-        
+        public double lockedX;
+        public double lockedY;
+        public double lockedZ;
+    
         public boolean isCharging = true;
         public ViaductPathFinder pathFinder;
 
@@ -152,6 +153,7 @@ public class ViaductTravel {
             this.pathFinder = new ViaductPathFinder(level, start, end);
             this.startPos = start;
             this.targetPos = end;
+            
         }
     }
     
@@ -160,7 +162,6 @@ public class ViaductTravel {
 
         TravelData data = new TravelData(level, startPos, targetPos, ticksPerChunk);
 
-        // Schnellcheck: Ziel ist direkt benachbart?
         boolean isTargetNextToStart = false;
         for (Direction dir : Direction.values()) {
             BlockPos neighbor = startPos.relative(dir);
@@ -175,7 +176,7 @@ public class ViaductTravel {
             data.isCharging = false;
             data.path = List.of(startPos, targetPos);
             data.progressIndex = 0;
-            data.pathFinder = null; // sehr wichtig, damit nicht wieder gesucht wird
+            data.pathFinder = null; 
         }
         activeTravels.put(player.getUUID(), data);
 
@@ -191,14 +192,14 @@ public class ViaductTravel {
             NetworkHandler.sendTravelStateToAll(serverPlayer, false);
         }
         Direction travelDir = null;
-        Direction verticalDir = Direction.UP;
         BlockPos viaduct = null;
 
-        // Finde angrenzenden Viaduct-Block
         for (Direction dir : Direction.values()) {
             BlockPos candidate = startPos.relative(dir);
             BlockState state = level.getBlockState(candidate);
-            if (state.getBlock() instanceof BlockViaduct) {
+            System.out.println("Start: Check neighbor " + candidate + " block: " + state.getBlock());
+            if (ViaductBlockRegistry.isViaduct(state)) {
+                System.out.println("Start: Found viaduct neighbor at " + candidate);
                 travelDir = dir;
                 viaduct = candidate;
                 break;
@@ -209,7 +210,7 @@ public class ViaductTravel {
             double x = viaduct.getX() + 0.5;
             double y = switch (travelDir) {
                 case UP, DOWN -> viaduct.getY() - 0.5;
-                default       -> viaduct.getY() - 1;  // keine +0.5 → korrekt im Block liegen
+                default       -> viaduct.getY() - 1;
             };
             double z = viaduct.getZ() + 0.5;
 
@@ -237,22 +238,22 @@ public class ViaductTravel {
                 };
             }
 
-
             player.teleportTo(x, y, z);
+            data.lockedX = x;
+            data.lockedY = y;
+            data.lockedZ = z;
             player.setYRot(yaw);
             player.setXRot(pitch);
 
-            // Speichere Rotation für Rendering
             travelYawMap.put(player.getUUID(), yaw);
             travelPitchMap.put(player.getUUID(), pitch);
             verticalDirMap.put(player.getUUID(), vdir);
         } else {
-            // fallback
             Vec3 pos = new Vec3(startPos.getX() + 0.5, startPos.getY(), startPos.getZ() + 0.5);
             player.teleportTo(pos.x, pos.y, pos.z);
+
         }
     }
-
   
     public static void tick(Player player) {
         UUID id = player.getUUID();
@@ -270,7 +271,6 @@ public class ViaductTravel {
             data.pathFinder.tick(50);
             List<BlockPos> result = data.pathFinder.getResult();
 
-            // ✅ Wenn Pfad gefunden: sofort laden und abbrechen
             if (!result.isEmpty()) {
                 data.path = result;
                 data.chargeProgress = 100f;
@@ -278,11 +278,10 @@ public class ViaductTravel {
                 data.progressIndex = 0;
                 data.chunkProgress = 0;
                 data.tickCounter = 0;
-                data.pathFinder = null; // ⬅️ ganz wichtig, verhindert weiteres "tick()"
+                data.pathFinder = null; 
                 return;
             }
 
-            // ⏳ Pfad noch nicht gefunden → langsam laden
             double distance = Vec3.atCenterOf(data.startPos).distanceToSqr(Vec3.atCenterOf(data.targetPos));
             double maxDistance = 512 * 512;
             double speed = 2.0 - 0.1 * Math.min(distance / maxDistance, 1.0);
@@ -292,8 +291,26 @@ public class ViaductTravel {
             }
 
             data.tickCounter++;
+
+            if (!player.level().isClientSide()) {
+                player.noPhysics = true;
+                player.setNoGravity(true);
+                player.setDeltaMovement(Vec3.ZERO);
+
+                player.teleportTo(data.lockedX, data.lockedY, data.lockedZ);
+
+                float yaw = ViaductTravel.getTravelYaw(player.getUUID(), player.level());
+                float pitch = -ViaductTravel.getTravelPitch(player.getUUID(), player.level());
+
+                player.setYRot(yaw);
+                player.setXRot(pitch);
+                player.setYHeadRot(yaw);
+                player.yBodyRot = yaw;
+            }
+
+            return; 
         }
-    
+
  
         List<BlockPos> path = data.path;
         int currentIndex = data.progressIndex;
@@ -340,7 +357,7 @@ public class ViaductTravel {
             return;
         }
 
-        player.teleportTo(lerped.x, lerped.y - 1, lerped.z);
+        player.teleportTo(lerped.x, lerped.y -1, lerped.z);
 
         if (data.chunkProgress >= 1.0) {
             data.progressIndex += stepsLeft;
@@ -349,7 +366,7 @@ public class ViaductTravel {
 
         if (data.progressIndex >= lastIndex) {
             BlockPos stonePos = path.get(lastIndex);
-            player.teleportTo(stonePos.getX() + 0.5, stonePos.getY() + 1.0, stonePos.getZ() + 0.5);
+            player.teleportTo(stonePos.getX() + 0.5, stonePos.getY() , stonePos.getZ() + 0.5);
             stop(player, true);
         }
     }
@@ -377,55 +394,7 @@ public class ViaductTravel {
     	}
     	verticalDirMap.put(player.getUUID(), dir);
     }
-/*
-    public static List<BlockPos> findViaductPath(Level level, BlockPos start, BlockPos end) {
-        Set<BlockPos> visited = new HashSet<>();
-        Map<BlockPos, BlockPos> cameFrom = new HashMap<>();
-        Queue<BlockPos> queue = new ArrayDeque<>();
 
-        queue.add(start);
-        visited.add(start);
-
-        while (!queue.isEmpty()) {
-            BlockPos current = queue.poll();
-
-            if (current.equals(end)) {
-
-                List<BlockPos> path = new ArrayList<>();
-                BlockPos step = current;
-                while (step != null) {
-                    path.add(step);
-                    step = cameFrom.get(step);
-                }
-                Collections.reverse(path);
-
-                if (path.size() >= 3) {
-                    return path;
-                } else {
-                    continue;
-                }
-            }
-
-            for (Direction dir : Direction.values()) {
-                BlockPos neighbor = current.relative(dir);
-
-                if (visited.contains(neighbor)) continue;
-
-                BlockState state = level.getBlockState(neighbor);
-
-                if (state.is(BlockRegister.VIADUCTLINKER) && !neighbor.equals(end)) continue;
-
-                if (state.getBlock() instanceof BlockViaduct || neighbor.equals(end)) {
-                    visited.add(neighbor);
-                    cameFrom.put(neighbor, current);
-                    queue.add(neighbor);
-                }
-            }
-        }
-
-        return List.of();
-    }
-    */
     public static BlockPos findTarget(Level level, BlockPos from) {
         Set<BlockPos> visited = new HashSet<>();
         Queue<BlockPos> queue = new ArrayDeque<>();
@@ -447,13 +416,26 @@ public class ViaductTravel {
                 }
             }
 
+            BlockState currentState = level.getBlockState(current);
+            boolean currentIsLinker = currentState.is(BlockRegister.VIADUCTLINKER);
+
             for (Direction dir : Direction.values()) {
                 BlockPos neighbor = current.relative(dir);
 
                 if (visited.contains(neighbor)) continue;
 
-                BlockState state = level.getBlockState(neighbor);
-                if (state.getBlock() instanceof BlockViaduct || state.is(BlockRegister.VIADUCTLINKER)) {
+                BlockState neighborState = level.getBlockState(neighbor);
+                boolean neighborIsLinker = neighborState.is(BlockRegister.VIADUCTLINKER);
+
+                if (neighborIsLinker && currentIsLinker) {
+                    // Prüfe, ob zwischen current und neighbor ein Viaduct-Block liegt (also ob neighbor selbst Viaduct ist)
+                    // Wenn nicht, Verbindung abbrechen
+                    if (!ViaductBlockRegistry.isViaduct(neighborState)) {
+                        continue; // nicht verbinden
+                    }
+                }
+
+                if (ViaductBlockRegistry.isViaduct(neighborState) || neighborIsLinker) {
                     visited.add(neighbor);
                     queue.add(neighbor);
                 }
@@ -462,7 +444,6 @@ public class ViaductTravel {
 
         return null;
     }
-    
     public static void resume(Player player) {
         UUID id = player.getUUID();
         TravelData data = activeTravels.get(id);
@@ -562,15 +543,16 @@ public class ViaductTravel {
 
             player.teleportTo(teleportPos.x, teleportPos.y, teleportPos.z);
 
-            BlockPos below = stonePos.below();                  
-            BlockState belowState = level.getBlockState(below);
+            if (targetState.is(BlockRegister.VIADUCTLINKER)) {
+                Direction facing = targetState.getValue(BlockViaductLinker.FACING);
 
-            if (belowState.getBlock() instanceof BlockViaduct) {
-
-                if (player.level().isClientSide() && player instanceof LocalPlayer) {
-                    ((LocalPlayer) player).jumpFromGround();
-                } else {
-                    jumpTrigger.add(player.getUUID());
+                // Nur wenn der Linker nach oben zeigt, springe
+                if (facing == Direction.UP) {
+                    if (player.level().isClientSide() && player instanceof LocalPlayer localPlayer) {
+                        localPlayer.jumpFromGround();
+                    } else {
+                        jumpTrigger.add(player.getUUID());
+                    }
                 }
             }
         }

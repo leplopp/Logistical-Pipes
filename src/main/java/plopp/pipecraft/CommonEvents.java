@@ -1,8 +1,16 @@
 package plopp.pipecraft;
 
+import java.util.ArrayDeque;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -10,6 +18,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.DyeItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
@@ -27,8 +37,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 import plopp.pipecraft.Network.NetworkHandler;
 import plopp.pipecraft.logic.ViaductTravel;
@@ -226,6 +234,78 @@ public class CommonEvents {
 	                return;
 	            }
 	        }
+	        
+	        // FÄRBEN
+	        ItemStack stack1 = event.getItemStack();
+	        if (stack1.getItem() instanceof DyeItem dyeItem) {
+	            DyeColor clickedColor = dyeItem.getDyeColor();
+	            DyeColor currentColor = state.getValue(BlockViaduct.COLOR);
+
+	            if (player.isShiftKeyDown()) {
+	                int maxBlocks = stack1.getCount();
+	                Set<BlockPos> visited = new HashSet<>();
+	                Queue<BlockPos> queue = new ArrayDeque<>();
+	                int colored = 0;
+
+	                queue.add(pos);
+	                visited.add(pos);
+
+	                while (!queue.isEmpty() && colored < maxBlocks) {
+	                    BlockPos currentPos = queue.poll();
+	                    BlockState currentState = level.getBlockState(currentPos);
+
+	                    if (!(currentState.getBlock() instanceof BlockViaduct)) continue;
+	                    if (!currentState.hasProperty(BlockViaduct.COLOR)) continue;
+	                    if (currentState.getValue(BlockViaduct.COLOR) == clickedColor) continue;
+
+	                    // Färben
+	                    level.setBlock(currentPos, currentState.setValue(BlockViaduct.COLOR, clickedColor), 3);
+	                    colored++;
+
+	                    // Nachbarn hinzufügen
+	                    for (Direction dir : Direction.values()) {
+	                        BlockPos neighbor = currentPos.relative(dir);
+	                        if (!visited.contains(neighbor)) {
+	                            BlockState neighborState = level.getBlockState(neighbor);
+	                            if (neighborState.getBlock() instanceof BlockViaduct &&
+	                                neighborState.hasProperty(BlockViaduct.COLOR) &&
+	                                neighborState.getValue(BlockViaduct.COLOR) != clickedColor) {
+
+	                                visited.add(neighbor);
+	                                queue.add(neighbor);
+	                            }
+	                        }
+	                    }
+	                }
+
+	                if (colored > 0 && !player.isCreative()) {
+	                    stack1.shrink(colored);
+	                }
+
+	                player.displayClientMessage(
+	                    Component.literal("Gefärbt: " + colored + " verbundene Blöcke in " + clickedColor.getName()),
+	                    true
+	                );
+	                event.setCancellationResult(InteractionResult.SUCCESS);
+	                event.setCanceled(true);
+	                return;
+	            }
+
+	            // Einzelblock färben
+	            if (currentColor != clickedColor) {
+	                BlockState newState = state.setValue(BlockViaduct.COLOR, clickedColor);
+	                level.setBlock(pos, newState, 3);
+	                if (!player.isCreative()) stack1.shrink(1);
+	                player.displayClientMessage(Component.literal("Farbe auf " + clickedColor.getName() + " gesetzt."), true);
+	                event.setCancellationResult(InteractionResult.SUCCESS);
+	                event.setCanceled(true);
+	            } else {
+	                player.displayClientMessage(Component.literal("Der Block ist bereits " + clickedColor.getName() + "."), true);
+	                event.setCancellationResult(InteractionResult.FAIL);
+	                event.setCanceled(true);
+	            }
+	        }
+
 	    }
 	    
 	    @SubscribeEvent
