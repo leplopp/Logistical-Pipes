@@ -1,0 +1,8 @@
+{
+  "loader": "neoforge:obj",
+  "model": "logisticpipes:models/block/viaduct/detector/viaduct_detector.obj",
+  "flip-v": true,
+  "rendertype": "translucent",
+  "detectCullableFaces": false,
+  "materialLibraryOverride": "logisticpipes:models/block/viaduct/detector/viaduct_detector_powered.mtl"
+}

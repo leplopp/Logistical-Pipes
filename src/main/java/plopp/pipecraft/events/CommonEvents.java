@@ -5,7 +5,11 @@ import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+
+import org.lwjgl.glfw.GLFW;
+
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -13,6 +17,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ArmorItem;
@@ -25,9 +30,13 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.InputEvent.MouseButton;
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
@@ -40,7 +49,10 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import plopp.pipecraft.PipeCraftIndex;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
 import plopp.pipecraft.Network.NetworkHandler;
+import plopp.pipecraft.Network.SpeedChangePacket;
+import plopp.pipecraft.logic.SpeedLevel;
 import plopp.pipecraft.logic.ViaductTravel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -156,7 +168,7 @@ public class CommonEvents {
 	            event.setCanceled(true);
 	        }
 	    }
-	    
+
 	    @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
 	    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
 	        if (!(event.getEntity() instanceof Player player)) return;
@@ -173,7 +185,7 @@ public class CommonEvents {
 	        ItemStack stack = player.getItemInHand(hand);
 	        BlockState state = level.getBlockState(pos);
 	        Block block = state.getBlock();
-
+	        
 	        if (level.isClientSide) return;
 
 	        boolean isViaduct = block instanceof BlockViaduct;
@@ -353,6 +365,7 @@ public class CommonEvents {
 	                event.setCanceled(true);
 	            }
 	        }
+	        
 
 	    }
 	    

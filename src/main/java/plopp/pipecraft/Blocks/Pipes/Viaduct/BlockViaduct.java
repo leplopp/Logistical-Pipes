@@ -19,6 +19,7 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
@@ -27,10 +28,10 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import plopp.pipecraft.logic.Connectable;
 import plopp.pipecraft.logic.ViaductTravel;
-import plopp.pipecraft.util.ConnectionHelper;
 
-public class BlockViaduct extends Block{
+public class BlockViaduct extends Block implements Connectable{
 
     public static final BooleanProperty CONNECTED_NORTH = BooleanProperty.create("connected_north");
     public static final BooleanProperty CONNECTED_SOUTH = BooleanProperty.create("connected_south");
@@ -76,17 +77,6 @@ public class BlockViaduct extends Block{
             return InteractionResult.CONSUME; 
         }
         return InteractionResult.PASS;
-    }
-    
-    public static boolean isConnectedTo(BlockState state, Direction dir) {
-        return switch (dir) {
-            case NORTH -> state.getValue(BlockViaduct.CONNECTED_NORTH);
-            case SOUTH -> state.getValue(BlockViaduct.CONNECTED_SOUTH);
-            case EAST -> state.getValue(BlockViaduct.CONNECTED_EAST);
-            case WEST -> state.getValue(BlockViaduct.CONNECTED_WEST);
-            case UP -> state.getValue(BlockViaduct.CONNECTED_UP);
-            case DOWN -> state.getValue(BlockViaduct.CONNECTED_DOWN);
-        };
     }
     
     @Override
@@ -173,6 +163,14 @@ public class BlockViaduct extends Block{
             }
         }
     }
+
+    @Override
+    public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+        boolean connect = isViaduct(neighborState, (Level) level, neighborPos, direction);
+        return state.setValue(getPropertyForDirection(direction), connect);
+    }
+    
+    
     @Override
     public int getLightEmission(BlockState state, BlockGetter world, BlockPos pos) {
         return state.getValue(LIGHT_LEVEL);
@@ -183,22 +181,29 @@ public class BlockViaduct extends Block{
 
         Block block = state.getBlock();
 
-        return block instanceof BlockViaduct || block instanceof BlockViaductLinker;
-    }
-    
-    @Override
-    public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor world, BlockPos pos, BlockPos neighborPos) {
-        if (world instanceof Level level) {
-            boolean connected = ConnectionHelper.canConnect(level, pos, direction);
-            return state.setValue(getPropertyForDirection(direction), connected);
+        if (block instanceof BlockViaduct || block instanceof BlockViaductLinker) {
+            return true;
         }
-        return state;
+
+        if (block instanceof BlockViaductDetector || block instanceof BlockViaductSpeed) {
+            Direction detectorFacing = state.getValue(BlockStateProperties.FACING); 
+
+            return detectorFacing == toDirection || detectorFacing == toDirection.getOpposite();
+        }
+        
+        if (block instanceof BlockViaductTeleporter) {
+            
+            Direction teleFacing = state.getValue(BlockViaductTeleporter.FACING);
+            return teleFacing == toDirection;
+        }
+        return false;
     }
 
     @Override
     public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource rand) {
         updateConnections(level, pos);
     }
+    
     @Override
     public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
         if (!level.isClientSide) {
@@ -343,5 +348,26 @@ public class BlockViaduct extends Block{
             }
         }
         return getShape(state, world, pos, context);
+    }
+
+    @Override
+    public boolean canConnectTo(BlockState state, Level level, BlockPos pos, Direction direction) {
+        BlockPos neighborPos = pos.relative(direction);
+        BlockState neighborState = level.getBlockState(neighborPos);
+        Block neighborBlock = neighborState.getBlock();
+
+        // Viaduct und Linker immer verbinden
+        if (neighborBlock instanceof BlockViaduct || neighborBlock instanceof BlockViaductLinker) {
+            return true;
+        }
+
+        // Detector nur, wenn entlang seiner Achse
+        if (neighborBlock instanceof BlockViaductDetector || neighborBlock instanceof BlockViaductSpeed) {
+            Direction detectorFacing = neighborState.getValue(BlockStateProperties.FACING);
+            return detectorFacing.getAxis() == direction.getAxis();
+        }
+        
+
+        return false;
     }
 } 

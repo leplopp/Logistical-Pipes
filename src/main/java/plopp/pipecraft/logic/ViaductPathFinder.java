@@ -48,12 +48,14 @@ public class ViaductPathFinder {
 	            BlockPos neighbor = linkerPos.relative(dir);
 	            BlockState state = level.getBlockState(neighbor);
 	            if (ViaductBlockRegistry.isViaduct(state) || state.is(BlockRegister.VIADUCTLINKER)) {
-	                return neighbor;
+	                if (ViaductBlockRegistry.areViaductBlocksConnected(level, linkerPos, neighbor)) {
+	                    return neighbor;
+	                }
 	            }
 	        }
 	        return null;
 	    }
-	    
+
 	    public boolean isComplete() {
 	        return pathComplete || queue.isEmpty();
 	    }
@@ -61,61 +63,58 @@ public class ViaductPathFinder {
 	    public List<BlockPos> getResult() {
 	        return result;
 	    }
-	 
+
 	    public void tick(int maxSteps) {
 	        for (int i = 0; i < maxSteps && !queue.isEmpty(); i++) {
 	            BlockPos current = queue.poll();
 
 	            if (isViaductTarget(current)) {
-	                List<BlockPos> path = new ArrayList<>();
-	                BlockPos step = current;
-	                while (step != null) {
-	                    path.add(step);
-	                    step = cameFrom.get(step);
-	                }
-	                Collections.reverse(path);
-	                    result = path;
-	                
+	                result = buildPath(current);
 	                pathComplete = true;
 	                return;
 	            }
 
 	            if (current.equals(end)) {
-	                List<BlockPos> path = new ArrayList<>();
-	                BlockPos step = current;
-	                while (step != null) {
-	                    path.add(step);
-	                    step = cameFrom.get(step);
-	                }
-	                Collections.reverse(path);
-	                    result = path;
-	                
+	                result = buildPath(current);
 	                pathComplete = true;
 	                return;
 	            }
 
 	            for (Direction dir : Direction.values()) {
 	                BlockPos neighbor = current.relative(dir);
-	                if (!visited.contains(neighbor)) {
-	                    BlockState state = level.getBlockState(neighbor);
-	                    BlockState currentState = level.getBlockState(current);
+	                if (visited.contains(neighbor)) continue;
 
-	                    boolean currentIsLinker = currentState.is(BlockRegister.VIADUCTLINKER);
-	                    boolean neighborIsLinker = state.is(BlockRegister.VIADUCTLINKER);
+	                BlockState neighborState = level.getBlockState(neighbor);
+	                BlockState currentState = level.getBlockState(current);
 
-	                    if (!(currentIsLinker && neighborIsLinker)) {
-	                        if (ViaductBlockRegistry.isViaduct(state) || neighborIsLinker) {
-	                            visited.add(neighbor);
-	                            cameFrom.put(neighbor, current);
-	                            queue.add(neighbor);
-	                        }
-	                    }
+	                boolean currentIsLinker = currentState.is(BlockRegister.VIADUCTLINKER);
+	                boolean neighborIsLinker = neighborState.is(BlockRegister.VIADUCTLINKER);
+
+	                // Linker dürfen nicht direkt verbunden sein
+	                if (currentIsLinker && neighborIsLinker) continue;
+
+	                // Verbindung erlaubt?
+	                if (ViaductBlockRegistry.areViaductBlocksConnected(level, current, neighbor)) {
+	                    visited.add(neighbor);
+	                    cameFrom.put(neighbor, current);
+	                    queue.add(neighbor);
 	                }
 	            }
 	        }
 	    }
 
+	    private List<BlockPos> buildPath(BlockPos end) {
+	        List<BlockPos> path = new ArrayList<>();
+	        BlockPos step = end;
+	        while (step != null) {
+	            path.add(step);
+	            step = cameFrom.get(step);
+	        }
+	        Collections.reverse(path);
+	        return path;
+	    }
+
 	    private boolean isViaductTarget(BlockPos pos) {
 	        return level.getBlockState(pos).is(BlockRegister.VIADUCTLINKER) && pos.equals(end);
 	    }
-}
+	}

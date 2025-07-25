@@ -24,6 +24,7 @@ import plopp.pipecraft.Blocks.BlockRegister;
 import plopp.pipecraft.Blocks.ViaductBlockRegistry;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
 import plopp.pipecraft.Network.NetworkHandler;
 import plopp.pipecraft.Network.travel.ClientTravelDataManager;
 import plopp.pipecraft.Network.travel.TravelStatePacket;
@@ -297,10 +298,24 @@ public class ViaductTravel {
         int fromIndex = Math.min(currentIndex + subIndex, lastIndex - 1);
         int toIndex = Math.min(fromIndex + 1, lastIndex);
 
+        // 🟩 NEU: Schleife über alle übersprungenen Blöcke, um Speed zu erkennen
+        for (int i = currentIndex; i <= fromIndex; i++) {
+            BlockState state = player.level().getBlockState(path.get(i));
+            if (state.getBlock() instanceof BlockViaductSpeed speedBlock) {
+                int newSpeed = speedBlock.getSpeed(state); // oder state.getValue(SPEED)
+                data.ticksPerChunk = newSpeed;
+            }
+        }
         Vec3 from = vecFromBlockPos(path.get(fromIndex));
         Vec3 to = vecFromBlockPos(path.get(toIndex));
         Vec3 lerped = from.lerp(to, lerpProgress);
-
+        
+        BlockState fromState = player.level().getBlockState(path.get(fromIndex));
+        if (fromState.getBlock() instanceof BlockViaductSpeed speedBlock) {
+            int newSpeed = speedBlock.getSpeed(fromState); // oder z. B. fromState.getValue(SPEED);
+            data.ticksPerChunk = newSpeed;
+        }
+        
         double lookAheadProgress = lerpProgress + 0.1;
         int lookAheadSubIndex = subIndex;
         while (lookAheadProgress > 1.0) {
@@ -310,6 +325,9 @@ public class ViaductTravel {
 
         int lookFromIndex = Math.min(currentIndex + lookAheadSubIndex, lastIndex - 1);
         int lookToIndex = Math.min(lookFromIndex + 1, lastIndex);
+        
+        
+        
         Vec3 lookFrom = vecFromBlockPos(path.get(lookFromIndex));
         Vec3 lookTo = vecFromBlockPos(path.get(lookToIndex));
         Vec3 lookTarget = lookFrom.lerp(lookTo, lookAheadProgress);

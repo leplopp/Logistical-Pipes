@@ -293,9 +293,11 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
 
             for (Direction dir : Direction.values()) {
                 BlockPos neighbor = startPos.relative(dir);
+                if (visited.contains(neighbor)) continue;
+
                 BlockState neighborState = level.getBlockState(neighbor);
-                if (ViaductBlockRegistry.isViaduct(neighborState)) {
-                    toVisit.add(neighbor);
+                if (ViaductBlockRegistry.isViaduct(neighborState) || neighborState.is(BlockRegister.VIADUCTLINKER)) {
+                    toVisit.add(neighbor); // auch Linker mitnehmen!
                 }
             }
         }
@@ -322,16 +324,17 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
                     BlockEntity be = level.getBlockEntity(neighbor);
 
                     if (be instanceof BlockEntityViaductLinker linker && !neighbor.equals(startPos)) {
-                        BlockState currentState1 = level.getBlockState(current);
-
-                        if (!currentState1.is(BlockRegister.VIADUCTLINKER)) {
+                        // Verbindung prüfen!
+                        if (ViaductBlockRegistry.areViaductBlocksConnected(level, current, neighbor)) {
                             String name = linker.getCustomName();
                             foundLinkers.add(new LinkedTargetEntry(neighbor, name));
                             toVisit.add(neighbor);
                         }
 
                     } else if (ViaductBlockRegistry.isViaduct(neighborState)) {
-                        toVisit.add(neighbor);
+                        if (ViaductBlockRegistry.areViaductBlocksConnected(level, current, neighbor)) {
+                            toVisit.add(neighbor);
+                        }
                     }
                 }
 

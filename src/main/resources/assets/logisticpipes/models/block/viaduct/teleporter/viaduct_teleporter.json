@@ -1,0 +1,7 @@
+{
+  "loader": "neoforge:obj",
+  "model": "logisticpipes:models/block/viaduct/teleporter/viaduct_teleporter.obj",
+  "flip-v": true,
+  "rendertype": "translucent",
+  "detectCullableFaces": false
+}

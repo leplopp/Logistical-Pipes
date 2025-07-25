@@ -1,0 +1,36 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "logisticpipes:block/viaduct/teleporter/viaduct_teleporter",
+	  "x": 90,
+      "y": 180
+    },
+
+    "facing=south": {
+		"model": "logisticpipes:block/viaduct/teleporter/viaduct_teleporter",
+	  "x": 90
+    },
+
+    "facing=east": {
+		"model": "logisticpipes:block/viaduct/teleporter/viaduct_teleporter",
+	  "x": 90,
+      "y": 270
+    },
+
+    "facing=west": {
+		"model": "logisticpipes:block/viaduct/teleporter/viaduct_teleporter",
+	  "x": 90,
+      "y": 90
+    },
+
+    "facing=up": {
+		"model": "logisticpipes:block/viaduct/teleporter/viaduct_teleporter",
+		"x": 180
+    },
+
+    "facing=down": {
+		"model": "logisticpipes:block/viaduct/teleporter/viaduct_teleporter"
+
+    }
+  }
+}

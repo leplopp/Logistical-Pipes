@@ -30,7 +30,9 @@ public class NetworkHandler {
 	        .playToClient(TravelStatePacket.TYPE, TravelStatePacket.CODEC, TravelStatePacket::handle)
 	        .playToServer(PacketTravelStart.TYPE, PacketTravelStart.CODEC, PacketTravelStart::handle)
 	        .playToServer(PacketUpdateSortedPositions.TYPE, PacketUpdateSortedPositions.CODEC, PacketUpdateSortedPositions::handle)
-	        .playToServer(PacketUpdateLinkerName.TYPE, PacketUpdateLinkerName.CODEC, PacketUpdateLinkerName::handle);
+	        .playToServer(PacketUpdateLinkerName.TYPE, PacketUpdateLinkerName.CODEC, PacketUpdateLinkerName::handle)
+	        .playToServer(SpeedChangePacket.TYPE,SpeedChangePacket.CODEC,SpeedChangePacket::handle);
+	    
 	}
 	
 	    public static void sendNameToServer(BlockPos pos, String name) {
@@ -64,12 +66,11 @@ public class NetworkHandler {
 	        var connection = Minecraft.getInstance().getConnection();
 	        if (connection != null) {
 	            connection.send(packet);
-	        } else {
 	        }
 	    }
 	    
 	    public static void sendTravelStateToAll(ServerPlayer sender, boolean resetModel) {
-	        int chargeProgress = ViaductTravel.getChargeProgress(sender); // Verwende direkt den Player
+	        int chargeProgress = ViaductTravel.getChargeProgress(sender);
 
 	        TravelStatePacket packet = new TravelStatePacket(
 	            sender.getUUID(),
@@ -78,7 +79,7 @@ public class NetworkHandler {
 	            ViaductTravel.getTravelPitch(sender.getUUID(), sender.level()),
 	            ViaductTravel.getVerticalDirection(sender.getUUID(), sender.level()),
 	            resetModel,
-	            chargeProgress // <-- NEU
+	            chargeProgress 
 	        );
 
 	        MinecraftServer server = sender.getServer();

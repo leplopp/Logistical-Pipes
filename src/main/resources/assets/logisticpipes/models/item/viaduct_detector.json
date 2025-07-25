@@ -1,5 +1,6 @@
 {
-  "parent": "logisticpipes:block/viaduct/viaduct_connected",
+  "parent": "logisticpipes:block/viaduct/detector/viaduct_detector",
+  
   
   "display": {
      "thirdperson_righthand": {

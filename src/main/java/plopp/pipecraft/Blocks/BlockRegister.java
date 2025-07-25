@@ -11,7 +11,10 @@ import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import plopp.pipecraft.PipeCraftIndex;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductDetector;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductTeleporter;
 
 public class BlockRegister {
 	
@@ -25,6 +28,18 @@ public class BlockRegister {
     public static final DeferredBlock<Block> VIADUCT = registerBlock("viaduct",
             () -> new BlockViaduct(BlockBehaviour.Properties.of()
                     .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS)));
+    
+    public static final DeferredBlock<Block> VIADUCTDETECTOR = registerBlock("viaduct_detector",
+            () -> new BlockViaductDetector(BlockBehaviour.Properties.of()
+                    .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS).noOcclusion()));
+    
+    public static final DeferredBlock<Block> VIADUCTSPEED = registerBlock("viaduct_speed",
+            () -> new BlockViaductSpeed(BlockBehaviour.Properties.of()
+                    .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS).noOcclusion()));
+    
+    public static final DeferredBlock<Block> VIADUCTTELEPORTER = registerBlock("viaduct_teleporter",
+            () -> new BlockViaductTeleporter(BlockBehaviour.Properties.of()
+                    .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS).noOcclusion()));
     
     private static <T extends Block> DeferredBlock<T> registerBlock(String name, Supplier<T> block) {
         DeferredBlock<T> toReturn = (DeferredBlock<T>) BLOCKS.register(name, block);
@@ -45,6 +60,9 @@ public class BlockRegister {
 	            event.enqueueWork(() -> {
 	                ViaductBlockRegistry.registerViaductBlock(VIADUCT.get());
 	                ViaductBlockRegistry.registerViaductBlock(VIADUCTLINKER.get());
+	                ViaductBlockRegistry.registerViaductBlock(VIADUCTDETECTOR.get());
+	                ViaductBlockRegistry.registerViaductBlock(VIADUCTSPEED.get());
+	                ViaductBlockRegistry.registerViaductBlock(VIADUCTTELEPORTER.get());
 	            });
 	        });
 	    }

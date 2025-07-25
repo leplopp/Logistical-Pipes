@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "logisticpipes:block/viaduct/speed/viaduct_speed",
+	  "x": 90,
+      "y": 180
+    },
+
+    "facing=south": {
+		"model": "logisticpipes:block/viaduct/speed/viaduct_speed",
+	  "x": 90
+    },
+
+    "facing=east": {
+		"model": "logisticpipes:block/viaduct/speed/viaduct_speed",
+	  "x": 90,
+      "y": 270
+    },
+
+    "facing=west": {
+		"model": "logisticpipes:block/viaduct/speed/viaduct_speed",
+	  "x": 90,
+      "y": 90
+    },
+
+    "facing=up": {
+		"model": "logisticpipes:block/viaduct/speed/viaduct_speed"
+    },
+
+    "facing=down": {
+		"model": "logisticpipes:block/viaduct/speed/viaduct_speed"
+    }
+  }
+}
