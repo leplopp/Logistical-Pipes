@@ -16,8 +16,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
 import plopp.pipecraft.Network.NetworkHandler;
-import plopp.pipecraft.Network.linker.LinkedTargetEntryRecord;
+import plopp.pipecraft.Network.data.DataEntryRecord;
+import plopp.pipecraft.Network.linker.PacketCancelScan;
 import plopp.pipecraft.Network.linker.PacketUpdateSortedPositions;
 
 public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMenu> {
@@ -34,6 +36,7 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
     private boolean isDraggingCustom = false;     
     private int draggedIndex = -1;                 
     private int dragOffsetY = 0;                      
+    private boolean sentPacket = false;
     
     private enum SortMode {
         DISTANCE_ASCENDING,
@@ -43,22 +46,27 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
             return this == DISTANCE_ASCENDING ? DISTANCE_DESCENDING : DISTANCE_ASCENDING;
         }
     }
-    
     @Override
     public void onClose() {
         super.onClose();
 
+        if (sentPacket) return; // nur einmal senden
+        sentPacket = true;
+
         if (!menu.getCustomSortedLinkers().isEmpty()) {
             List<BlockPos> sorted = menu.getCustomSortedLinkers().stream()
-                .map(LinkedTargetEntryRecord::pos)
+                .map(DataEntryRecord::pos)
                 .toList();
 
-            menu.blockEntity.setSortedTargetPositions(sorted); 
+            menu.blockEntity.setSortedTargetPositions(sorted);
 
             PacketUpdateSortedPositions packet = new PacketUpdateSortedPositions(menu.blockEntity.getBlockPos(), sorted);
             NetworkHandler.sendToServer(packet);
             System.out.println("[Screen] PacketUpdateSortedPositions gesendet: " + sorted);
         }
+
+        NetworkHandler.sendToServer(new PacketCancelScan(menu.blockEntity.getBlockPos()));
+        System.out.println("[Screen] PacketCancelScan gesendet");
     }
     
     public ViaductLinkerScreen(ViaductLinkerMenu menu, Inventory inv, Component title) {
@@ -69,7 +77,7 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
         maxScroll = Math.max(0, menu.linkedNames.size() - maxVisibleButtons);
     }
     
-    public void updateLinkers(List<LinkedTargetEntryRecord> newLinkers) {
+    public void updateLinkers(List<DataEntryRecord> newLinkers) {
         if (newLinkers == null || newLinkers.isEmpty()) {
             menu.setLinkers(Collections.emptyList());
             return;
@@ -81,13 +89,13 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
             return;
         }
 
-        List<LinkedTargetEntryRecord> sortedList = new ArrayList<>(newLinkers);
+        List<DataEntryRecord> sortedList = new ArrayList<>(newLinkers);
 
-        Comparator<LinkedTargetEntryRecord> comparator;
+        Comparator<DataEntryRecord> comparator;
 
         if (alphabeticalSortEnabled) {
             comparator = Comparator.comparing(
-                (Function<LinkedTargetEntryRecord, String>) e -> e.name().toString(),
+                (Function<DataEntryRecord, String>) e -> e.name().toString(),
                 String.CASE_INSENSITIVE_ORDER
             );
         } else {
@@ -403,7 +411,7 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
                 customSortEnabled = false;
                 if (!menu.getCustomSortedLinkers().isEmpty()) {
                     List<BlockPos> sorted = menu.getCustomSortedLinkers().stream()
-                        .map(LinkedTargetEntryRecord::pos)
+                        .map(DataEntryRecord::pos)
                         .toList();
                     menu.blockEntity.setSortedTargetPositions(sorted);
                 }
@@ -415,12 +423,12 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
 
                 List<BlockPos> savedOrder = menu.blockEntity.getSortedTargetPositions();
                 if (!savedOrder.isEmpty()) {
-                    List<LinkedTargetEntryRecord> sortedList = new ArrayList<>();
-                    List<LinkedTargetEntryRecord> unsorted = new ArrayList<>(menu.getLinkers());
+                    List<DataEntryRecord> sortedList = new ArrayList<>();
+                    List<DataEntryRecord> unsorted = new ArrayList<>(menu.getLinkers());
 
                     for (BlockPos pos : savedOrder) {
-                        for (Iterator<LinkedTargetEntryRecord> it = unsorted.iterator(); it.hasNext(); ) {
-                            LinkedTargetEntryRecord entry = it.next();
+                        for (Iterator<DataEntryRecord> it = unsorted.iterator(); it.hasNext(); ) {
+                            DataEntryRecord entry = it.next();
                             if (entry.pos().equals(pos)) {
                                 sortedList.add(entry);
                                 it.remove();
@@ -484,7 +492,7 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         if (isDraggingCustom && customSortEnabled) {
-            List<LinkedTargetEntryRecord> list = menu.getCustomSortedLinkers();
+            List<DataEntryRecord> list = menu.getCustomSortedLinkers();
             if (draggedIndex >= 0 && draggedIndex < list.size()) {
                 int relMouseY = (int)(mouseY - (topPos + 24));
                 int btnHeight = 14;
@@ -500,7 +508,7 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
                 targetIndex = Mth.clamp(targetIndex, 0, list.size() - 1);
 
                 if (targetIndex != draggedIndex) {
-                    LinkedTargetEntryRecord draggedItem = list.remove(draggedIndex);
+                    DataEntryRecord draggedItem = list.remove(draggedIndex);
                     list.add(targetIndex, draggedItem);
                     draggedIndex = targetIndex;
                     menu.setCustomSortedLinkers(list);

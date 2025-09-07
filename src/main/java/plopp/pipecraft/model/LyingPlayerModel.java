@@ -1,5 +1,10 @@
 package plopp.pipecraft.model;
 
+import java.util.UUID;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.PlayerModel;
@@ -11,17 +16,18 @@ import plopp.pipecraft.logic.ViaductTravel;
 import plopp.pipecraft.logic.ViaductTravel.VerticalDirection;
 
 public class LyingPlayerModel<T extends AbstractClientPlayer> extends PlayerModel<T> {
-    public LyingPlayerModel(ModelPart part, boolean slim) {
+    private UUID playerUUID;
+
+	public LyingPlayerModel(ModelPart part, boolean slim) {
         super(part, slim);
     }
 
     @Override
     public void setupAnim(T player, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
         super.setupAnim(player, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
-        
-        if (!ClientTravelDataManager.hasData(player.getUUID())) {
-            return;
-        }
+        this.playerUUID = player.getUUID(); 
+
+        if (!ClientTravelDataManager.hasData(player.getUUID())) return;
         
         TravelStatePacket travelData = ClientTravelDataManager.getTravelData(player.getUUID());
         if (ViaductTravel.consumeResetModel(player.getUUID())) {
@@ -29,15 +35,11 @@ public class LyingPlayerModel<T extends AbstractClientPlayer> extends PlayerMode
             return;
         }
 
-        if (travelData == null || !travelData.isActive()) {
-            return;
-        }
+        if (travelData == null || !travelData.isActive()) return;
         
         if (player.level().isClientSide() &&
-        	    Minecraft.getInstance().options.getCameraType() == CameraType.FIRST_PERSON &&
-        	    player == Minecraft.getInstance().player) {
-        	    return;
-        	}
+                Minecraft.getInstance().options.getCameraType() == CameraType.FIRST_PERSON &&
+                player == Minecraft.getInstance().player) return;
         
         
         if (ViaductTravel.consumeResetModel(player.getUUID())) {
@@ -49,33 +51,45 @@ public class LyingPlayerModel<T extends AbstractClientPlayer> extends PlayerMode
         
         if (vdir != VerticalDirection.NONE) {
             boolean upsideDown = vdir == VerticalDirection.DOWN;
+            float yaw = ViaductTravel.getTravelYaw(player.getUUID(), player.level());
+
+            float bodyYaw;
+            if ((yaw >= 45 && yaw < 135) || (yaw >= 225 && yaw < 315)) {
+                // Ost oder West → Yaw = 0
+                bodyYaw = 0f;
+            } else {
+                // Nord oder Süd → Yaw = Travel-Yaw
+                bodyYaw = yaw;
+            }
 
             this.body.xRot = 0;
-            this.body.yRot = 0;
+            this.body.yRot = (float) Math.toRadians(bodyYaw);
             this.body.zRot = upsideDown ? (float) Math.toRadians(180) : 0;
 
+            // Kopf anpassen
             this.head.xRot = upsideDown ? (float) Math.toRadians(90) : (float) Math.toRadians(-90);
             this.head.yRot = 0;
             this.head.zRot = 0;
-            
             this.head.x = 0f;
             this.head.y = 0f;
-            this.head.z = upsideDown ? 1f : -1f; 
+            this.head.z = upsideDown ? 1f : -1f;
 
-            this.rightArm.xRot = upsideDown ? (float) Math.toRadians(0) : (float) Math.toRadians(180);
-            this.rightArm.yRot = upsideDown ? 0 : (float) Math.toRadians(-10);
+            // Arme anpassen
+            this.rightArm.xRot = upsideDown ? 0f : (float) Math.toRadians(180);
+            this.rightArm.yRot = upsideDown ? 0f : (float) Math.toRadians(-10);
             this.rightArm.zRot = 0;
             this.rightArm.x = -5;
             this.rightArm.y = 0;
             this.rightArm.z = 0;
 
-            this.leftArm.xRot = upsideDown ? (float) Math.toRadians(0) : (float) Math.toRadians(180);
-            this.leftArm.yRot = upsideDown ? 0 : (float) Math.toRadians(10);
+            this.leftArm.xRot = upsideDown ? 0f : (float) Math.toRadians(180);
+            this.leftArm.yRot = upsideDown ? 0f : (float) Math.toRadians(10);
             this.leftArm.zRot = 0;
             this.leftArm.x = 5;
             this.leftArm.y = 0;
             this.leftArm.z = 0;
-            
+
+            // Beine anpassen
             this.leftLeg.xRot = upsideDown ? (float) Math.toRadians(180) : 0;
             this.leftLeg.y = upsideDown ? -12 : 12;
             this.leftLeg.z = 0;
@@ -84,6 +98,7 @@ public class LyingPlayerModel<T extends AbstractClientPlayer> extends PlayerMode
             this.rightLeg.y = upsideDown ? -12 : 12;
             this.rightLeg.z = 0;
 
+            // Kleidung verstecken
             this.hat.visible = false;
             this.jacket.visible = false;
             this.leftSleeve.visible = false;
@@ -238,5 +253,16 @@ public class LyingPlayerModel<T extends AbstractClientPlayer> extends PlayerMode
         this.rightSleeve.visible = true;
         this.leftPants.visible = true;
         this.rightPants.visible = true;
+    }
+    
+    @Override
+    public void renderToBuffer(PoseStack poseStack, VertexConsumer buffer, int packedLight, int packedOverlay, int color) {
+        if (ClientTravelDataManager.hasData(this.playerUUID)) {
+            TravelStatePacket travelData = ClientTravelDataManager.getTravelData(this.playerUUID);
+            if (travelData != null && travelData.isActive()) {
+                poseStack.translate(0, 1.1, 0); 
+            }
+        }
+        super.renderToBuffer(poseStack, buffer, packedLight, packedOverlay, color);
     }
 }

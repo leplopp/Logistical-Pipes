@@ -4,13 +4,11 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
 import javax.annotation.Nullable;
-
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.ItemOverrides;
-import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelState;
@@ -19,13 +17,16 @@ import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.ChunkRenderTypeSet;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import net.neoforged.neoforge.client.model.data.ModelProperty;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductDetector;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
 
 public class DynamicColorWrappedModel implements BakedModel {
 
@@ -68,15 +69,17 @@ public class DynamicColorWrappedModel implements BakedModel {
     public ChunkRenderTypeSet getRenderTypes(BlockState state, RandomSource rand, ModelData data) {
         boolean translucent = state != null
             && ((state.hasProperty(BlockViaduct.TRANSPARENT) && state.getValue(BlockViaduct.TRANSPARENT)) ||
-                (state.hasProperty(BlockViaductLinker.TRANSPARENT) && state.getValue(BlockViaductLinker.TRANSPARENT)));
+                (state.hasProperty(BlockViaductLinker.TRANSPARENT) && state.getValue(BlockViaductLinker.TRANSPARENT))||
+                (state.hasProperty(BlockViaductSpeed.TRANSPARENT) && state.getValue(BlockViaductSpeed.TRANSPARENT))||
+                (state.hasProperty(BlockViaductDetector.TRANSPARENT) && state.getValue(BlockViaductDetector.TRANSPARENT)));
         return ChunkRenderTypeSet.of(translucent ? RenderType.translucent() : RenderType.cutout());
     }
     
     @Override
-    public ItemTransforms getTransforms() {
-        return fallback.getTransforms();
+    public BakedModel applyTransform(ItemDisplayContext type, PoseStack poseStack, boolean leftHanded) {
+        fallback.applyTransform(type, poseStack, leftHanded); 
+        return this; 
     }
-
     @Override
     public ModelData getModelData(BlockAndTintGetter level, BlockPos pos, BlockState state, ModelData data) {
         if (state != null) {
@@ -84,6 +87,10 @@ public class DynamicColorWrappedModel implements BakedModel {
                 return data.derive().with(COLOR_MODEL_DATA_KEY, state.getValue(BlockViaduct.COLOR)).build();
             } else if (state.hasProperty(BlockViaductLinker.COLOR)) {
                 return data.derive().with(COLOR_MODEL_DATA_KEY, state.getValue(BlockViaductLinker.COLOR)).build();
+            }else if (state.hasProperty(BlockViaductSpeed.COLOR)) {
+                return data.derive().with(COLOR_MODEL_DATA_KEY, state.getValue(BlockViaductSpeed.COLOR)).build();
+            }else if (state.hasProperty(BlockViaductDetector.COLOR)) {
+                return data.derive().with(COLOR_MODEL_DATA_KEY, state.getValue(BlockViaductDetector.COLOR)).build();
             }
         }
         return data;
@@ -103,6 +110,8 @@ public class DynamicColorWrappedModel implements BakedModel {
         if (state != null) {
             if (state.hasProperty(BlockViaduct.COLOR)) return state.getValue(BlockViaduct.COLOR);
             if (state.hasProperty(BlockViaductLinker.COLOR)) return state.getValue(BlockViaductLinker.COLOR);
+            if (state.hasProperty(BlockViaductSpeed.COLOR)) return state.getValue(BlockViaductSpeed.COLOR);
+            if (state.hasProperty(BlockViaductDetector.COLOR)) return state.getValue(BlockViaductDetector.COLOR);
         }
         return modelData != null ? modelData.get(COLOR_MODEL_DATA_KEY) : null;
     }

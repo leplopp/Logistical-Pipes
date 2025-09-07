@@ -14,22 +14,22 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
 import plopp.pipecraft.Network.NetworkHandler;
+import plopp.pipecraft.Network.data.DataEntryRecord;
 import plopp.pipecraft.Network.data.ViaductLinkerWorldData;
 import plopp.pipecraft.Network.linker.LinkedTargetEntry;
-import plopp.pipecraft.Network.linker.LinkedTargetEntryRecord;
 import plopp.pipecraft.Network.linker.ViaductLinkerListPacket;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerMenu;
 
 public class ViaductLinkerManager {
 	
-	    private static final Map<BlockPos, LinkedTargetEntryRecord> allLinkersData = new HashMap<>();
-	    private static final Map<BlockPos, LinkedTargetEntryRecord> knownLinkers = new HashMap<>();
+	    private static final Map<BlockPos, DataEntryRecord> allLinkersData = new HashMap<>();
+	    private static final Map<BlockPos, DataEntryRecord> knownLinkers = new HashMap<>();
 	    private static ViaductLinkerMenu openMenu = null;
 	    
 	    public static void addOrUpdateLinker(BlockPos pos, String name, ItemStack icon) {
 	        pos = pos.immutable();
-	        LinkedTargetEntryRecord newRecord = new LinkedTargetEntryRecord(pos, name, icon);
-	        LinkedTargetEntryRecord existing = allLinkersData.get(pos);
+	        DataEntryRecord newRecord = new DataEntryRecord(pos, name, icon);
+	        DataEntryRecord existing = allLinkersData.get(pos);
 
 	        if (!newRecord.equals(existing)) {
 	            allLinkersData.put(pos, newRecord);
@@ -46,7 +46,7 @@ public class ViaductLinkerManager {
 	        return Collections.unmodifiableSet(allLinkersData.keySet());
 	    }
 
-	    public static Collection<LinkedTargetEntryRecord> getAllLinkersData() {
+	    public static Collection<DataEntryRecord> getAllLinkersData() {
 	        return Collections.unmodifiableCollection(allLinkersData.values());
 	    }
 	    
@@ -62,7 +62,7 @@ public class ViaductLinkerManager {
 	    public static ViaductLinkerMenu getOpenMenu() {
 	        return openMenu;
 	    }
-	    
+
 	    public static void saveToWorldData(ViaductLinkerWorldData data) {
 	        data.setLinkers(new HashMap<>(allLinkersData));
 	    }
@@ -88,7 +88,7 @@ public class ViaductLinkerManager {
 	                .map(t -> t.pos)
 	                .collect(Collectors.toSet());
 
-	            List<LinkedTargetEntryRecord> filtered = allLinkersData.values().stream()
+	            List<DataEntryRecord> filtered = allLinkersData.values().stream()
 	                .filter(e -> connectedPositions.contains(e.pos()))
 	                .sorted(Comparator.comparingDouble(e -> e.pos().distSqr(currentLinker.getBlockPos())))
 	                .toList();

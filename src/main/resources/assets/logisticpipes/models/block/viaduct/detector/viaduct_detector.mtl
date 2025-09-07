@@ -1,12 +1,8 @@
-# Blender 4.5.0 MTL File: 'None'
+# Blender 4.5.2 LTS MTL File: 'None'
 # www.blender.org
 
-newmtl m_f27d1936-c483-b96f-661c-1c1f9903ab0a
-Ns 0.000000
-Ka 1.000000 1.000000 1.000000
-Ks 0.000000 0.000000 0.000000
-Ke 0.000000 0.000000 0.000000
-Ni 1.500000
-d 1.000000
-illum 1
-map_Kd V:/Modding/Projects/Logistical Pipes/src/main/resources/assets/logisticpipes/models/block/viaduct/placeholder
+newmtl m_4bd97fc6-93df-cea6-df10-4f8ff6e17a1d
+map_Kd logisticpipes:block/detector_point
+
+newmtl m_5769ad2c-5a55-c302-1e60-9554c8e79d61
+map_Kd placeholder

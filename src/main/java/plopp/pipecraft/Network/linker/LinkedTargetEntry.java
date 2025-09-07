@@ -26,5 +26,7 @@ public class LinkedTargetEntry {
 	        String name = tag.getString("name");
 	        return new LinkedTargetEntry(pos, name);
 	    }
-	
+	    public BlockPos getPos() {
+	        return pos;
+	    }
 }

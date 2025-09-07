@@ -1,7 +1,23 @@
 {
-  "loader": "neoforge:obj",
+	"loader": "pipecraft:viaduct_model",
   "model": "logisticpipes:models/block/viaduct/speed/viaduct_speed.obj",
-  "flip-v": true,
-  "rendertype": "translucent",
-  "detectCullableFaces": false
+  "textures": {
+	"particle": "logisticpipes:block/viaduct_particle",
+	"white": "logisticpipes:block/viaduct_speed_white",
+	 "orange": "logisticpipes:block/viaduct_speed_orange",
+	 "magenta": "logisticpipes:block/viaduct_speed_magenta",
+	 "light_blue": "logisticpipes:block/viaduct_speed_light_blue",
+	 "yellow": "logisticpipes:block/viaduct_speed_yellow",
+	 "lime": "logisticpipes:block/viaduct_speed_lime",
+	 "pink": "logisticpipes:block/viaduct_speed_pink",
+	 "gray": "logisticpipes:block/viaduct_speed_gray",
+	 "light_gray": "logisticpipes:block/viaduct_speed_light_gray",
+	 "cyan": "logisticpipes:block/viaduct_speed_cyan",
+	 "purple": "logisticpipes:block/viaduct_speed_purple",
+	 "blue": "logisticpipes:block/viaduct_speed_blue",
+	 "brown": "logisticpipes:block/viaduct_speed_brown",
+	 "green": "logisticpipes:block/viaduct_speed_green",
+	 "red": "logisticpipes:block/viaduct_speed_red",
+	 "black": "logisticpipes:block/viaduct_speed_black"
+  }
 }

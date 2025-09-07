@@ -40,9 +40,5 @@ public class ClientTravelDataManager {
 	    public static boolean hasData(UUID uuid) {
 	        return travelDataMap.containsKey(uuid);
 	    }
-	    
-	    public static int getChargeProgress(UUID uuid) {
-	        TravelStatePacket packet = travelDataMap.get(uuid);
-	        return packet != null ? packet.getChargeProgress() : 0;
-	    }
+
 	}

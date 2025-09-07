@@ -1,14 +1,12 @@
 package plopp.pipecraft.Blocks.Pipes.Viaduct;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Queue;
-import java.util.Set;
+import java.util.Map;
+
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.IntArrayTag;
@@ -30,9 +28,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.extensions.IBlockEntityExtension;
 import plopp.pipecraft.Blocks.BlockEntityRegister;
 import plopp.pipecraft.Blocks.BlockRegister;
-import plopp.pipecraft.Blocks.ViaductBlockRegistry;
 import plopp.pipecraft.Network.linker.LinkedTargetEntry;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerMenu;
+import plopp.pipecraft.logic.AsyncViaductScanner;
+import plopp.pipecraft.logic.DimBlockPos;
 import plopp.pipecraft.logic.ViaductLinkerManager;
 
 public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvider, IBlockEntityExtension  {
@@ -43,8 +42,9 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
 	private boolean asyncScanInProgress = false;
 	private List<BlockPos> sortedTargetPositions = new ArrayList<>();
 	private CompoundTag customPersistentData = new CompoundTag();
-	private AsyncViaductScanner asyncScanner = null;
+	public AsyncViaductScanner asyncScanner = null;
 	private List<LinkedTargetEntry> cachedLinkedTargets = Collections.emptyList();
+	public final Map<BlockPos, List<BlockPos>> scannedPaths = new HashMap<>();
 	
     public BlockEntityViaductLinker(BlockPos pos, BlockState state) {
         super(BlockEntityRegister.VIADUCT_LINKER.get(), pos, state);
@@ -246,11 +246,26 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
         }
 
         if (asyncScanner == null) {
-            asyncScanner = new AsyncViaductScanner(level, worldPosition, 99);
-            setAsyncScanInProgress(true); 
+            // Neue cameFrom Map anlegen
+            Map<DimBlockPos, DimBlockPos> cameFromMap = new HashMap<>();
+            // Scanner mit cameFromMap initialisieren
+            asyncScanner = new AsyncViaductScanner(level, worldPosition, 99, cameFromMap);
+            setAsyncScanInProgress(true);
         }
 
         return cachedLinkedTargets;
+    }
+    
+    public Map<BlockPos, List<BlockPos>> getScannedPaths() {
+        return scannedPaths;
+    }
+
+    public List<BlockPos> getPathTo(BlockPos target) {
+        return scannedPaths.getOrDefault(target, Collections.emptyList());
+    }
+    
+    public void clearScannedPaths() {
+        this.scannedPaths.clear();
     }
     
     public static void serverTick(Level level, BlockPos pos, BlockState state, BlockEntityViaductLinker be) {
@@ -267,85 +282,20 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
                 }
             }
 
+            // Pfade bei jedem Tick aktualisieren (für alle gefundenen Ziele)
+            List<LinkedTargetEntry> allTargets = be.asyncScanner.getFoundLinkers();
+            for (LinkedTargetEntry entry : allTargets) {
+                DimBlockPos dimPos = new DimBlockPos(level.dimension(), entry.getPos());
+                List<BlockPos> fullPath = be.asyncScanner.constructPath(dimPos);
+                if (fullPath != null && !fullPath.isEmpty()) {
+                    be.scannedPaths.put(entry.getPos(), fullPath);
+                }
+            }
+
             if (done) {
+                be.setAsyncScanInProgress(false);
                 be.asyncScanner = null;
-                be.setAsyncScanInProgress(false); 
             }
-        }
-    }
-    
-    public class AsyncViaductScanner {
-        private final Level level;
-        private final BlockPos startPos;
-
-        private final Set<BlockPos> visited = new HashSet<>();
-        private final Queue<BlockPos> toVisit = new ArrayDeque<>();
-        private final List<LinkedTargetEntry> foundLinkers = new ArrayList<>();
-
-        private final int maxStepsPerTick;
-
-        public AsyncViaductScanner(Level level, BlockPos startPos, int maxStepsPerTick) {
-            this.level = level;
-            this.startPos = startPos;
-            this.maxStepsPerTick = maxStepsPerTick;
-
-            visited.add(startPos);
-
-            for (Direction dir : Direction.values()) {
-                BlockPos neighbor = startPos.relative(dir);
-                if (visited.contains(neighbor)) continue;
-
-                BlockState neighborState = level.getBlockState(neighbor);
-                if (ViaductBlockRegistry.isViaduct(neighborState) || neighborState.is(BlockRegister.VIADUCTLINKER)) {
-                    toVisit.add(neighbor); // auch Linker mitnehmen!
-                }
-            }
-        }
-
-        public boolean tick() {
-            int steps = 0;
-
-            while (!toVisit.isEmpty() && steps < maxStepsPerTick) {
-                BlockPos current = toVisit.poll();
-
-                if (!visited.add(current)) continue;
-
-                BlockState currentState = level.getBlockState(current);
-
-                if (!ViaductBlockRegistry.isViaduct(currentState)) {
-                    continue;
-                }
-
-                for (Direction dir : Direction.values()) {
-                    BlockPos neighbor = current.relative(dir);
-                    if (visited.contains(neighbor) || toVisit.contains(neighbor)) continue;
-
-                    BlockState neighborState = level.getBlockState(neighbor);
-                    BlockEntity be = level.getBlockEntity(neighbor);
-
-                    if (be instanceof BlockEntityViaductLinker linker && !neighbor.equals(startPos)) {
-                        // Verbindung prüfen!
-                        if (ViaductBlockRegistry.areViaductBlocksConnected(level, current, neighbor)) {
-                            String name = linker.getCustomName();
-                            foundLinkers.add(new LinkedTargetEntry(neighbor, name));
-                            toVisit.add(neighbor);
-                        }
-
-                    } else if (ViaductBlockRegistry.isViaduct(neighborState)) {
-                        if (ViaductBlockRegistry.areViaductBlocksConnected(level, current, neighbor)) {
-                            toVisit.add(neighbor);
-                        }
-                    }
-                }
-
-                steps++;
-            }
-
-            return toVisit.isEmpty();
-        }
-
-        public List<LinkedTargetEntry> getFoundLinkers() {
-            return foundLinkers;
         }
     }
 }

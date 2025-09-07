@@ -19,7 +19,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
 import plopp.pipecraft.Network.NetworkHandler;
-import plopp.pipecraft.Network.linker.LinkedTargetEntryRecord;
+import plopp.pipecraft.Network.data.DataEntryRecord;
 import plopp.pipecraft.Network.linker.ViaductLinkerListPacket;
 import plopp.pipecraft.gui.MenuTypeRegister;
 import plopp.pipecraft.logic.ViaductLinkerManager;
@@ -29,12 +29,12 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
     public final BlockEntityViaductLinker blockEntity;
     public final List<Component> linkedNames = new ArrayList<>();
     public final List<ItemStack> linkedItems = new ArrayList<>();
-    private List<LinkedTargetEntryRecord> linkers = new ArrayList<>();
+    private List<DataEntryRecord> linkers = new ArrayList<>();
 	private Level level;
-	private List<LinkedTargetEntryRecord> latestLinkers = new ArrayList<>();
+	private List<DataEntryRecord> latestLinkers = new ArrayList<>();
 	private boolean newDataAvailable = false;
     private boolean allLinkersLoaded = false;
-    private List<LinkedTargetEntryRecord> customSortedLinkers = new ArrayList<>();
+    private List<DataEntryRecord> customSortedLinkers = new ArrayList<>();
 	public ServerPlayer serverPlayer;
 	
 	public ViaductLinkerMenu(int containerId, Inventory inv, FriendlyByteBuf buf) {
@@ -69,12 +69,12 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
 
             List<BlockPos> savedOrder = blockEntity.getSortedTargetPositions();
             if (!savedOrder.isEmpty()) {
-                List<LinkedTargetEntryRecord> sortedList = new ArrayList<>();
-                List<LinkedTargetEntryRecord> unsorted = new ArrayList<>(this.linkers);
+                List<DataEntryRecord> sortedList = new ArrayList<>();
+                List<DataEntryRecord> unsorted = new ArrayList<>(this.linkers);
 
                 for (BlockPos pos : savedOrder) {
-                    for (Iterator<LinkedTargetEntryRecord> it = unsorted.iterator(); it.hasNext(); ) {
-                        LinkedTargetEntryRecord entry = it.next();
+                    for (Iterator<DataEntryRecord> it = unsorted.iterator(); it.hasNext(); ) {
+                        DataEntryRecord entry = it.next();
                         if (entry.pos().equals(pos)) {
                             sortedList.add(entry);
                             it.remove();
@@ -102,11 +102,11 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
         return blockEntity != null && blockEntity.isAsyncScanInProgress();
     }
     
-    public List<LinkedTargetEntryRecord> getCustomSortedLinkers() {
+    public List<DataEntryRecord> getCustomSortedLinkers() {
         return customSortedLinkers;
     }
 
-    public void setCustomSortedLinkers(List<LinkedTargetEntryRecord> list) {
+    public void setCustomSortedLinkers(List<DataEntryRecord> list) {
         this.customSortedLinkers = list;
         setLinkers(list); 
     }
@@ -128,7 +128,7 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
 
         if (!customSortedLinkers.isEmpty()) {
             List<BlockPos> sorted = customSortedLinkers.stream()
-                .map(LinkedTargetEntryRecord::pos)
+                .map(DataEntryRecord::pos)
                 .toList();
 
             blockEntity.setSortedTargetPositions(sorted);
@@ -147,20 +147,20 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
         return newDataAvailable;
     }
 
-    public List<LinkedTargetEntryRecord> getLatestLinkers() {
+    public List<DataEntryRecord> getLatestLinkers() {
         newDataAvailable = false;
         return latestLinkers;
     }
 
-    public void updateLinkersData(List<LinkedTargetEntryRecord> newLinkers) {
+    public void updateLinkersData(List<DataEntryRecord> newLinkers) {
 
-        List<LinkedTargetEntryRecord> filteredSorted = customSortedLinkers.stream()
+        List<DataEntryRecord> filteredSorted = customSortedLinkers.stream()
             .filter(e -> newLinkers.stream().anyMatch(n -> n.pos().equals(e.pos())))
             .toList();
 
-        List<LinkedTargetEntryRecord> result = new ArrayList<>(filteredSorted);
+        List<DataEntryRecord> result = new ArrayList<>(filteredSorted);
 
-        for (LinkedTargetEntryRecord entry : newLinkers) {
+        for (DataEntryRecord entry : newLinkers) {
             boolean alreadyIn = filteredSorted.stream().anyMatch(e -> e.pos().equals(entry.pos()));
             if (!alreadyIn) {
                 result.add(entry);
@@ -183,7 +183,7 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
     public void updateFromLinkers() {
         linkedNames.clear();
         linkedItems.clear();
-        for (LinkedTargetEntryRecord entry : linkers) {
+        for (DataEntryRecord entry : linkers) {
             linkedNames.add(Component.literal(entry.name()));
             linkedItems.add(entry.icon());
         }
@@ -193,21 +193,12 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
         linkedNames.clear();
         linkedItems.clear();
 
-        int foundCount = 0;
         for (BlockPos pos : linkedPositions) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof BlockEntityViaductLinker linker) {
                 linkedNames.add(Component.literal(linker.getCustomName()));
                 linkedItems.add(linker.getDisplayedItem());
-                foundCount++;
-            } else {
-                linkedNames.add(Component.literal("Unknown"));
-                linkedItems.add(ItemStack.EMPTY);
             }
-        }
-        
-        if (!linkedPositions.isEmpty() && foundCount >= linkedPositions.size()) {
-            allLinkersLoaded = true;
         }
     }
     
@@ -221,12 +212,12 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
         return ItemStack.EMPTY;
     }
 
-    public void setLinkers(List<LinkedTargetEntryRecord> linkers) {
+    public void setLinkers(List<DataEntryRecord> linkers) {
         this.linkers = linkers;
         updateFromLinkers();
     }
 
-    public List<LinkedTargetEntryRecord> getLinkers() {
+    public List<DataEntryRecord> getLinkers() {
         return linkers;
     }
 }

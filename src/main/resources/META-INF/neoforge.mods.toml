@@ -1,0 +1,27 @@
+modLoader="javafml"
+loaderVersion="[2,)"
+license="All rights reserved"
+
+[[mods]]
+modId="logisticpipes"
+version="1.0.0"
+displayName="Pipecraft"
+authors="leplopp"
+description='''Pipecraft Mod'''
+
+[[mixins]]
+config="pipecraft.mixins.json"
+
+[[dependencies.pipecraft]]
+modId="neoforge"
+type="required"
+versionRange="[21.1,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.pipecraft]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1,)"
+ordering="NONE"
+side="BOTH"

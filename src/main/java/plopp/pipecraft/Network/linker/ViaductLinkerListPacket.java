@@ -14,10 +14,11 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import plopp.pipecraft.PipeCraftIndex;
+import plopp.pipecraft.Network.data.DataEntryRecord;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerScreen;
 
 public class ViaductLinkerListPacket implements CustomPacketPayload {
-    private List<LinkedTargetEntryRecord> linkers;
+    private List<DataEntryRecord> linkers;
 
     public static final CustomPacketPayload.Type<ViaductLinkerListPacket> TYPE =
         new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(PipeCraftIndex.MODID, "viaduct_linker_list"));
@@ -26,7 +27,7 @@ public class ViaductLinkerListPacket implements CustomPacketPayload {
     	@Override
     	public void encode(RegistryFriendlyByteBuf buf, ViaductLinkerListPacket pkt) {
     	    buf.writeInt(pkt.linkers.size());
-    	    for (LinkedTargetEntryRecord entry : pkt.linkers) {
+    	    for (DataEntryRecord entry : pkt.linkers) {
     	        buf.writeBlockPos(entry.pos());
     	        buf.writeUtf(entry.name());
 
@@ -42,7 +43,7 @@ public class ViaductLinkerListPacket implements CustomPacketPayload {
     	@Override
     	public ViaductLinkerListPacket decode(RegistryFriendlyByteBuf buf) {
     	    int size = buf.readInt();
-    	    List<LinkedTargetEntryRecord> linkers = new ArrayList<>();
+    	    List<DataEntryRecord> linkers = new ArrayList<>();
     	    for (int i = 0; i < size; i++) {
     	        BlockPos pos = buf.readBlockPos();
     	        String name = buf.readUtf(32767);
@@ -55,13 +56,13 @@ public class ViaductLinkerListPacket implements CustomPacketPayload {
     	                icon = decodeResult.result().get();
     	            }
     	        }
-    	        linkers.add(new LinkedTargetEntryRecord(pos, name, icon));
+    	        linkers.add(new DataEntryRecord(pos, name, icon));
     	    }
     	    return new ViaductLinkerListPacket(linkers);
     	}
     };
 
-    public ViaductLinkerListPacket(List<LinkedTargetEntryRecord> linkers) {
+    public ViaductLinkerListPacket(List<DataEntryRecord> linkers) {
         this.linkers = linkers;
     }
 

@@ -66,6 +66,8 @@ public class PacketUpdateSortedPositions implements CustomPacketPayload {
 
             BlockEntity be = player.level().getBlockEntity(packet.getTargetPos());
             if (be instanceof BlockEntityViaductLinker linker) {
+            	   linker.asyncScanner = null;
+            	    linker.setAsyncScanInProgress(false);
                 linker.setSortedTargetPositions(packet.getPositions());
                 linker.setChanged();
                 player.level().sendBlockUpdated(linker.getBlockPos(), linker.getBlockState(), linker.getBlockState(), 3);

@@ -1,28 +1,43 @@
 package plopp.pipecraft.Blocks.Pipes.Viaduct;
 
+import java.util.UUID;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import plopp.pipecraft.Network.data.ViaductTeleporterWorldData;
+import plopp.pipecraft.Network.teleporter.ViaductTeleporterIdRegistry;
+import plopp.pipecraft.Network.teleporter.ViaductTeleporterManager;
+import plopp.pipecraft.gui.ViaductGuiProvider;
 import plopp.pipecraft.logic.Connectable;
 import plopp.pipecraft.logic.ViaductTravel;
 
-public class BlockViaductTeleporter  extends Block implements Connectable{
+public class BlockViaductTeleporter  extends Block implements EntityBlock,Connectable{
 	
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
     
@@ -54,12 +69,29 @@ public class BlockViaductTeleporter  extends Block implements Connectable{
 		           }
 	           
 	           if (neighborBlock instanceof BlockViaduct || neighborBlock instanceof BlockViaductLinker) {
-	               return this.defaultBlockState().setValue(FACING, dir); // Zeige auf Viaduct
+	               return this.defaultBlockState().setValue(FACING, dir);
 	           }
 	       }
 
-	       // Kein Viaduct gefunden: standardmäßig zum Spieler blicken
 	       return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
+	   }
+	   
+	   @Override
+	   protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
+	       if (!level.isClientSide()) {
+	           if (player.isCrouching() && player instanceof ServerPlayer serverPlayer) {
+	               serverPlayer.openMenu(new ViaductGuiProvider(pos), buf -> buf.writeBlockPos(pos));
+	               return InteractionResult.CONSUME;
+	           }
+
+	           BlockEntity be = level.getBlockEntity(pos);
+	           if (be instanceof MenuProvider provider && player instanceof ServerPlayer sp) {
+	               sp.openMenu(provider, buf -> buf.writeBlockPos(pos));
+	               return InteractionResult.CONSUME;
+	           }
+	       }
+
+	       return InteractionResult.SUCCESS;
 	   }
 	   
 	    @Override
@@ -80,6 +112,36 @@ public class BlockViaductTeleporter  extends Block implements Connectable{
 	    @Override
 	    public boolean useShapeForLightOcclusion(BlockState state) {
 	        return true;
+	    }
+	    
+	    @Override
+	    public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
+	        if (placer instanceof ServerPlayer serverPlayer && level instanceof ServerLevel serverLevel) {
+	            BlockEntity blockEntity = level.getBlockEntity(pos);
+	            if (blockEntity instanceof BlockEntityViaductTeleporter teleporter) {
+	                UUID ownerUUID = serverPlayer.getUUID();
+	                teleporter.setOwnerUUID(ownerUUID); 
+
+	                ViaductTeleporterManager.updateEntry(pos, teleporter.getStartEntry(), teleporter.getGoalEntry(), ownerUUID);
+	                ViaductTeleporterWorldData.get(serverLevel).setTeleporters(ViaductTeleporterManager.getAll());
+	            }
+	        }
+	    }
+	    
+	    @Override
+	    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
+	        if (!state.is(newState.getBlock())) {
+	            BlockEntity blockEntity = level.getBlockEntity(pos);
+	            if (blockEntity instanceof BlockEntityViaductTeleporter teleporter && level instanceof ServerLevel serverLevel) {
+	            	String generatedId = BlockEntityViaductTeleporter.generateItemId(teleporter.getDisplayedItem());
+	                if (!generatedId.isEmpty()) {
+	                    ViaductTeleporterIdRegistry.unregisterId(generatedId);
+	                }
+	                ViaductTeleporterManager.removeEntry(serverLevel, pos);
+	            }
+	            super.onRemove(state, level, pos, newState, isMoving);
+	            
+	        }
 	    }
 	    
 	    @Override
@@ -136,6 +198,11 @@ public class BlockViaductTeleporter  extends Block implements Connectable{
 	    @Override
 	    public boolean canConnectTo(BlockState state, Level level, BlockPos pos, Direction direction) {
 	        Direction facing = state.getValue(BlockStateProperties.FACING);
-	        return direction == facing; // Nur Verbindung in Blickrichtung
+	        return direction == facing; 
+	    }
+
+	    @Override
+	    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+	        return new BlockEntityViaductTeleporter(pos, state);
 	    }
 	}

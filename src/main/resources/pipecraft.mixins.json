@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "plopp.pipecraft.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "MixinPlayerDimensions"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -11,10 +11,15 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import plopp.pipecraft.PipeCraftIndex;
+import plopp.pipecraft.Network.linker.PacketCancelScan;
 import plopp.pipecraft.Network.linker.PacketUpdateLinkerName;
 import plopp.pipecraft.Network.linker.PacketUpdateSortedPositions;
 import plopp.pipecraft.Network.linker.ViaductLinkerListPacket;
+import plopp.pipecraft.Network.speeder.SpeedChangePacket;
+import plopp.pipecraft.Network.teleporter.PacketUpdateTeleporterNames;
+import plopp.pipecraft.Network.teleporter.PacketUpdateTeleporterToggle;
 import plopp.pipecraft.Network.travel.PacketTravelStart;
+import plopp.pipecraft.Network.travel.PacketTravelStop;
 import plopp.pipecraft.Network.travel.TravelStatePacket;
 import plopp.pipecraft.logic.ViaductTravel;
 
@@ -31,8 +36,11 @@ public class NetworkHandler {
 	        .playToServer(PacketTravelStart.TYPE, PacketTravelStart.CODEC, PacketTravelStart::handle)
 	        .playToServer(PacketUpdateSortedPositions.TYPE, PacketUpdateSortedPositions.CODEC, PacketUpdateSortedPositions::handle)
 	        .playToServer(PacketUpdateLinkerName.TYPE, PacketUpdateLinkerName.CODEC, PacketUpdateLinkerName::handle)
-	        .playToServer(SpeedChangePacket.TYPE,SpeedChangePacket.CODEC,SpeedChangePacket::handle);
-	    
+	        .playToServer(SpeedChangePacket.TYPE,SpeedChangePacket.CODEC,SpeedChangePacket::handle)
+	    	.playToServer(PacketUpdateTeleporterNames.TYPE, PacketUpdateTeleporterNames.CODEC, PacketUpdateTeleporterNames::handle)
+	    	.playToServer(PacketUpdateTeleporterToggle.TYPE, PacketUpdateTeleporterToggle.CODEC, PacketUpdateTeleporterToggle::handle)
+	    	.playToServer(PacketCancelScan.TYPE, PacketCancelScan.CODEC, PacketCancelScan::handle)
+	    	.playToClient(PacketTravelStop.TYPE, PacketTravelStop.CODEC, PacketTravelStop::handle);
 	}
 	
 	    public static void sendNameToServer(BlockPos pos, String name) {
@@ -70,16 +78,16 @@ public class NetworkHandler {
 	    }
 	    
 	    public static void sendTravelStateToAll(ServerPlayer sender, boolean resetModel) {
-	        int chargeProgress = ViaductTravel.getChargeProgress(sender);
+	
 
-	        TravelStatePacket packet = new TravelStatePacket(
+
+			TravelStatePacket packet = new TravelStatePacket(
 	            sender.getUUID(),
 	            ViaductTravel.isTravelActive(sender),
 	            ViaductTravel.getTravelYaw(sender.getUUID(), sender.level()),
 	            ViaductTravel.getTravelPitch(sender.getUUID(), sender.level()),
 	            ViaductTravel.getVerticalDirection(sender.getUUID(), sender.level()),
-	            resetModel,
-	            chargeProgress 
+	            resetModel 
 	        );
 
 	        MinecraftServer server = sender.getServer();

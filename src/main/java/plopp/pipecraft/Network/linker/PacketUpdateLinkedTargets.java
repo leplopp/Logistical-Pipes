@@ -22,8 +22,7 @@ public class PacketUpdateLinkedTargets {
 	            buf.writeUtf(entry.name);
 	        }
 	    }
-
-
+	    
 	    public static PacketUpdateLinkedTargets decode(FriendlyByteBuf buf) {
 	        int size = buf.readInt();
 	        List<LinkedTargetEntry> list = new ArrayList<>(size);

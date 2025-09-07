@@ -19,7 +19,6 @@ public class TravelStatePacket implements CustomPacketPayload {
     private final float travelPitch;
     private final VerticalDirection verticalDirection;
     private final boolean resetModel;
-    private final int chargeProgress;
 
     public static final CustomPacketPayload.Type<TravelStatePacket> TYPE =
         new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(PipeCraftIndex.MODID, "travel_state"));
@@ -32,7 +31,6 @@ public class TravelStatePacket implements CustomPacketPayload {
                 buf.writeFloat(pkt.travelPitch);
                 buf.writeEnum(pkt.verticalDirection);
                 buf.writeBoolean(pkt.resetModel);
-                buf.writeVarInt(pkt.chargeProgress); // NEU
             },
             (buf) -> new TravelStatePacket(
                 buf.readUUID(),
@@ -40,19 +38,18 @@ public class TravelStatePacket implements CustomPacketPayload {
                 buf.readFloat(),
                 buf.readFloat(),
                 buf.readEnum(VerticalDirection.class),
-                buf.readBoolean(),
-                buf.readVarInt() // NEU
+                buf.readBoolean()
             )
         );
 
-    public TravelStatePacket(UUID playerUUID, boolean active, float travelYaw, float travelPitch, VerticalDirection verticalDirection, boolean resetModel, int chargeProgress) {
+    public TravelStatePacket(UUID playerUUID, boolean active, float travelYaw, float travelPitch, VerticalDirection verticalDirection, boolean resetModel) {
         this.playerUUID = playerUUID;
         this.active = active;
         this.travelYaw = travelYaw;
         this.travelPitch = travelPitch;
         this.verticalDirection = verticalDirection;
         this.resetModel = resetModel;
-        this.chargeProgress = chargeProgress;
+
     }
 
     public UUID getPlayerUUID() { return playerUUID; }
@@ -60,7 +57,6 @@ public class TravelStatePacket implements CustomPacketPayload {
     public float getTravelYaw() { return travelYaw; }
     public float getTravelPitch() { return travelPitch; }
     public VerticalDirection getVerticalDirection() { return verticalDirection; }
-    public int getChargeProgress() { return chargeProgress; } // NEU
     public boolean shouldResetModel() { return resetModel; }
 
     @Override
@@ -81,6 +77,6 @@ public class TravelStatePacket implements CustomPacketPayload {
     }
     
     public static TravelStatePacket empty(UUID playerUUID) {
-        return new TravelStatePacket(playerUUID, false, 0f, 0f, VerticalDirection.NONE, true, 0);
+        return new TravelStatePacket(playerUUID, false, 0f, 0f, VerticalDirection.NONE, true);
     }
 }

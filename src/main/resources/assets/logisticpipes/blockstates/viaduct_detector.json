@@ -1,59 +1,40 @@
 {
   "variants": {
-    "facing=north,powered=false": {
+    "facing=north": {
       "model": "logisticpipes:block/viaduct/detector/viaduct_detector",
 	  "x": 90,
       "y": 180
     },
-    "facing=north,powered=true": {
-      "model": "logisticpipes:block/viaduct/detector/viaduct_detector_powered",
-	  "x": 90,
-      "y": 180
-    },
+ 
 
-    "facing=south,powered=false": {
+    "facing=south": {
       "model": "logisticpipes:block/viaduct/detector/viaduct_detector",
 	  "x": 90
     },
-    "facing=south,powered=true": {
-      "model": "logisticpipes:block/viaduct/detector/viaduct_detector_powered",
-	  "x": 90
-    },
+   
 
-    "facing=east,powered=false": {
+    "facing=east": {
       "model": "logisticpipes:block/viaduct/detector/viaduct_detector",
 	  "x": 90,
       "y": 270
     },
-    "facing=east,powered=true": {
-      "model": "logisticpipes:block/viaduct/detector/viaduct_detector_powered",
-	  "x": 90,
-      "y": 270
-    },
+  
 
-    "facing=west,powered=false": {
+    "facing=west": {
       "model": "logisticpipes:block/viaduct/detector/viaduct_detector",
 	  "x": 90,
       "y": 90
     },
-    "facing=west,powered=true": {
-      "model": "logisticpipes:block/viaduct/detector/viaduct_detector_powered",
-	  "x": 90,
-      "y": 90
-    },
+   
 
-    "facing=up,powered=false": {
+    "facing=up": {
       "model": "logisticpipes:block/viaduct/detector/viaduct_detector"
     },
-    "facing=up,powered=true": {
-      "model": "logisticpipes:block/viaduct/detector/viaduct_detector_powered"
-    },
+   
 
-    "facing=down,powered=false": {
+    "facing=down": {
       "model": "logisticpipes:block/viaduct/detector/viaduct_detector"
-    },
-    "facing=down,powered=true": {
-      "model": "logisticpipes:block/viaduct/detector/viaduct_detector_powered"
     }
+  
   }
 }

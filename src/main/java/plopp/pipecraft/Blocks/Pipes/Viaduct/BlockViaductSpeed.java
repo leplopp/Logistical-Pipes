@@ -1,25 +1,30 @@
 package plopp.pipecraft.Blocks.Pipes.Viaduct;
 
-import org.lwjgl.glfw.GLFW;
-
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.Mth;
-import net.minecraft.world.InteractionHand;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.DyeItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.AABB;
@@ -28,28 +33,30 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.InputEvent;
 import plopp.pipecraft.logic.Connectable;
 import plopp.pipecraft.logic.SpeedLevel;
 import plopp.pipecraft.logic.ViaductTravel;
 
-public class BlockViaductSpeed  extends Block implements Connectable{
+public class BlockViaductSpeed  extends Block implements EntityBlock, Connectable{
 	
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
+    public static final EnumProperty<SpeedLevel> SPEED = EnumProperty.create("speed", SpeedLevel.class);
+    public static final EnumProperty<DyeColor> COLOR = EnumProperty.create("color", DyeColor.class);
+    public static final BooleanProperty TRANSPARENT = BooleanProperty.create("transparent");
     public static BlockPos editingPos = null;
     public static boolean editingActive = false;
 
-    public static final EnumProperty<SpeedLevel> SPEED = EnumProperty.create("speed", SpeedLevel.class);
+
     
 	   public BlockViaductSpeed(Properties properties) {
 	        super(Properties.of()
 	            .strength(1.5f));
 	        this.registerDefaultState(this.defaultBlockState()
 	            .setValue(FACING, Direction.NORTH)
+                .setValue(COLOR, DyeColor.WHITE)
+                .setValue(TRANSPARENT, true)
 	            .setValue(SPEED, SpeedLevel.LEVEL_32));
+	        
 	    }
 	   
 	   @Override
@@ -77,12 +84,55 @@ public class BlockViaductSpeed  extends Block implements Connectable{
 	   }
 	   
 	   @Override
+	protected boolean canBeReplaced(BlockState state, BlockPlaceContext useContext) {
+		   return false; 
+	}
+	   
+	   @Override
 	   protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
+	       ItemStack held = player.getMainHandItem();
+
+	       if (held.getItem() instanceof DyeItem ||
+	           held.is(ItemTags.WOOL) ||
+	           held.is(Items.GLASS)) {
+	           return InteractionResult.PASS;
+	       }
+		   
+		   if (player.isShiftKeyDown()) {
+	           BlockEntity be = level.getBlockEntity(pos);
+	           if (be instanceof BlockEntityViaductSpeed speedBE) {
+	               speedBE.setIdStack(ItemStack.EMPTY);
+	               speedBE.setChanged();
+
+	               if (!level.isClientSide && level instanceof ServerLevel serverLevel) {
+	                   ClientboundBlockEntityDataPacket pkt = speedBE.getUpdatePacket();
+	                   if (pkt != null) {
+	                       serverLevel.getPlayers(p -> p.blockPosition().closerThan(pos, 64))
+	                                  .forEach(sp -> sp.connection.send(pkt));
+	                   }
+	               }
+	           }
+
+	           return InteractionResult.CONSUME;
+	       }
+
 	       if (level.isClientSide) {
 	           if (BlockViaductSpeed.editingActive && BlockViaductSpeed.editingPos != null && BlockViaductSpeed.editingPos.equals(pos)) {
 	               BlockViaductSpeed.editingActive = false;
 	               BlockViaductSpeed.editingPos = null;
-	               player.displayClientMessage(Component.literal("Geschwindigkeitsänderung beendet."), true);
+
+	               if (state.hasProperty(BlockViaductSpeed.SPEED)) {
+	            	    int speed = state.getValue(BlockViaductSpeed.SPEED).getValue();
+	                   player.displayClientMessage(
+	                       Component.literal("Geschwindigkeitsänderung beendet. Neue Geschwindigkeit: " + speed + " ticks pro Chunk"), 
+	                       true
+	                   );
+	               } else {
+	                   player.displayClientMessage(
+	                       Component.literal("Geschwindigkeitsänderung beendet."), 
+	                       true
+	                   );
+	               }
 	           } else {
 	               BlockViaductSpeed.editingActive = true;
 	               BlockViaductSpeed.editingPos = pos;
@@ -92,10 +142,11 @@ public class BlockViaductSpeed  extends Block implements Connectable{
 
 	       return InteractionResult.SUCCESS;
 	   }
-	    
+	 
+	   
 	    @Override
 	    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-	        builder.add(FACING, SPEED);
+	        builder.add(FACING, SPEED, COLOR, TRANSPARENT);
 	    }
 
 	    @Override
@@ -172,5 +223,10 @@ public class BlockViaductSpeed  extends Block implements Connectable{
 
 	    public int getSpeed(BlockState state) {
 	        return state.getValue(SPEED).getValue();
+	    }
+
+	    @Override
+	    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+	        return new BlockEntityViaductSpeed(pos, state);
 	    }
 	}

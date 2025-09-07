@@ -43,23 +43,22 @@ public class PipeCraftIndex
 
 /*ideen
  * 
- *  viaduct											<- Pre Release				/ models & textur /hitbox vollenden /sounds hinzufügen
- *  viaduct Linker with gui 						<- Pre Release				/ textur & model /hitbox vollenden /sounds hinzufügen / bug manchmal resettet sich die speicherung wenn man zu schnell klickt?
- *  viaduct	glowing option 							<- Released					/ brush soll gedrückt halten können
- *  viaduct player detector 					    <- Pre Release				/ vllt noch wireless
- *  viaduct Speed controller						<- Pre Release					
- *  viaduct Teleporter								<- Alpha
+ *  viaduct											<- Pre Release				/ hitbox vollenden /sounds hinzufügen
+ *  viaduct Linker									<- Pre Release				/ hitbox vollenden /sounds hinzufügen 
+ *  viaduct	glowing option 							<- Released					
+ *  viaduct player detector 					    <- Beta						/ render layer activate
+ *  viaduct Speed controller						<- Released						
+ *  viaduct Teleporter								<- Pre Alpha 				/ ist zu komplex 
  *   	
  *  viaduct facade for all pipes & cables			<- concept
  *   
  *  item & fluid pipes: 							
  *   
- *  sorter pipe										<- concept
  *  pipe											<- Pre Alpha
+ *  sorter pipe										<- concept
  *  vacuum pipe										<- concept
  *  speed up pipe									<- concept
  *  detector pipe									<- concept
- *  Teleporter  pipe								<- concept
  *  
  *  item schlömpel									<- concept
  *  multi schlömpel									<- concept

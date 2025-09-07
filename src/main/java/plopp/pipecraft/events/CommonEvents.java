@@ -1,23 +1,21 @@
 package plopp.pipecraft.events;
 
 import java.util.ArrayDeque;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
-
-import org.lwjgl.glfw.GLFW;
-
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ArmorItem;
@@ -28,15 +26,12 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.InputEvent;
-import net.neoforged.neoforge.client.event.InputEvent.MouseButton;
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
@@ -47,12 +42,12 @@ import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import plopp.pipecraft.PipeCraftIndex;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductSpeed;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductDetector;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
 import plopp.pipecraft.Network.NetworkHandler;
-import plopp.pipecraft.Network.SpeedChangePacket;
-import plopp.pipecraft.logic.SpeedLevel;
 import plopp.pipecraft.logic.ViaductTravel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -61,16 +56,16 @@ import net.minecraft.world.entity.Entity;
 @EventBusSubscriber(modid = PipeCraftIndex.MODID)
 public class CommonEvents {	
 	
+	public static final Map<UUID, BlockPos> brushingPlayers = new HashMap<>();
+	
 	@SubscribeEvent
 	public static void onLevelTick(LevelTickEvent.Post event) {
 	    if (!(event.getLevel() instanceof ServerLevel level)) return;
 
 	    for (ServerPlayer player : level.players()) {
 	        if (ViaductTravel.isTravelActive(player)) {
-	            int progress = ViaductTravel.getChargeProgress(player);
-	            if (progress < 100) {
-	                NetworkHandler.sendTravelStateToAll(player, false);
-	            }
+	           
+	          
 	        }
 	    }
 	}
@@ -83,11 +78,49 @@ public class CommonEvents {
 	    if (serverPlayer.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
 	        if (ViaductTravel.isTravelActive(player)) {
 	            ViaductTravel.stop(player, false);
+
+
 	        }
 	        return;
 	    }
 
 	    ViaductTravel.tick(player);
+	    
+	    UUID uuid = serverPlayer.getUUID();
+	    if (!brushingPlayers.containsKey(uuid)) return;
+
+	    ItemStack stack = serverPlayer.getMainHandItem();
+	    if (stack.getItem() != Items.BRUSH) {
+	        brushingPlayers.remove(uuid);
+	        return;
+	    }
+
+	    BlockPos pos = brushingPlayers.get(uuid);
+	    Level level = serverPlayer.level();
+	    BlockState state = level.getBlockState(pos);
+
+	    if (!(state.getBlock() instanceof BlockViaduct)) {
+	        brushingPlayers.remove(uuid); 
+	        return;
+	    }
+
+	    int currentLevel = state.getValue(BlockViaduct.LIGHT_LEVEL);
+	    if (currentLevel <= 0) {
+	        brushingPlayers.remove(uuid); 
+	        return;
+	    }
+
+	    BlockState newState = state.setValue(BlockViaduct.LIGHT_LEVEL, 0);
+	    level.setBlock(pos, newState, 3);
+
+	    ItemStack glowstoneReturn = new ItemStack(Items.GLOWSTONE_DUST, currentLevel);
+	    boolean added = serverPlayer.getInventory().add(glowstoneReturn);
+	    if (!added) serverPlayer.drop(glowstoneReturn, false);
+
+	    serverPlayer.displayClientMessage(
+	        Component.literal("Lichtlevel auf 0 zurückgesetzt. Glowstone zurückgegeben: " + currentLevel),
+	        true
+	    );
 	}
 	
 	@SubscribeEvent
@@ -184,19 +217,28 @@ public class CommonEvents {
 	        InteractionHand hand = event.getHand();
 	        ItemStack stack = player.getItemInHand(hand);
 	        BlockState state = level.getBlockState(pos);
-	        Block block = state.getBlock();
-	        
-	        if (level.isClientSide) return;
+	        Block block = state.getBlock();  
 
 	        boolean isViaduct = block instanceof BlockViaduct;
 	        boolean isLinker = block instanceof BlockViaductLinker;
+	        boolean isSpeed   = block instanceof BlockViaductSpeed;
+	        boolean isDetector   = block instanceof BlockViaductDetector;
 
 	        if ((isViaduct && state.hasProperty(BlockViaduct.TRANSPARENT)) ||
-	            (isLinker && state.hasProperty(BlockViaductLinker.TRANSPARENT))) {
+	        	    (isLinker && state.hasProperty(BlockViaductLinker.TRANSPARENT)) ||
+	        	    (isSpeed   && state.hasProperty(BlockViaductSpeed.TRANSPARENT))||
+	        	    (isDetector   && state.hasProperty(BlockViaductDetector.TRANSPARENT))) {
 
-	        	   if (stack.is(ItemTags.WOOL)) {
+	   
+	        	 if (isSpeed && player.isShiftKeyDown()) {
+	        		 
+	        	 }else {
+	        	    if (stack.is(ItemTags.WOOL)) {
 	        	        BlockState newState = state.setValue(
-	        	            isViaduct ? BlockViaduct.TRANSPARENT : BlockViaductLinker.TRANSPARENT,
+	        	            isViaduct ? BlockViaduct.TRANSPARENT :
+	        	            isLinker ? BlockViaductLinker.TRANSPARENT :
+	        	            isSpeed ?        BlockViaductSpeed.TRANSPARENT :
+	        	            BlockViaductDetector.TRANSPARENT,
 	        	            false
 	        	        );
 	        	        level.setBlock(pos, newState, 3);
@@ -207,9 +249,12 @@ public class CommonEvents {
 	        	    }
 
 	        	    if (stack.is(Items.GLASS)) {
-	        	        BlockState newState = state.setValue(
-	        	            isViaduct ? BlockViaduct.TRANSPARENT : BlockViaductLinker.TRANSPARENT,
-	        	            true
+	        	    	BlockState newState = state.setValue(
+		        	            isViaduct ? BlockViaduct.TRANSPARENT :
+		        	            isLinker ? BlockViaductLinker.TRANSPARENT :
+		        	            isSpeed ?        BlockViaductSpeed.TRANSPARENT :
+		        	            BlockViaductDetector.TRANSPARENT,
+		        	            true
 	        	        );
 	        	        level.setBlock(pos, newState, 3);
 	        	        player.displayClientMessage(Component.literal("Transparenz aktiviert."), true);
@@ -217,69 +262,9 @@ public class CommonEvents {
 	        	        event.setCanceled(true);
 	        	        return;
 	        	    }
+	        	 }
 	        	}
-
-	        if (isViaduct && stack.getItem() == Items.GLOWSTONE_DUST) {
-	            int currentLevel = state.getValue(BlockViaduct.LIGHT_LEVEL);
-	            if (player.isShiftKeyDown()) {
-	                if (currentLevel < 15) {
-	                    int toConsume = 1;
-	                    BlockState newState = state.setValue(BlockViaduct.LIGHT_LEVEL, currentLevel + toConsume);
-	                    level.setBlock(pos, newState, 3);
-	                    if (!player.isCreative()) stack.shrink(toConsume);
-	                    player.displayClientMessage(Component.literal("Lichtlevel erhöht auf " + (currentLevel + toConsume)), true);
-	                    event.setCancellationResult(InteractionResult.SUCCESS);
-	                    event.setCanceled(true);
-	                    return;
-	                } else {
-	                    player.displayClientMessage(Component.literal("Lichtlevel ist bereits auf Maximum (15)."), true);
-	                    event.setCancellationResult(InteractionResult.FAIL);
-	                    event.setCanceled(true);
-	                    return;
-	                }
-	            } else {
-	                if (currentLevel < 15) {
-	                    int maxIncrease = 15 - currentLevel;
-	                    int toConsume = Math.min(stack.getCount(), maxIncrease);
-	                    int newLevel = currentLevel + toConsume;
-	                    BlockState newState = state.setValue(BlockViaduct.LIGHT_LEVEL, newLevel);
-	                    level.setBlock(pos, newState, 3);
-	                    if (!player.isCreative()) stack.shrink(toConsume);
-	                    player.displayClientMessage(Component.literal("Lichtlevel erhöht auf " + newLevel), true);
-	                    event.setCancellationResult(InteractionResult.SUCCESS);
-	                    event.setCanceled(true);
-	                    return;
-	                } else {
-	                    player.displayClientMessage(Component.literal("Lichtlevel ist bereits auf Maximum (15)."), true);
-	                    event.setCancellationResult(InteractionResult.FAIL);
-	                    event.setCanceled(true);
-	                    return;
-	                }
-	            }
-	        }
-
-	        if (isViaduct && stack.getItem() == Items.BRUSH) {
-	            int currentLevel = state.getValue(BlockViaduct.LIGHT_LEVEL);
-	            if (currentLevel > 0) {
-	                BlockState newState = state.setValue(BlockViaduct.LIGHT_LEVEL, 0);
-	                level.setBlock(pos, newState, 3);
-	                ItemStack glowstoneReturn = new ItemStack(Items.GLOWSTONE_DUST, currentLevel);
-	                boolean added = player.getInventory().add(glowstoneReturn);
-	                if (!added) {
-	                    player.drop(glowstoneReturn, false);
-	                }
-	                player.displayClientMessage(Component.literal("Lichtlevel auf 0 zurückgesetzt. Glowstone zurückgegeben: " + currentLevel), true);
-	                event.setCancellationResult(InteractionResult.SUCCESS);
-	                event.setCanceled(true);
-	                return;
-	            } else {
-	                player.displayClientMessage(Component.literal("Lichtlevel ist bereits 0."), true);
-	                event.setCancellationResult(InteractionResult.FAIL);
-	                event.setCanceled(true);
-	                return;
-	            }
-	        }
-
+	        
 	        if (stack.getItem() instanceof DyeItem dyeItem) {
 	            DyeColor clickedColor = dyeItem.getDyeColor();
 
@@ -330,8 +315,13 @@ public class CommonEvents {
 	                event.setCanceled(true);
 	                return;
 	            }
-
-	            if ((isViaduct && state.hasProperty(BlockViaduct.COLOR)) || (isLinker && state.hasProperty(BlockViaductLinker.COLOR))) {
+	            
+	            if (isSpeed && player.isShiftKeyDown()) {
+	            } else {
+	            if ((isViaduct && state.hasProperty(BlockViaduct.COLOR)) ||
+	                    (isLinker && state.hasProperty(BlockViaductLinker.COLOR)) ||
+	                    (isSpeed   && state.hasProperty(BlockViaductSpeed.COLOR))||
+	                    (isDetector   && state.hasProperty(BlockViaductDetector.COLOR))) {
 
 	                DyeColor currentColor;
 	                BlockState newState;
@@ -346,12 +336,32 @@ public class CommonEvents {
 	                        event.setCanceled(true);
 	                        return;
 	                    }
-	                } else { 
+	                } else if (isLinker) {
 	                    currentColor = state.getValue(BlockViaductLinker.COLOR);
 	                    if (currentColor != clickedColor) {
 	                        newState = state.setValue(BlockViaductLinker.COLOR, clickedColor);
 	                    } else {
 	                        player.displayClientMessage(Component.literal("Der Linker ist bereits " + clickedColor.getName() + "."), true);
+	                        event.setCancellationResult(InteractionResult.FAIL);
+	                        event.setCanceled(true);
+	                        return;
+	                    }
+	                } else if (isSpeed){ // isSpeed
+	                    currentColor = state.getValue(BlockViaductSpeed.COLOR);
+	                    if (currentColor != clickedColor) {
+	                        newState = state.setValue(BlockViaductSpeed.COLOR, clickedColor);
+	                    } else {
+	                        player.displayClientMessage(Component.literal("Der Speed-Viaduct ist bereits " + clickedColor.getName() + "."), true);
+	                        event.setCancellationResult(InteractionResult.FAIL);
+	                        event.setCanceled(true);
+	                        return;
+	                    }
+	                } else { 
+	                    currentColor = state.getValue(BlockViaductDetector.COLOR);
+	                    if (currentColor != clickedColor) {
+	                        newState = state.setValue(BlockViaductDetector.COLOR, clickedColor);
+	                    } else {
+	                        player.displayClientMessage(Component.literal("Der Speed-Viaduct ist bereits " + clickedColor.getName() + "."), true);
 	                        event.setCancellationResult(InteractionResult.FAIL);
 	                        event.setCanceled(true);
 	                        return;
@@ -365,8 +375,81 @@ public class CommonEvents {
 	                event.setCanceled(true);
 	            }
 	        }
-	        
+	        }
 
+	        if (isViaduct && stack.getItem() == Items.GLOWSTONE_DUST) {
+	            int currentLevel = state.getValue(BlockViaduct.LIGHT_LEVEL);
+	            if (player.isShiftKeyDown()) {
+	                if (currentLevel < 15) {
+	                    int toConsume = 1;
+	                    BlockState newState = state.setValue(BlockViaduct.LIGHT_LEVEL, currentLevel + toConsume);
+	                    level.setBlock(pos, newState, 3);
+	                    if (!player.isCreative()) stack.shrink(toConsume);
+	                    player.displayClientMessage(Component.literal("Lichtlevel erhöht auf " + (currentLevel + toConsume)), true);
+	                    event.setCancellationResult(InteractionResult.SUCCESS);
+	                    event.setCanceled(true);
+	                    return;
+	                } else {
+	                    player.displayClientMessage(Component.literal("Lichtlevel ist bereits auf Maximum (15)."), true);
+	                    event.setCancellationResult(InteractionResult.FAIL);
+	                    event.setCanceled(true);
+	                    return;
+	                }
+	            } else {
+	                if (currentLevel < 15) {
+	                    int maxIncrease = 15 - currentLevel;
+	                    int toConsume = Math.min(stack.getCount(), maxIncrease);
+	                    int newLevel = currentLevel + toConsume;
+	                    BlockState newState = state.setValue(BlockViaduct.LIGHT_LEVEL, newLevel);
+	                    level.setBlock(pos, newState, 3);
+	                    if (!player.isCreative()) stack.shrink(toConsume);
+	                    player.displayClientMessage(Component.literal("Lichtlevel erhöht auf " + newLevel), true);
+	                    event.setCancellationResult(InteractionResult.SUCCESS);
+	                    event.setCanceled(true);
+	                    return;
+	                } else {
+	                    player.displayClientMessage(Component.literal("Lichtlevel ist bereits auf Maximum (15)."), true);
+	                    event.setCancellationResult(InteractionResult.FAIL);
+	                    event.setCanceled(true);
+	                    return;
+	                }
+	            } 
+	            
+	        }
+	        if (stack.getItem() == Items.BRUSH && state.getBlock() instanceof BlockViaduct) {
+	            brushingPlayers.put(player.getUUID(), pos);
+	            event.setCanceled(true);
+	            event.setCancellationResult(InteractionResult.SUCCESS);
+	        }
+
+	
+	        if (state.getBlock() instanceof BlockViaductSpeed && player.isShiftKeyDown()) {
+	            BlockEntity be = level.getBlockEntity(pos);
+	            if (be instanceof BlockEntityViaductSpeed speedBE) {
+	                ItemStack held = player.getMainHandItem();
+
+	                if (!held.isEmpty()) {
+	                    ItemStack copy = held.copy();
+	                    copy.setCount(1);
+	                    speedBE.setIdStack(copy);
+	                } else {
+	                    speedBE.setIdStack(ItemStack.EMPTY);
+	                }
+	                speedBE.setChanged();
+
+	                if (!level.isClientSide && level instanceof ServerLevel serverLevel) {
+	                    ClientboundBlockEntityDataPacket pkt = speedBE.getUpdatePacket();
+	                    if (pkt != null) {
+	                        serverLevel.getPlayers(p -> p.blockPosition().closerThan(pos, 64))
+	                                   .forEach(sp -> sp.connection.send(pkt));
+	                    }
+	                }
+
+	                event.setCanceled(true);
+	                event.setCancellationResult(InteractionResult.SUCCESS);
+	            }
+	        
+	        }
 	    }
 	    
 	    @SubscribeEvent

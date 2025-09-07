@@ -1,7 +1,6 @@
 package plopp.pipecraft.logic;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -18,15 +17,18 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import plopp.pipecraft.Blocks.BlockRegister;
 import plopp.pipecraft.Blocks.ViaductBlockRegistry;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
 import plopp.pipecraft.Network.NetworkHandler;
 import plopp.pipecraft.Network.travel.ClientTravelDataManager;
+import plopp.pipecraft.Network.travel.PacketTravelStop;
 import plopp.pipecraft.Network.travel.TravelStatePacket;
 
 public class ViaductTravel {
@@ -35,13 +37,10 @@ public class ViaductTravel {
 	public static final Map<UUID, TravelData> activeTravels = new HashMap<>();
     private static final Set<UUID> jumpAfterTravel = new HashSet<>();
     private static final Set<UUID> jumpTrigger = new HashSet<>();
-    public static final int MAX_CHARGE = 30; //charge time
     private static final Set<UUID> resetModelSet = new HashSet<>();
     private static final Map<UUID, Float> travelYawMap = new HashMap<>();
     private static final Map<UUID, VerticalDirection> verticalDirMap = new HashMap<>();
-    public enum VerticalDirection {
-        NONE, UP, DOWN
-    }
+    public enum VerticalDirection {NONE, UP, DOWN}
     
     public static void markResetModel(UUID id) {
     resetModelSet.add(id);
@@ -79,7 +78,7 @@ public class ViaductTravel {
             return activeTravels.containsKey(player.getUUID());
         }
     }
-    
+
     public static float getTravelYaw(UUID uuid, Level level) {
         if (level != null && level.isClientSide()) {
             TravelStatePacket travelData = ClientTravelDataManager.getTravelData(uuid);
@@ -107,279 +106,241 @@ public class ViaductTravel {
         }
     }
     
-   public static boolean isCharging(Player player) {
-        TravelData data = activeTravels.get(player.getUUID());
-        return data != null && data.isCharging;
-    }
 
-   public static int getChargeProgress(Player player) {
-	    if (player.level().isClientSide()) {
-	        return ClientTravelDataManager.getChargeProgress(player.getUUID());
-	    }
-
-	    TravelData data = activeTravels.get(player.getUUID());
-	    if (data != null) {
-	        if (data.pathFinder == null || (data.pathFinder.getResult() != null && !data.pathFinder.getResult().isEmpty())) {
-	            return 100;
-	        }
-	        return (int) data.chargeProgress;
-	    }
-	    return 0;
+   private static float getYawFromDirection(Direction dir) {
+	    return switch (dir) {
+	        case NORTH -> 180f;
+	        case SOUTH -> 0f;
+	        case WEST  -> 90f;
+	        case EAST  -> -90f;
+	        default    -> 0f;
+	    };
 	}
 
-    public static void start(Player player, BlockPos startPos, BlockPos targetPos, int ticksPerChunk) {
-        Level level = player.level();
+	private static float getPitchFromDirection(Direction dir) {
+	    return switch (dir) {
+	        case UP   -> 90f;
+	        case DOWN -> -90f;
+	        default   -> 0f;
+	    };
+	}
 
-        TravelData data = new TravelData(level, startPos, targetPos, ticksPerChunk);
+	private static VerticalDirection getVerticalDirection(Direction dir) {
+	    return switch (dir) {
+	        case UP   -> VerticalDirection.UP;
+	        case DOWN -> VerticalDirection.DOWN;
+	        default   -> VerticalDirection.NONE;
+	    };
+	}
+	
+	public static void start(Player player, BlockPos startPos, BlockPos targetPos, int ticksPerChunk) {
+	    Level level = player.level();
+	    UUID uuid = player.getUUID();
 
-        boolean isTargetNextToStart = false;
-        for (Direction dir : Direction.values()) {
-            BlockPos neighbor = startPos.relative(dir);
-            if (neighbor.equals(targetPos)) {
-                isTargetNextToStart = true;
-                break;
-            }
-        }
+	    TravelData data = new TravelData(level, startPos, targetPos, ticksPerChunk, false);
+	    data.finalTargetPos = targetPos;
 
-        if (isTargetNextToStart) {
-            data.chargeProgress = 100;
-            data.isCharging = false;
-            data.path = List.of(startPos, targetPos);
-            data.progressIndex = 0;
-            data.pathFinder = null; 
-        }
-        activeTravels.put(player.getUUID(), data);
+	    BlockEntity startBE = level.getBlockEntity(startPos);
+	    if (startBE instanceof BlockEntityViaductLinker linker) {
+	        linker.asyncScanner = null;
+	        linker.setAsyncScanInProgress(false);
 
-        if (!player.level().isClientSide()) {
-            player.setInvulnerable(true);
-            player.setShiftKeyDown(false);
-            player.noPhysics = true;
-            player.setNoGravity(true);
-            player.setDeltaMovement(Vec3.ZERO);
-        }
+	        List<BlockPos> pathToTarget = linker.scannedPaths.get(targetPos);
+	        if (pathToTarget != null && !pathToTarget.isEmpty()) {
+	            data.path = pathToTarget;
+	            data.phase = TravelData.TravelPhase.TO_FINAL_TARGET;
+	            data.hasTeleporterPhase = false;
+	        } else {
+	            stop(player, true);
+	            return;
+	        }
+	    }
 
-        if (player instanceof ServerPlayer serverPlayer) {
-            NetworkHandler.sendTravelStateToAll(serverPlayer, false);
-        }
-        Direction travelDir = null;
-        BlockPos viaduct = null;
+	    activeTravels.put(uuid, data);
 
-        for (Direction dir : Direction.values()) {
-            BlockPos candidate = startPos.relative(dir);
-            BlockState state = level.getBlockState(candidate);
-            System.out.println("Start: Check neighbor " + candidate + " block: " + state.getBlock());
-            if (ViaductBlockRegistry.isViaduct(state)) {
-                System.out.println("Start: Found viaduct neighbor at " + candidate);
-                travelDir = dir;
-                viaduct = candidate;
-                break;
-            }
-        }
+	    if (!level.isClientSide()) {
+	        player.setInvulnerable(true);
+	        player.setShiftKeyDown(false);
+	        player.noPhysics = true;
+	        player.setNoGravity(true);
+	        player.setDeltaMovement(Vec3.ZERO);
+	        player.setPose(Pose.SWIMMING);
 
-        if (viaduct != null && travelDir != null) {
-            double x = viaduct.getX() + 0.5;
-            double y = switch (travelDir) {
-                case UP, DOWN -> viaduct.getY() - 0.5;
-                default       -> viaduct.getY() - 1;
-            };
-            double z = viaduct.getZ() + 0.5;
+	    }
 
-            float yaw;
-            float pitch;
-            VerticalDirection vdir;
+	    if (player instanceof ServerPlayer serverPlayer) {
+	        NetworkHandler.sendTravelStateToAll(serverPlayer, false);
+	    }
 
-            if (travelDir == Direction.UP) {
-                yaw = 0f;
-                pitch = 90f; 
-                vdir = VerticalDirection.UP;
-            } else if (travelDir == Direction.DOWN) {
-                yaw = 0f;
-                pitch = -90f; 
-                vdir = VerticalDirection.DOWN;
-            } else {
-                pitch = 0f;
-                vdir = VerticalDirection.NONE;
-                yaw = switch (travelDir) {
-                    case NORTH -> 180f;
-                    case SOUTH -> 0f;
-                    case WEST  -> 90f;
-                    case EAST  -> -90f;
-                    default    -> 0f;
-                };
-            }
+	    for (Direction dir : Direction.values()) {
+	        BlockPos candidate = startPos.relative(dir);
+	        BlockState state = level.getBlockState(candidate);
+	        if (ViaductBlockRegistry.isViaduct(state)) {
+	            Vec3 start = vecFromBlockPos(candidate);
+	            player.teleportTo(start.x, start.y - 1, start.z);
 
-            player.teleportTo(x, y, z);
-            data.lockedX = x;
-            data.lockedY = y;
-            data.lockedZ = z;
-            player.setYRot(yaw);
-            player.setXRot(pitch);
+	            float yaw = getYawFromDirection(dir);
+	            float pitch = getPitchFromDirection(dir);
 
-            travelYawMap.put(player.getUUID(), yaw);
-            travelPitchMap.put(player.getUUID(), pitch);
-            verticalDirMap.put(player.getUUID(), vdir);
-        } else {
-            Vec3 pos = new Vec3(startPos.getX() + 0.5, startPos.getY(), startPos.getZ() + 0.5);
-            player.teleportTo(pos.x, pos.y, pos.z);
+	            player.setYRot(yaw);
+	            player.setXRot(pitch);
 
-        }
-    }
-  
-    public static void tick(Player player) {
-        UUID id = player.getUUID();
-        TravelData data = activeTravels.get(id);
-        if (data == null) return;
+	            data.lockedX = start.x;
+	            data.lockedY = start.y - 1;
+	            data.lockedZ = start.z;
 
-        if (!player.level().isClientSide()) {
-            List<ItemEntity> items = player.level().getEntitiesOfClass(ItemEntity.class, player.getBoundingBox().inflate(1.5));
-            for (ItemEntity item : items) {
-                item.setPickUpDelay(20);
-            }
-        }
+	            travelYawMap.put(uuid, yaw);
+	            travelPitchMap.put(uuid, pitch);
+	            verticalDirMap.put(uuid, getVerticalDirection(dir));
+	            return;
+	        }
+	    }
 
-        if (data.isCharging) {
-            data.pathFinder.tick(50);
-            List<BlockPos> result = data.pathFinder.getResult();
+	    Vec3 fallback = new Vec3(startPos.getX() + 0.5, startPos.getY(), startPos.getZ() + 0.5);
+	    player.teleportTo(fallback.x, fallback.y, fallback.z);
+	}
+   
+	public static void tick(Player player) {
+	    TravelData data = activeTravels.get(player.getUUID());
+	    if (data == null) return;
 
-            if (!result.isEmpty()) {
-                data.path = result;
-                data.chargeProgress = 100f;
-                data.isCharging = false;
-                data.progressIndex = 0;
-                data.chunkProgress = 0;
-                data.tickCounter = 0;
-                data.pathFinder = null; 
-                return;
-            }
+	    if (!player.level().isClientSide()) {
+	        List<ItemEntity> items = player.level().getEntitiesOfClass(ItemEntity.class, player.getBoundingBox().inflate(1.5));
+	        for (ItemEntity item : items) {
+	            item.setPickUpDelay(20);
+	        }
+	    }
 
-            double distance = Vec3.atCenterOf(data.startPos).distanceToSqr(Vec3.atCenterOf(data.targetPos));
-            double maxDistance = 512 * 512;
-            double speed = 2.0 - 0.1 * Math.min(distance / maxDistance, 1.0);
+	    List<BlockPos> path = data.path;
+	    if (path == null || path.isEmpty()) return;
 
-            if (data.chargeProgress < 99) {
-                data.chargeProgress += speed;
-            }
+	    int currentIndex = data.progressIndex;
+	    int lastIndex = path.size() - 1;
+	    if (currentIndex >= lastIndex || data.ticksPerChunk <= 0) return;
 
-            data.tickCounter++;
+	    data.tickCounter++;
+	    data.chunkProgress += (1.0 / data.ticksPerChunk);
 
-            if (!player.level().isClientSide()) {
-                player.noPhysics = true;
-                player.setNoGravity(true);
-                player.setDeltaMovement(Vec3.ZERO);
+	    int stepsLeft = Math.min(16, lastIndex - currentIndex);
+	    double totalStepProgress = data.chunkProgress * stepsLeft;
+	    int subIndex = (int) totalStepProgress;
+	    double lerpProgress = totalStepProgress - subIndex;
 
-                player.teleportTo(data.lockedX, data.lockedY, data.lockedZ);
+	    int fromIndex = Math.min(currentIndex + subIndex, lastIndex - 1);
+	    int toIndex = Math.min(fromIndex + 1, lastIndex);
 
-                float yaw = ViaductTravel.getTravelYaw(player.getUUID(), player.level());
-                float pitch = -ViaductTravel.getTravelPitch(player.getUUID(), player.level());
+	    for (int i = currentIndex; i <= fromIndex; i++) {
+	        BlockState state = player.level().getBlockState(path.get(i));
+	        if (state.getBlock() instanceof BlockViaductSpeed speedBlock) {
+	            data.ticksPerChunk = speedBlock.getSpeed(state);
+	        }
+	    }
 
-                player.setYRot(yaw);
-                player.setXRot(pitch);
-                player.setYHeadRot(yaw);
-                player.yBodyRot = yaw;
-            }
+	    Vec3 from = vecFromBlockPos(path.get(fromIndex));
+	    Vec3 to = vecFromBlockPos(path.get(toIndex));
+	    Vec3 lerped = from.lerp(to, lerpProgress);
 
-            return; 
-        }
+	    BlockState fromState = player.level().getBlockState(path.get(fromIndex));
+	    if (fromState.getBlock() instanceof BlockViaductSpeed speedBlock) {
+	        data.ticksPerChunk = speedBlock.getSpeed(fromState);
+	    }
 
-        List<BlockPos> path = data.path;
-        int currentIndex = data.progressIndex;
-        int lastIndex = path.size() - 1;
-        if (currentIndex >= lastIndex || data.ticksPerChunk <= 0) return;
+	    double lookAheadProgress = lerpProgress + 0.1;
+	    int lookAheadSubIndex = subIndex;
+	    while (lookAheadProgress > 1.0) {
+	        lookAheadProgress -= 1.0;
+	        lookAheadSubIndex++;
+	    }
 
-        data.tickCounter++;
-        data.chunkProgress += (1.0 / data.ticksPerChunk);
+	    int lookFromIndex = Math.min(currentIndex + lookAheadSubIndex, lastIndex - 1);
+	    int lookToIndex = Math.min(lookFromIndex + 1, lastIndex);
+	    Vec3 lookFrom = vecFromBlockPos(path.get(lookFromIndex));
+	    Vec3 lookTo = vecFromBlockPos(path.get(lookToIndex));
+	    Vec3 lookTarget = lookFrom.lerp(lookTo, lookAheadProgress);
 
-        int chunkSize = 16;
-        int stepsLeft = Math.min(chunkSize, lastIndex - currentIndex);
-        double totalStepProgress = data.chunkProgress * stepsLeft;
-        int subIndex = (int) totalStepProgress;
-        double lerpProgress = totalStepProgress - subIndex;
+	    updatePlayerDirection(player, lerped, lookTarget);
 
-        int fromIndex = Math.min(currentIndex + subIndex, lastIndex - 1);
-        int toIndex = Math.min(fromIndex + 1, lastIndex);
+	    if (player instanceof ServerPlayer sp) {
+	        NetworkHandler.sendTravelStateToAll(sp, false);
+	    }
 
-        // 🟩 NEU: Schleife über alle übersprungenen Blöcke, um Speed zu erkennen
-        for (int i = currentIndex; i <= fromIndex; i++) {
-            BlockState state = player.level().getBlockState(path.get(i));
-            if (state.getBlock() instanceof BlockViaductSpeed speedBlock) {
-                int newSpeed = speedBlock.getSpeed(state); // oder state.getValue(SPEED)
-                data.ticksPerChunk = newSpeed;
-            }
-        }
-        Vec3 from = vecFromBlockPos(path.get(fromIndex));
-        Vec3 to = vecFromBlockPos(path.get(toIndex));
-        Vec3 lerped = from.lerp(to, lerpProgress);
-        
-        BlockState fromState = player.level().getBlockState(path.get(fromIndex));
-        if (fromState.getBlock() instanceof BlockViaductSpeed speedBlock) {
-            int newSpeed = speedBlock.getSpeed(fromState); // oder z. B. fromState.getValue(SPEED);
-            data.ticksPerChunk = newSpeed;
-        }
-        
-        double lookAheadProgress = lerpProgress + 0.1;
-        int lookAheadSubIndex = subIndex;
-        while (lookAheadProgress > 1.0) {
-            lookAheadProgress -= 1.0;
-            lookAheadSubIndex++;
-        }
+	    if (player instanceof ServerPlayer sp && sp.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
+	        stop(player, false);
+	        return;
+	    }
 
-        int lookFromIndex = Math.min(currentIndex + lookAheadSubIndex, lastIndex - 1);
-        int lookToIndex = Math.min(lookFromIndex + 1, lastIndex);
-        
-        
-        
-        Vec3 lookFrom = vecFromBlockPos(path.get(lookFromIndex));
-        Vec3 lookTo = vecFromBlockPos(path.get(lookToIndex));
-        Vec3 lookTarget = lookFrom.lerp(lookTo, lookAheadProgress);
+	    player.teleportTo(lerped.x, lerped.y - 0, lerped.z);
 
-        updatePlayerDirection(player, lerped, lookTarget);
+	    if (data.chunkProgress >= 1.0) {
+	        data.progressIndex += stepsLeft;
+	        data.chunkProgress = 0.0;
+	    }
 
-        if (player instanceof ServerPlayer serverPlayer) {
-            NetworkHandler.sendTravelStateToAll(serverPlayer, false);
-        }
+	    if (data.progressIndex >= lastIndex) {
+	        if (data.phase == TravelData.TravelPhase.TO_START_TELEPORTER) {
+	            BlockPos startTeleporterPos = path.get(lastIndex);
+	            BlockEntity be = player.level().getBlockEntity(startTeleporterPos);
+	            if (be instanceof BlockEntityViaductLinker linker) {
+	                List<BlockPos> pathToFinalTarget = linker.scannedPaths.get(data.finalTargetPos);
+	                if (pathToFinalTarget != null && !pathToFinalTarget.isEmpty()) {
+	                    data.path = pathToFinalTarget;
+	                    data.progressIndex = 0;
+	                    data.chunkProgress = 0.0;
+	                    data.phase = TravelData.TravelPhase.TO_FINAL_TARGET;
+	                    return; 
+	                }
+	            }
+	            stop(player, true);
+	        } else {
+	            stop(player, true);
+	        }
+	    }
+	}
+	
+	public static void updatePlayerDirection(Player player, Vec3 lerped, Vec3 lookTarget) {
+	    Vec3 lookDirection = lookTarget.subtract(lerped).normalize();
 
-        if (player instanceof ServerPlayer sp && sp.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
-            stop(player, false);
-            return;
-        }
+	    float pitch = (float) Math.toDegrees(Math.asin(lookDirection.y));
+	    VerticalDirection vdir = VerticalDirection.NONE;
+	    double verticalThreshold = 0.8;
+	    if (lookDirection.y > verticalThreshold) vdir = VerticalDirection.UP;
+	    else if (lookDirection.y < -verticalThreshold) vdir = VerticalDirection.DOWN;
 
-        player.teleportTo(lerped.x, lerped.y -1, lerped.z);
+	    float yaw; // nur einmal
 
-        if (data.chunkProgress >= 1.0) {
-            data.progressIndex += stepsLeft;
-            data.chunkProgress = 0.0;
-        }
+	    if (vdir == VerticalDirection.NONE) {
+	        // normale horizontale Rotation
+	        yaw = (float) Math.toDegrees(Math.atan2(-lookDirection.x, lookDirection.z));
+	        if (yaw < 0) yaw += 360.0f;
+	    } else {
+	        // vertikal: letzten Yaw nehmen, oder horizontalen Unterschied falls vorhanden
+	        TravelData data = activeTravels.get(player.getUUID());
+	        if (data != null && data.progressIndex > 0) {
+	            Vec3 prev = vecFromBlockPos(data.path.get(Math.max(0, data.progressIndex - 1)));
+	            Vec3 curr = lerped;
 
-        if (data.progressIndex >= lastIndex) {
-            BlockPos stonePos = path.get(lastIndex);
-            player.teleportTo(stonePos.getX() + 0.5, stonePos.getY() , stonePos.getZ() + 0.5);
-            stop(player, true);
-        }
-    }
-    
-    public static void updatePlayerDirection(Player player, Vec3 lerped, Vec3 lookTarget) {
-    	Vec3 lookDirection = lookTarget.subtract(lerped).normalize();
+	            double dx = curr.x - prev.x;
+	            double dz = curr.z - prev.z;
 
-    	float yaw = (float) Math.toDegrees(Math.atan2(-lookDirection.x, lookDirection.z));
-    	if (yaw < 0) yaw += 360.0f;
-    	yaw = yaw % 360;
+	            if (Math.abs(dx) < 0.001 && Math.abs(dz) < 0.001) {
+	                yaw = travelYawMap.getOrDefault(player.getUUID(), 0f);
+	            } else {
+	                yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+	                if (yaw < 0) yaw += 360;
+	            }
+	        } else {
+	            yaw = travelYawMap.getOrDefault(player.getUUID(), 0f);
+	        }
+	    }
 
-    	float pitch = (float) Math.toDegrees(Math.asin(lookDirection.y)); 
+	    // Speichern
+	    travelYawMap.put(player.getUUID(), yaw);
+	    travelPitchMap.put(player.getUUID(), pitch);
+	    verticalDirMap.put(player.getUUID(), vdir);
 
-    	travelYawMap.put(player.getUUID(), yaw);
-    	travelPitchMap.put(player.getUUID(), pitch);
-
-    	player.setYRot(yaw);
-
-    	double verticalThreshold = 0.8;
-    	VerticalDirection dir = VerticalDirection.NONE;
-    	if (lookDirection.y > verticalThreshold) {
-    	    dir = VerticalDirection.UP;
-    	} else if (lookDirection.y < -verticalThreshold) {
-    	    dir = VerticalDirection.DOWN;
-    	}
-    	verticalDirMap.put(player.getUUID(), dir);
-    }
+	    player.setYRot(yaw);
+	    player.setXRot(pitch);
+	}
 
     public static BlockPos findTarget(Level level, BlockPos from) {
         Set<BlockPos> visited = new HashSet<>();
@@ -439,23 +400,30 @@ public class ViaductTravel {
         player.setNoGravity(true);
         player.setDeltaMovement(Vec3.ZERO);
     }
-    
+
+  
     public static void stop(Player player, boolean includeTeleport) {
         UUID id = player.getUUID();
-        
+
         travelYawMap.remove(id);
         verticalDirMap.remove(id);
-        ViaductTravel.markResetModel(player.getUUID());
-        player.refreshDimensions();
+        ViaductTravel.markResetModel(id);
+
         TravelData data = activeTravels.remove(id);
         List<BlockPos> path = data != null ? data.path : null;
-    
+
         player.noPhysics = false;
         player.setPose(Pose.STANDING);
         player.setInvisible(false);
         player.setInvulnerable(false);
         player.setNoGravity(false);
+        
         markJumpAfterTravel(player);
+        
+        if (player instanceof ServerPlayer sp) {
+            NetworkHandler.sendTravelStateToAll(sp, true);
+            NetworkHandler.sendToClient(sp, new PacketTravelStop(sp.getUUID()));
+        }
 
         if (includeTeleport && path != null && !path.isEmpty()) {
             BlockPos stonePos = path.get(path.size() - 1);
@@ -542,37 +510,6 @@ public class ViaductTravel {
         
         if (player instanceof ServerPlayer serverPlayer) {
         	NetworkHandler.sendTravelStateToAll(serverPlayer, true);
-            
-        }
-    }
-    
-    public static class TravelData {
-        public List<BlockPos> path = new ArrayList<>();
-        public int progressIndex = 0;
-        public double chunkProgress = 0.0;
-        public int ticksPerChunk;
-        public int tickCounter = 0;
-        public int maxChargeTicks = 600; 
-        public float chargeProgress = 0f;
-        public int chargeTickCounter = 0;
-        public float ticksPerPercent = 1f; 
-        public int ticksToCharge = 100;          
-        public int estimatedTicksToCharge = 0; 
-        public BlockPos startPos;
-        public BlockPos targetPos;
-        public double lockedX;
-        public double lockedY;
-        public double lockedZ;
-    
-        public boolean isCharging = true;
-        public ViaductPathFinder pathFinder;
-
-        public TravelData(Level level, BlockPos start, BlockPos end, int ticksPerChunk) {
-            this.ticksPerChunk = ticksPerChunk;
-            this.path.add(start);
-            this.pathFinder = new ViaductPathFinder(level, start, end);
-            this.startPos = start;
-            this.targetPos = end;
             
         }
     }

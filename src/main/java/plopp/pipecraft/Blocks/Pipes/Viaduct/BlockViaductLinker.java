@@ -286,6 +286,7 @@ public class BlockViaductLinker extends Block implements EntityBlock, Connectabl
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new BlockEntityViaductLinker(pos, state);
     }
+    
     @Override
     public boolean canConnectTo(BlockState state, Level level, BlockPos pos, Direction direction) {
 

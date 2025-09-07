@@ -15,7 +15,10 @@ public enum SpeedLevel implements StringRepresentable {
 	LEVEL_73(73), LEVEL_74(74), LEVEL_75(75), LEVEL_76(76), LEVEL_77(77), LEVEL_78(78), LEVEL_79(79), LEVEL_80(80),
 	LEVEL_81(81), LEVEL_82(82), LEVEL_83(83), LEVEL_84(84), LEVEL_85(85), LEVEL_86(86), LEVEL_87(87), LEVEL_88(88),
 	LEVEL_89(89), LEVEL_90(90), LEVEL_91(91), LEVEL_92(92), LEVEL_93(93), LEVEL_94(94), LEVEL_95(95), LEVEL_96(96),
-	LEVEL_97(97), LEVEL_98(98), LEVEL_99(99);
+	LEVEL_97(97), LEVEL_98(98), LEVEL_99(99),  LEVEL_100(100), LEVEL_101(101), LEVEL_102(102), LEVEL_103(103), LEVEL_104(104),
+	LEVEL_105(105), LEVEL_106(106), LEVEL_107(107), LEVEL_108(108), LEVEL_109(109), LEVEL_110(110), LEVEL_111(111), LEVEL_112(112),
+	LEVEL_113(113), LEVEL_114(114), LEVEL_115(115), LEVEL_116(116), LEVEL_117(117), LEVEL_118(118), LEVEL_119(119), LEVEL_120(120),
+	LEVEL_121(121), LEVEL_122(122), LEVEL_123(123), LEVEL_124(124), LEVEL_125(125), LEVEL_126(126), LEVEL_127(127), LEVEL_128(128); 
 
     private final int value;
 
@@ -29,14 +32,15 @@ public enum SpeedLevel implements StringRepresentable {
 
     @Override
     public String getSerializedName() {
-        return String.valueOf(value);
+        int visual = 129 - value; // 1 → 128, 128 → 1
+        return String.valueOf(visual);
     }
 
     public static SpeedLevel fromInt(int i) {
         for (SpeedLevel level : values()) {
             if (level.getValue() == i) return level;
         }
-        return LEVEL_32; // default fallback
+        return LEVEL_32; // default 
     }
 }
 

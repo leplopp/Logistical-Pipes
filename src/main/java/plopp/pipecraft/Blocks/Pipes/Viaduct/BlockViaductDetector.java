@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -17,6 +18,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
@@ -29,12 +31,16 @@ public class BlockViaductDetector  extends Block implements Connectable{
 	
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
+    public static final EnumProperty<DyeColor> COLOR = EnumProperty.create("color", DyeColor.class);
+    public static final BooleanProperty TRANSPARENT = BooleanProperty.create("transparent");
     
 	   public BlockViaductDetector(Properties properties) {
 	        super(Properties.of()
 	            .strength(1.5f));
 	        this.registerDefaultState(this.defaultBlockState()
 	            .setValue(FACING, Direction.NORTH)
+                .setValue(COLOR, DyeColor.WHITE)
+                .setValue(TRANSPARENT, true)
 	            .setValue(POWERED, false));
 	    }
 	   
@@ -64,7 +70,7 @@ public class BlockViaductDetector  extends Block implements Connectable{
 	   
 	    @Override
 	    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-	        builder.add(FACING, POWERED);
+	        builder.add(FACING, POWERED, COLOR, TRANSPARENT);
 	    }
 
 	    @Override
