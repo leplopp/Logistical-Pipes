@@ -44,24 +44,20 @@ public class PipeCraftIndex
 /*ideen
  * 
  *  viaduct											<- Pre Release				/ hitbox vollenden /sounds hinzufügen
- *  viaduct Linker									<- Pre Release				/ hitbox vollenden /sounds hinzufügen 
- *  viaduct	glowing option 							<- Released					
- *  viaduct player detector 					    <- Beta						/ render layer activate
+ *  viaduct Linker									<- Pre Release				/ hitbox vollenden /sounds hinzufügen 			
+ *  viaduct player detector 					    <- Released						
  *  viaduct Speed controller						<- Released						
- *  viaduct Teleporter								<- Pre Alpha 				/ ist zu komplex 
+ *  viaduct Teleporter								<- Pre Alpha 				/ 
  *   	
  *  viaduct facade for all pipes & cables			<- concept
  *   
  *  item & fluid pipes: 							
  *   
- *  pipe											<- Pre Alpha
- *  sorter pipe										<- concept
- *  vacuum pipe										<- concept
- *  speed up pipe									<- concept
- *  detector pipe									<- concept
- *  
- *  item schlömpel									<- concept
- *  multi schlömpel									<- concept
- *  Fluid Schlömpel									<- concept
+ *  pipe		/ iron								<- Pre Alpha
+ *  sorter pipe	/ diamond							<- concept
+ *  vacuum pipe / wooden /stone /netherite			<- concept
+ *  speed up pipe	/gold							<- concept
+ *  detector pipe	/iron							<- concept
+ *	blocker pipe	/ iron							<- concept
  *  
  */

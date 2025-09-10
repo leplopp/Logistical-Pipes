@@ -1,3 +1,10 @@
-# Made in Blockbench 4.12.5
-newmtl m_5b703c23-4bfc-6ff9-b01f-654614089dc5
+# Blender 4.5.2 LTS MTL File: 'None'
+# www.blender.org
+
+newmtl m_6f01d38c-25cb-0173-0102-c2d2cbe7df8c
+
+map_Kd logisticpipes:block/viaduct_speed_display
+
+newmtl m_99ef25c4-b16f-e75c-18fc-c209fdf2ae68
+
 map_Kd placeholder

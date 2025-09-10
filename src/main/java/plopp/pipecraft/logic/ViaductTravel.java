@@ -220,8 +220,9 @@ public class ViaductTravel {
 
 	    data.tickCounter++;
 	    data.chunkProgress += (1.0 / data.ticksPerChunk);
-
-	    int stepsLeft = Math.min(16, lastIndex - currentIndex);
+	    
+	    int remaining = lastIndex - currentIndex;
+	    int stepsLeft = remaining > 16 ? 16 : remaining;
 	    double totalStepProgress = data.chunkProgress * stepsLeft;
 	    int subIndex = (int) totalStepProgress;
 	    double lerpProgress = totalStepProgress - subIndex;
@@ -247,17 +248,32 @@ public class ViaductTravel {
 
 	    double lookAheadProgress = lerpProgress + 0.1;
 	    int lookAheadSubIndex = subIndex;
+
+	    // Schrittindex für Look-Ahead hochzählen
 	    while (lookAheadProgress > 1.0) {
 	        lookAheadProgress -= 1.0;
 	        lookAheadSubIndex++;
 	    }
 
+	    // Indizes clampen
 	    int lookFromIndex = Math.min(currentIndex + lookAheadSubIndex, lastIndex - 1);
 	    int lookToIndex = Math.min(lookFromIndex + 1, lastIndex);
-	    Vec3 lookFrom = vecFromBlockPos(path.get(lookFromIndex));
-	    Vec3 lookTo = vecFromBlockPos(path.get(lookToIndex));
-	    Vec3 lookTarget = lookFrom.lerp(lookTo, lookAheadProgress);
 
+	    Vec3 lookTarget;
+
+	    // Kurz vor dem Ziel: keinen neuen Look-Ahead berechnen, letzte Rotation behalten
+	    if (currentIndex + lookAheadSubIndex >= lastIndex) {
+	        Vec3 prev = vecFromBlockPos(path.get(lastIndex - 1));
+	        Vec3 last = vecFromBlockPos(path.get(lastIndex));
+	        lookTarget = last.add(last.subtract(prev)); // Extrapolation
+	    
+	    } else {
+	        Vec3 lookFrom = vecFromBlockPos(path.get(lookFromIndex));
+	        Vec3 lookTo = vecFromBlockPos(path.get(lookToIndex));
+	        lookTarget = lookFrom.lerp(lookTo, lookAheadProgress);
+	    }
+
+	    // Spieler-Rotation aktualisieren
 	    updatePlayerDirection(player, lerped, lookTarget);
 
 	    if (player instanceof ServerPlayer sp) {

@@ -16,7 +16,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
 import plopp.pipecraft.Network.NetworkHandler;
 import plopp.pipecraft.Network.data.DataEntryRecord;
 import plopp.pipecraft.Network.linker.PacketCancelScan;

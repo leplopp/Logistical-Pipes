@@ -3,10 +3,9 @@ package plopp.pipecraft.events;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-
+import com.mojang.blaze3d.vertex.VertexFormat;
 import org.joml.Matrix4f;
-
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
@@ -17,6 +16,7 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.MultiBufferSource.BufferSource;
+import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
@@ -31,7 +31,6 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -97,12 +96,12 @@ public class ClientRuntimeEvents {
 	                     BlockViaductSpeed.editingActive = false;
 	                     BlockViaductSpeed.editingPos = null;
 	                     lostSightTicks = 0;
-	                     player.displayClientMessage(Component.literal("Geschwindigkeitsänderung beendet."), true);
+	                     player.displayClientMessage(Component.translatable("speedblock.changed.chnageend"), true);
 	                 } else {
 	                     BlockViaductSpeed.editingActive = true;
 	                     BlockViaductSpeed.editingPos = pos;
 	                     lostSightTicks = 0;
-	                     player.displayClientMessage(Component.literal("Geschwindigkeitsänderung gestartet."), true);
+	                     player.displayClientMessage(Component.literal("speedblock.changed.chnagestart"), true);
 	                 }
 	                 toggleCooldownTicks = 5; 
 	             }
@@ -119,7 +118,7 @@ public class ClientRuntimeEvents {
 	             BlockViaductSpeed.editingActive = false;
 	             BlockViaductSpeed.editingPos = null;
 	             lostSightTicks = 0;
-	             player.displayClientMessage(Component.literal("Zu weit entfernt – Bearbeitung beendet."), true);
+	             player.displayClientMessage(Component.literal("speedblock.changed.toofar"), true);
 	         } else {
 	             HitResult hit = mc.hitResult;
 	             if (!(hit instanceof BlockHitResult bhr) || !bhr.getBlockPos().equals(pos)) {
@@ -128,7 +127,7 @@ public class ClientRuntimeEvents {
 	                     BlockViaductSpeed.editingActive = false;
 	                     BlockViaductSpeed.editingPos = null;
 	                     lostSightTicks = 0;
-	                     player.displayClientMessage(Component.literal("Nicht mehr im Blick – Bearbeitung beendet."), true);
+	                     player.displayClientMessage(Component.literal("speedblock.changed.insight"), true);
 	                 }
 	             } else {
 	                 lostSightTicks = 0;
@@ -218,7 +217,22 @@ public class ClientRuntimeEvents {
 	     event.setCanceled(true);
 	 
 	 }
-	   
+	 
+	 private static final RenderType GLOW_CUBE = RenderType.create(
+			    "glow_cube",
+			    DefaultVertexFormat.POSITION_COLOR,
+			    VertexFormat.Mode.QUADS,
+			    256,
+			    false, true,
+			    RenderType.CompositeState.builder()
+			        .setShaderState(RenderStateShard.POSITION_COLOR_SHADER)
+			        .setTransparencyState(RenderStateShard.ADDITIVE_TRANSPARENCY) 
+			        .setLightmapState(RenderStateShard.NO_LIGHTMAP)             
+			        .setWriteMaskState(RenderStateShard.COLOR_WRITE)           
+			        .setDepthTestState(RenderStateShard.LEQUAL_DEPTH_TEST)      
+			        .createCompositeState(false)
+			);
+	 
 	   @SuppressWarnings("incomplete-switch")
 	@SubscribeEvent
 	   public static void onRenderLevel(RenderLevelStageEvent event) {
@@ -242,27 +256,44 @@ public class ClientRuntimeEvents {
 	    	        mc.player.blockPosition().offset(16, 16, 16))) {
 
 	    	    BlockState state = level.getBlockState(pos);
-	    	    if (state.getBlock() instanceof BlockViaductDetector) {
+	    	    if (!(state.getBlock() instanceof BlockViaductDetector)) continue;
+	    	    if (!state.hasProperty(BlockStateProperties.POWERED) || !state.getValue(BlockStateProperties.POWERED)) {
+	    	        continue; 
+	    	    }
+	    	    Direction blockFacing = state.getValue(BlockViaductDetector.FACING);
+
+	    	    List<Direction> directionsToRender;
+	    	    switch (blockFacing) {
+	    	        case WEST, EAST -> directionsToRender = List.of(Direction.NORTH, Direction.SOUTH, Direction.UP, Direction.DOWN);
+	    	        case NORTH, SOUTH -> directionsToRender = List.of(Direction.WEST, Direction.EAST, Direction.UP, Direction.DOWN);
+	    	        default -> directionsToRender = List.of(Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST);
+	    	    }
+
+	    	    for (Direction facing : directionsToRender) {
 	    	        double x = pos.getX() + 0.5 - camPos.x;
 	    	        double y = pos.getY() + 0.5 - camPos.y;
 	    	        double z = pos.getZ() + 0.5 - camPos.z;
 
+	    	        switch (facing) {
+	    	            case NORTH -> z -= 0.47;
+	    	            case SOUTH -> z += 0.47;
+	    	            case WEST  -> x -= 0.47;
+	    	            case EAST  -> x += 0.47;
+	    	            case UP    -> y += 0.47;
+	    	            case DOWN  -> y -= 0.47;
+	    	        }
+
 	    	        poseStack.pushPose();
 	    	        poseStack.translate(x, y, z);
-	    	        float size = 0.35f;
+
+	    	        float size = -0.2f; 
 	    	        poseStack.scale(size, size, size);
 
-	    	        float half = 0.5f; // halbe Einheit für einen Würfel 1x1 in local space
-	    	        float r = 1f, g = 0f, b = 0f, a = 0.8f;
-	    	        int packedLight = 15728880;
-	    	        int overlay = OverlayTexture.NO_OVERLAY;
-	    	        int lightU = packedLight & 0xFFFF;
-	    	        int lightV = (packedLight >> 16) & 0xFFFF;
-
-	    	        VertexConsumer buffer = bufferSource.getBuffer(RenderType.translucent());
+	    	        float half = 0.36f;
+	    	        float r = 1f, g = 0f, b = 0f, a = 0.1f;
+	    	        VertexConsumer buffer = bufferSource.getBuffer(GLOW_CUBE);
 	    	        Matrix4f mat = poseStack.last().pose();
 
-	    	        // Würfel-Seiten definieren (je 4 Vertices pro Fläche)
 	    	        float[][] faces = new float[][] {
 	    	            {-half, -half, -half,  half, -half, -half,  half, half, -half, -half, half, -half}, // -Z
 	    	            { half, -half,  half, -half, -half,  half, -half, half,  half,  half, half,  half}, // +Z
@@ -273,11 +304,12 @@ public class ClientRuntimeEvents {
 	    	        };
 
 	    	        for (float[] f : faces) {
-	    	            buffer.addVertex(mat, f[0], f[1], f[2]).setColor(r,g,b,a).setUv(0f,0f).setUv2(lightU, lightV).setNormal(0,1,0).setOverlay(overlay);
-	    	            buffer.addVertex(mat, f[3], f[4], f[5]).setColor(r,g,b,a).setUv(1f,0f).setUv2(lightU, lightV).setNormal(0,1,0).setOverlay(overlay);
-	    	            buffer.addVertex(mat, f[6], f[7], f[8]).setColor(r,g,b,a).setUv(1f,1f).setUv2(lightU, lightV).setNormal(0,1,0).setOverlay(overlay);
-	    	            buffer.addVertex(mat, f[9], f[10], f[11]).setColor(r,g,b,a).setUv(0f,1f).setUv2(lightU, lightV).setNormal(0,1,0).setOverlay(overlay);
+	    	            buffer.addVertex(mat, f[0], f[1], f[2]).setColor(r,g,b,a);
+	    	            buffer.addVertex(mat, f[3], f[4], f[5]).setColor(r,g,b,a);
+	    	            buffer.addVertex(mat, f[6], f[7], f[8]).setColor(r,g,b,a);
+	    	            buffer.addVertex(mat, f[9], f[10], f[11]).setColor(r,g,b,a);
 	    	        }
+
 
 	    	        poseStack.popPose();
 	    	    }

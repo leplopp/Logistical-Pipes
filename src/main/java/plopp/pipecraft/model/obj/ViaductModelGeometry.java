@@ -19,7 +19,7 @@ import java.util.function.Function;
 
 @OnlyIn(Dist.CLIENT)
 public class ViaductModelGeometry implements IUnbakedGeometry<ViaductModelGeometry> {
-
+	ResourceLocation blockAtlas = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/atlas/blocks.png");
     private final ResourceLocation objModel;
     private final Map<DyeColor, ResourceLocation> colorTextures;
     private final ResourceLocation particleTexture;
@@ -40,10 +40,10 @@ public class ViaductModelGeometry implements IUnbakedGeometry<ViaductModelGeomet
     	            String matPath = mat.texture().getPath();
 
     	            if ("placeholder".equals(matPath)) {
-    	                // Dynamisch für DyeColor
-    	                return spriteGetter.apply(new Material(TextureAtlas.LOCATION_BLOCKS, colorTexture));
+
+    	            	return spriteGetter.apply(new Material(blockAtlas, colorTexture));
     	            } else {
-    	                // feste Textur, z.B. map_Kd fixed_texture.png in der MTL
+
     	                return spriteGetter.apply(mat);
     	            }
     	        };
@@ -58,11 +58,11 @@ public class ViaductModelGeometry implements IUnbakedGeometry<ViaductModelGeomet
 
         Map<DyeColor, TextureAtlasSprite> particleSprites = new EnumMap<>(DyeColor.class);
         for (Map.Entry<DyeColor, ResourceLocation> entry : colorTextures.entrySet()) {
-            TextureAtlasSprite sprite = spriteGetter.apply(new Material(TextureAtlas.LOCATION_BLOCKS, entry.getValue()));
+        	TextureAtlasSprite sprite = spriteGetter.apply(new Material(blockAtlas, entry.getValue()));
             particleSprites.put(entry.getKey(), sprite);
         }
 
-        TextureAtlasSprite fixedParticleSprite = spriteGetter.apply(new Material(TextureAtlas.LOCATION_BLOCKS, particleTexture));
+        TextureAtlasSprite fixedParticleSprite = spriteGetter.apply(new Material(blockAtlas, particleTexture));
 
         return new DynamicColorWrappedModel(modelGenerator, colorTextures, fallbackModel, modelState, particleSprites, fixedParticleSprite);
     }

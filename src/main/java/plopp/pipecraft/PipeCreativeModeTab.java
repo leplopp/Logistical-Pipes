@@ -24,6 +24,7 @@ public class PipeCreativeModeTab {
     	                output.accept(BlockRegister.VIADUCTLINKER.get().asItem());
     	                output.accept(BlockRegister.VIADUCTDETECTOR.get().asItem());
     	                output.accept(BlockRegister.VIADUCTSPEED.get().asItem());
+    	                output.accept(BlockRegister.BLOCKPIPE.get().asItem());
     	               // output.accept(BlockRegister.VIADUCTTELEPORTER.get().asItem());
     	            })
     	            .build()

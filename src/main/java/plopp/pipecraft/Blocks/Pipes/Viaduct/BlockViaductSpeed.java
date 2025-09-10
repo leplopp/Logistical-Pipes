@@ -33,6 +33,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import plopp.pipecraft.Blocks.BlockRegister;
 import plopp.pipecraft.logic.Connectable;
 import plopp.pipecraft.logic.SpeedLevel;
 import plopp.pipecraft.logic.ViaductTravel;
@@ -94,6 +95,7 @@ public class BlockViaductSpeed  extends Block implements EntityBlock, Connectabl
 
 	       if (held.getItem() instanceof DyeItem ||
 	           held.is(ItemTags.WOOL) ||
+	           held.is(BlockRegister.VIADUCT.asItem()) ||
 	           held.is(Items.GLASS)) {
 	           return InteractionResult.PASS;
 	       }

@@ -1,5 +1,8 @@
 package plopp.pipecraft.Blocks.Pipes.Viaduct;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -33,6 +36,7 @@ public class BlockViaductDetector  extends Block implements Connectable{
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     public static final EnumProperty<DyeColor> COLOR = EnumProperty.create("color", DyeColor.class);
     public static final BooleanProperty TRANSPARENT = BooleanProperty.create("transparent");
+    private static final Map<BlockPos, Long> lastActivation = new HashMap<>();
     
 	   public BlockViaductDetector(Properties properties) {
 	        super(Properties.of()
@@ -94,25 +98,28 @@ public class BlockViaductDetector  extends Block implements Connectable{
 	    }
 
 	    @Override
+	    public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
+	        if (level.isClientSide) return;
+	        if (!(entity instanceof Player player)) return;
+	        if (!ViaductTravel.isTravelActive(player)) return;
+
+	        long now = level.getGameTime();
+	        long lastTime = lastActivation.getOrDefault(pos, -1000L);
+
+	        if (now - lastTime >= 60) { 
+	            level.setBlock(pos, state.setValue(POWERED, true), 3);
+	            level.updateNeighborsAt(pos, this);
+	            level.scheduleTick(pos, this, 20);
+	            lastActivation.put(pos, now);
+	        }
+	    }
+
+	    @Override
 	    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
 	        if (state.getValue(POWERED)) {
 	            level.setBlock(pos, state.setValue(POWERED, false), 3);
 	            level.updateNeighborsAt(pos, this);
 	        }
-	    }
-
-	    @Override
-	    public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
-	        if (!level.isClientSide && !state.getValue(POWERED)) {
-	            if (entity instanceof Player player) {
-	                if (ViaductTravel.isTravelActive(player)) {
-	                    level.setBlock(pos, state.setValue(POWERED, true), 3);
-	                    level.updateNeighborsAt(pos, this);
-	                    level.scheduleTick(pos, this, 20);
-	                }
-	            }
-	        }
-	        super.entityInside(state, level, pos, entity);
 	    }
 	    
 	    @Override

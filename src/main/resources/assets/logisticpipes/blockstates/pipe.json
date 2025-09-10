@@ -1,0 +1,150 @@
+{
+	"multipart": [
+		{
+			"when": {
+				"connected_up": false,
+				"connected_down": false,
+				"connected_north": false,
+				"connected_south": false,
+				"connected_east": false,
+				"connected_west": false
+			},
+			"apply": {
+				"model": "logisticpipes:block/pipes/pipe"
+			}
+		},
+		{
+			"when": {
+				"connected_up": false,
+				"connected_down": true,
+				"connected_north": false,
+				"connected_south": false,
+				"connected_east": false,
+				"connected_west": false
+			},
+			"apply": {
+				"model": "logisticpipes:block/pipes/pipe_connected"
+			}
+		},
+		{
+			"when": {
+				"connected_up": true,
+				"connected_down": false,
+				"connected_north": false,
+				"connected_south": false,
+				"connected_east": false,
+				"connected_west": false
+			},
+			"apply": {
+				"model": "logisticpipes:block/pipes/pipe_connected",
+				"x": 180
+			}
+		},
+		{
+			"when": {
+				"connected_up": false,
+				"connected_down": false,
+				"connected_north": false,
+				"connected_south": true,
+				"connected_east": false,
+				"connected_west": false
+			},
+			"apply": {
+				"model": "logisticpipes:block/pipes/pipe_connected",
+				"x": 90
+				
+			}
+		},
+		{
+			"when": {
+				"connected_up": false,
+				"connected_down": false,
+				"connected_north": true,
+				"connected_south": false,
+				"connected_east": false,
+				"connected_west": false
+			},
+			"apply": {
+				"model": "logisticpipes:block/pipes/pipe_connected",
+				"x": 90,
+				"y": 180
+				
+			}
+		},
+		{
+			"when": {
+				"connected_up": false,
+				"connected_down": false,
+				"connected_north": false,
+				"connected_south": false,
+				"connected_east": false,
+				"connected_west": true
+			},
+			"apply": {
+				"model": "logisticpipes:block/pipes/pipe_connected",
+				"x": 90,
+				"y": 90
+			}
+		},
+		{
+			"when": {
+				"connected_up": false,
+				"connected_down": false,
+				"connected_north": false,
+				"connected_south": false,
+				"connected_east": true,
+				"connected_west": false
+			},
+			"apply": {
+				"model": "logisticpipes:block/pipes/pipe_connected",
+				"x": 90,
+				"y": 270
+				
+			}
+		},
+		{
+			"when": {
+				"connected_up": true,
+				"connected_down": true,
+				"connected_north": false,
+				"connected_south": false,
+				"connected_east": false,
+				"connected_west": false
+			},
+			"apply": {
+				"model": "logisticpipes:block/pipes/pipe_long"
+			}
+		},
+		{
+				"when": {
+					"connected_up": false,
+					"connected_down": false,
+					"connected_north": true,
+					"connected_south": true,
+					"connected_east": false,
+					"connected_west": false
+				},
+				"apply": {
+					"model": "logisticpipes:block/pipes/pipe_long",
+					"x": 90
+					
+				}
+			},
+			{
+				"when": {
+					"connected_up": false,
+					"connected_down": false,
+					"connected_north": false,
+					"connected_south": false,
+					"connected_east": true,
+					"connected_west": true
+				},
+				"apply": {
+					"model": "logisticpipes:block/pipes/pipe_long",
+					"x": 90,
+					"y": 90
+				}
+			}
+
+	]
+}
