@@ -1,5 +1,6 @@
 package plopp.pipecraft.Blocks.Pipes;
 
+import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.Container;
@@ -15,12 +16,9 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.items.IItemHandler;
 import plopp.pipecraft.logic.pipe.PipeTravel;
 
 public class BlockPipe extends Block {
-
     public static final BooleanProperty CONNECTED_NORTH = BooleanProperty.create("connected_north");
     public static final BooleanProperty CONNECTED_SOUTH = BooleanProperty.create("connected_south");
     public static final BooleanProperty CONNECTED_EAST  = BooleanProperty.create("connected_east");
@@ -31,12 +29,12 @@ public class BlockPipe extends Block {
     public BlockPipe(Properties props) {
         super(props);
         this.registerDefaultState(this.stateDefinition.any()
-                .setValue(CONNECTED_NORTH, false)
-                .setValue(CONNECTED_SOUTH, false)
-                .setValue(CONNECTED_EAST, false)
-                .setValue(CONNECTED_WEST, false)
-                .setValue(CONNECTED_UP, false)
-                .setValue(CONNECTED_DOWN, false));
+            .setValue(CONNECTED_NORTH, false)
+            .setValue(CONNECTED_SOUTH, false)
+            .setValue(CONNECTED_EAST, false)
+            .setValue(CONNECTED_WEST, false)
+            .setValue(CONNECTED_UP, false)
+            .setValue(CONNECTED_DOWN, false));
     }
 
     @Override
@@ -44,7 +42,7 @@ public class BlockPipe extends Block {
         builder.add(CONNECTED_NORTH, CONNECTED_SOUTH, CONNECTED_EAST, CONNECTED_WEST, CONNECTED_UP, CONNECTED_DOWN);
     }
 
-    public BooleanProperty getPropertyForDirection(Direction dir) {
+    public BooleanProperty getProperty(Direction dir) {
         return switch (dir) {
             case NORTH -> CONNECTED_NORTH;
             case SOUTH -> CONNECTED_SOUTH;
@@ -58,65 +56,41 @@ public class BlockPipe extends Block {
     @Override
     public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
         super.onPlace(state, level, pos, oldState, isMoving);
-
         if (!level.isClientSide) {
-            PipeTravel.addPipe(pos);        // <- Pipe registrieren
-            updateAllConnections(level, pos); // optische Verbindung
+            updateConnections(level, pos);
+            level.scheduleTick(pos, this, 1);
         }
     }
-    
-    @Override
-    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        super.onRemove(state, level, pos, newState, isMoving);
 
-        if (!level.isClientSide) {
-            PipeTravel.removePipe(pos);     // <- Pipe abmelden
-        }
-    }
-    
     @Override
     public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
-        if (!level.isClientSide) {
-            updateAllConnections(level, pos);
-        }
+        if (!level.isClientSide) updateConnections(level, pos);
     }
 
-    private void updateAllConnections(Level level, BlockPos pos) {
+    private void updateConnections(Level level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         BlockState newState = state;
 
         for (Direction dir : Direction.values()) {
             BlockPos neighborPos = pos.relative(dir);
             BlockState neighborState = level.getBlockState(neighborPos);
-
             boolean connect = neighborState.getBlock() instanceof BlockPipe || canConnectToInventory(level, neighborPos, dir.getOpposite());
-            newState = newState.setValue(getPropertyForDirection(dir), connect);
+            newState = newState.setValue(getProperty(dir), connect);
         }
 
-        if (newState != state) {
-            level.setBlock(pos, newState, 3);
-        }
+        if (newState != state) level.setBlock(pos, newState, 3);
     }
-    
+
+    private boolean canConnectToInventory(LevelAccessor levelAccessor, BlockPos neighborPos, Direction sideToNeighbor) {
+        if (!(levelAccessor instanceof Level level)) return false;
+        BlockEntity be = level.getBlockEntity(neighborPos);
+        return be instanceof Container || be instanceof WorldlyContainer;
+    }
+
     @Override
     public BlockState updateShape(BlockState state, Direction dir, BlockState neighbor, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
         boolean connect = neighbor.getBlock() instanceof BlockPipe || canConnectToInventory(level, neighborPos, dir.getOpposite());
-        return state.setValue(getPropertyForDirection(dir), connect);
-    }
-    
-    private boolean canConnectToInventory(LevelAccessor levelAccessor, BlockPos neighborPos, Direction sideToNeighbor) {
-        if (!(levelAccessor instanceof Level level)) return false;
-
-        BlockEntity be = level.getBlockEntity(neighborPos);
-        if (be == null) return false;
-
-        // Vanilla Container (Chest, Furnace, Shulker Box etc.)
-        if (be instanceof Container) return true;
-
-        // Optional: Seitenabhängige Container
-        if (be instanceof WorldlyContainer) return true;
-
-        return false;
+        return state.setValue(getProperty(dir), connect);
     }
     
     private static final VoxelShape CORE = Block.box(5, 5, 5, 11, 11, 11);

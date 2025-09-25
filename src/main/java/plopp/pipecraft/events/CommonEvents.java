@@ -60,25 +60,23 @@ public class CommonEvents {
 	
 	public static final Map<UUID, BlockPos> brushingPlayers = new HashMap<>();
 	
-	/*@SubscribeEvent
+	/*@SubscribeEvent+
 	public static void onLevelTick(LevelTickEvent.Post event) {
 	    if (!(event.getLevel() instanceof ServerLevel level)) return;
-	    PipeTravel.tick(level);
-	    for (ServerPlayer player : level.players()) {
-	        if (ViaductTravel.isTravelActive(player)) {
-	           
-	          
-	        }
+	    PipeTravel.tick(level.getLevel());
+
 	    }
-	}*/
+	*/
 	
 	@SubscribeEvent
 	public static void onServerTick(ServerTickEvent.Post event) {
 	    MinecraftServer server = event.getServer();
 
 	    for (ServerLevel level : server.getAllLevels()) {
-	        PipeTravel.tick(level);
-
+	        if (level == null) continue;
+	        
+	        PipeTravel.tick(level.getLevel());
+	        
 	        for (ServerPlayer player : level.players()) {
 	            if (ViaductTravel.isTravelActive(player)) {
 	                // Spieler-Reise-Tick

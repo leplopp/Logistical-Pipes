@@ -183,4 +183,16 @@ public class BlockViaductDetector  extends Block implements Connectable{
 	        Direction facing = state.getValue(BlockStateProperties.FACING);
 	        return direction.getAxis() == facing.getAxis();
 	    }
+	    
+	    public void trigger(Level level, BlockPos pos, BlockState state) {
+	        long now = level.getGameTime();
+	        long lastTime = lastActivation.getOrDefault(pos, -1000L);
+
+	        if (now - lastTime >= 60) {
+	            level.setBlock(pos, state.setValue(POWERED, true), 3);
+	            level.updateNeighborsAt(pos, this);
+	            level.scheduleTick(pos, this, 20);
+	            lastActivation.put(pos, now);
+	        }
+	    }
 	}

@@ -53,6 +53,8 @@ import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
 import plopp.pipecraft.Network.NetworkHandler;
 import plopp.pipecraft.Network.speeder.SpeedChangePacket;
 import plopp.pipecraft.logic.ViaductTravel;
+import plopp.pipecraft.logic.pipe.PipeTravel;
+import plopp.pipecraft.logic.pipe.TravellingItem;
 
 @EventBusSubscriber(modid = PipeCraftIndex.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public class ClientRuntimeEvents {
@@ -81,8 +83,6 @@ public class ClientRuntimeEvents {
 	     if (mc.player == null) return;
 
 	     Player player = mc.player;
-
-	     
 	     boolean rightClickPressed = mc.options.keyUse.isDown();
 
 	     if (mc.screen == null && !rightClickPressed && wasRightClickPressedLastTick && toggleCooldownTicks == 0) {
@@ -314,7 +314,7 @@ public class ClientRuntimeEvents {
 	    	        poseStack.popPose();
 	    	    }
 	    	}
-	       
+	
 	       for (BlockPos pos : BlockPos.betweenClosed(
 	               mc.player.blockPosition().offset(-16, -16, -16),
 	               mc.player.blockPosition().offset(16, 16, 16))) {

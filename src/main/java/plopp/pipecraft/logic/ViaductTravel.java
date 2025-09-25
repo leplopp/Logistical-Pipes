@@ -24,6 +24,7 @@ import plopp.pipecraft.Blocks.BlockRegister;
 import plopp.pipecraft.Blocks.ViaductBlockRegistry;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductDetector;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
 import plopp.pipecraft.Network.NetworkHandler;
@@ -230,15 +231,26 @@ public class ViaductTravel {
 	    int fromIndex = Math.min(currentIndex + subIndex, lastIndex - 1);
 	    int toIndex = Math.min(fromIndex + 1, lastIndex);
 
-	    for (int i = currentIndex; i <= fromIndex; i++) {
-	        BlockState state = player.level().getBlockState(path.get(i));
+	    Vec3 from = vecFromBlockPos(path.get(fromIndex));
+	    Vec3 to   = vecFromBlockPos(path.get(toIndex));
+
+	    BlockPos min = BlockPos.containing(Math.min(from.x, to.x),
+	                                       Math.min(from.y, to.y),
+	                                       Math.min(from.z, to.z));
+	    BlockPos max = BlockPos.containing(Math.max(from.x, to.x),
+	                                       Math.max(from.y, to.y),
+	                                       Math.max(from.z, to.z));
+
+	    for (BlockPos pos : BlockPos.betweenClosed(min, max)) {
+	        BlockState state = player.level().getBlockState(pos);
 	        if (state.getBlock() instanceof BlockViaductSpeed speedBlock) {
 	            data.ticksPerChunk = speedBlock.getSpeed(state);
 	        }
+	        if (state.getBlock() instanceof BlockViaductDetector detectorBlock) {
+	            detectorBlock.trigger(player.level(), pos, state);
+	        }
 	    }
 
-	    Vec3 from = vecFromBlockPos(path.get(fromIndex));
-	    Vec3 to = vecFromBlockPos(path.get(toIndex));
 	    Vec3 lerped = from.lerp(to, lerpProgress);
 
 	    BlockState fromState = player.level().getBlockState(path.get(fromIndex));
@@ -249,31 +261,26 @@ public class ViaductTravel {
 	    double lookAheadProgress = lerpProgress + 0.1;
 	    int lookAheadSubIndex = subIndex;
 
-	    // Schrittindex für Look-Ahead hochzählen
 	    while (lookAheadProgress > 1.0) {
 	        lookAheadProgress -= 1.0;
 	        lookAheadSubIndex++;
 	    }
 
-	    // Indizes clampen
 	    int lookFromIndex = Math.min(currentIndex + lookAheadSubIndex, lastIndex - 1);
 	    int lookToIndex = Math.min(lookFromIndex + 1, lastIndex);
-
 	    Vec3 lookTarget;
 
-	    // Kurz vor dem Ziel: keinen neuen Look-Ahead berechnen, letzte Rotation behalten
 	    if (currentIndex + lookAheadSubIndex >= lastIndex) {
 	        Vec3 prev = vecFromBlockPos(path.get(lastIndex - 1));
 	        Vec3 last = vecFromBlockPos(path.get(lastIndex));
-	        lookTarget = last.add(last.subtract(prev)); // Extrapolation
+	        lookTarget = last.add(last.subtract(prev)); 
 	    
 	    } else {
 	        Vec3 lookFrom = vecFromBlockPos(path.get(lookFromIndex));
 	        Vec3 lookTo = vecFromBlockPos(path.get(lookToIndex));
 	        lookTarget = lookFrom.lerp(lookTo, lookAheadProgress);
 	    }
-
-	    // Spieler-Rotation aktualisieren
+	    
 	    updatePlayerDirection(player, lerped, lookTarget);
 
 	    if (player instanceof ServerPlayer sp) {
@@ -322,14 +329,12 @@ public class ViaductTravel {
 	    if (lookDirection.y > verticalThreshold) vdir = VerticalDirection.UP;
 	    else if (lookDirection.y < -verticalThreshold) vdir = VerticalDirection.DOWN;
 
-	    float yaw; // nur einmal
+	    float yaw; 
 
 	    if (vdir == VerticalDirection.NONE) {
-	        // normale horizontale Rotation
 	        yaw = (float) Math.toDegrees(Math.atan2(-lookDirection.x, lookDirection.z));
 	        if (yaw < 0) yaw += 360.0f;
 	    } else {
-	        // vertikal: letzten Yaw nehmen, oder horizontalen Unterschied falls vorhanden
 	        TravelData data = activeTravels.get(player.getUUID());
 	        if (data != null && data.progressIndex > 0) {
 	            Vec3 prev = vecFromBlockPos(data.path.get(Math.max(0, data.progressIndex - 1)));
@@ -349,7 +354,6 @@ public class ViaductTravel {
 	        }
 	    }
 
-	    // Speichern
 	    travelYawMap.put(player.getUUID(), yaw);
 	    travelPitchMap.put(player.getUUID(), pitch);
 	    verticalDirMap.put(player.getUUID(), vdir);
