@@ -1,5 +1,8 @@
 package plopp.pipecraft.logic.pipe;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -31,6 +34,9 @@ public class TravellingItem {
     public BlockPos containerPos = null;
     public boolean fromContainer; // neu
     public int lastExtractorIndex = -1;
+    public static final Map<BlockPos, Integer> containerExtractorIndex = new HashMap<>();
+    public static Map<BlockPos, Integer> pipeDirectionIndex = new HashMap<>();
+    public boolean justExtracted = false;
     
     public TravellingItem(ItemStack stack, BlockPos startContainer, Direction side, PipeConfig config, ServerLevel level) {
         this.stack = stack.copy();

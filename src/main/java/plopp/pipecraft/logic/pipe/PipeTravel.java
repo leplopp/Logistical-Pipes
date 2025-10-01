@@ -20,6 +20,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.HopperBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.items.IItemHandler;
 import plopp.pipecraft.PipeConfig;
 import plopp.pipecraft.Blocks.Pipes.BlockPipe;
 import plopp.pipecraft.Blocks.Pipes.BlockPipeExtract;
@@ -36,15 +38,13 @@ public class PipeTravel {
 
     public static void insertItem(ItemStack stack, BlockPos startContainer, Direction side, ServerLevel level, PipeConfig config) {
         TravellingItem item = new TravellingItem(stack, startContainer, side, config, level);
+        item.fromContainer = true; 
+        item.justExtracted = true;
         activeItems.add(item);
     }
 
     public static void finishItem(TravellingItem item, ServerLevel level) {
         BlockEntity be = level.getBlockEntity(item.currentPos);
-        System.out.println("FinishItem called!");
-        System.out.println("currentPos=" + item.currentPos);
-        System.out.println("BlockState=" + level.getBlockState(item.currentPos));
-        System.out.println("BlockEntity=" + level.getBlockEntity(item.currentPos));
         // Falls ein Container existiert
         if (be instanceof Container container) {
             // Item kurz animiert Richtung Container-Ende (optional)
@@ -65,7 +65,7 @@ public class PipeTravel {
                     break;
                 }
             }
-            System.out.println("FinishItem @ " + item.currentPos + " -> " + be);
+
             // Alles, was nicht mehr passt, rausploppen
             if (!leftover.isEmpty()) spawnItemEntity(level, item.currentPos, leftover);
         } else {
@@ -83,80 +83,85 @@ public class PipeTravel {
 
     public static Target getNextTarget(TravellingItem item, BlockPos current, BlockPos lastPos, Direction side) {
         ServerLevel level = item.level;
-
-        // 1) Item im Container → nur Extractor-Pipes
         BlockEntity beHere = level.getBlockEntity(current);
-        if (beHere instanceof Container && !current.equals(lastPos)) {
-            if (!item.fromContainer) {
+        BlockState currentState = level.getBlockState(current);
+
+        boolean isExtractorPipe = currentState.getBlock() instanceof BlockPipeExtract;
+
+        // === Inventar am aktuellen Block ===
+        IItemHandler hereInv = level.getCapability(Capabilities.ItemHandler.BLOCK, current, side);
+        if (hereInv != null) {
+            if (!item.justExtracted) {
+                // Item kommt gerade aus Pipe → muss zuerst in Inventar
                 return new Target(current, side, false, true);
-            } else {
-                // Alle angrenzenden Extractor-Pipes sammeln
-                List<Direction> extractors = new ArrayList<>();
-                for (Direction d : Direction.values()) {
-                    BlockPos candidate = current.relative(d);
-                    if (!level.hasChunkAt(candidate)) continue;
-
-                    BlockState state = level.getBlockState(candidate);
-                    Block block = state.getBlock();
-                    if (block instanceof BlockPipeExtract) {
-                        extractors.add(d);
-                    }
-                }
-
-                if (extractors.isEmpty()) {
-                    return new Target(current, side, false, true); // kein Extractor → bleibt
-                }
-
-                // Round-Robin: nächsten Extractor auswählen
-                int nextIndex = (item.lastExtractorIndex + 1) % extractors.size();
-                Direction chosenDir = extractors.get(nextIndex);
-                item.lastExtractorIndex = nextIndex;
-
-                BlockPos targetPos = current.relative(chosenDir);
-                return new Target(targetPos, chosenDir, false, false);
             }
+
+
+            // Item startet frisch aus Inventar → Extractor prüfen
+            List<Target> extractors = new ArrayList<>();
+            for (Direction d : Direction.values()) {
+                BlockPos candidate = current.relative(d);
+                if (!level.hasChunkAt(candidate)) continue;
+                BlockState state = level.getBlockState(candidate);
+                if (state.getBlock() instanceof BlockPipeExtract) {
+                    extractors.add(new Target(candidate, d, false, false));
+                }
+            }
+
+            if (!extractors.isEmpty()) {
+                int index = TravellingItem.containerExtractorIndex.getOrDefault(current, 0);
+                Target chosen = extractors.get(index % extractors.size());
+                TravellingItem.containerExtractorIndex.put(current, (index + 1) % extractors.size());
+                item.justExtracted = false;
+                return chosen;
+            }
+
+            item.justExtracted = false;
+            return new Target(current, side, false, true);
         }
 
-        // 2) Container vor dem Item → normale Fahrt hinein
+        // === Pipes und Inventare sammeln ===
+        List<Target> possibleTargets = new ArrayList<>();
         for (Direction d : Direction.values()) {
             BlockPos candidate = current.relative(d);
             if (candidate.equals(lastPos)) continue;
             if (!level.hasChunkAt(candidate)) continue;
 
+            BlockState state = level.getBlockState(candidate);
             BlockEntity be = level.getBlockEntity(candidate);
-            if (be instanceof Container) {
-                return new Target(candidate, d, true, false);
+
+            // Normale Pipes immer als Ziel
+            if (state.getBlock() instanceof BlockPipe && !(state.getBlock() instanceof BlockPipeExtract)) {
+                possibleTargets.add(new Target(candidate, d, false, false));
+            }
+            else if (!isExtractorPipe) {
+                IItemHandler inv = level.getCapability(Capabilities.ItemHandler.BLOCK, candidate, d.getOpposite());
+                if (inv != null) {
+                    possibleTargets.add(new Target(candidate, d, true, false));
+                }
             }
         }
 
-        // 3) Prüfen: angrenzende Extractor-Pipes **außerhalb Container**
-        for (Direction d : Direction.values()) {
-            BlockPos candidate = current.relative(d);
-            if (candidate.equals(lastPos)) continue;
-            if (!level.hasChunkAt(candidate)) continue;
+        if (!possibleTargets.isEmpty()) {
+            int index = TravellingItem.pipeDirectionIndex.getOrDefault(current, 0);
+            Target chosen = possibleTargets.get(index % possibleTargets.size());
+            TravellingItem.pipeDirectionIndex.put(current, (index + 1) % possibleTargets.size());
+            return chosen;
+        }
 
-            BlockState state = level.getBlockState(candidate);
-            Block block = state.getBlock();
-
-            if (block instanceof BlockPipeExtract) {
-                return new Target(candidate, d, false, false); // Extraktor hat Vorrang
+        // === Extraktor-Pipes prüfen, falls Item aus Container kommt ===
+        if (item.fromContainer) {
+            for (Direction d : Direction.values()) {
+                BlockPos candidate = current.relative(d);
+                if (candidate.equals(lastPos)) continue;
+                if (!level.hasChunkAt(candidate)) continue;
+                BlockState state = level.getBlockState(candidate);
+                if (state.getBlock() instanceof BlockPipeExtract) {
+                    return new Target(candidate, d, false, false);
+                }
             }
         }
 
-        // 4) Normale Pipes prüfen
-        for (Direction d : Direction.values()) {
-            BlockPos candidate = current.relative(d);
-            if (candidate.equals(lastPos)) continue;
-            if (!level.hasChunkAt(candidate)) continue;
-
-            BlockState state = level.getBlockState(candidate);
-            Block block = state.getBlock();
-
-            if (block instanceof BlockPipe && !(block instanceof BlockPipeExtract)) {
-                return new Target(candidate, d, false, false);
-            }
-        }
-
-        return null;
+        return null; // Kein Ziel
     }
 }

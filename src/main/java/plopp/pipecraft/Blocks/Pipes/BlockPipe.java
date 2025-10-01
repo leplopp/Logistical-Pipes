@@ -89,7 +89,7 @@ public class BlockPipe extends Block {
 
     @Override
     public BlockState updateShape(BlockState state, Direction dir, BlockState neighbor, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
-        boolean connect = neighbor.getBlock() instanceof BlockPipe || canConnectToInventory(level, neighborPos, dir.getOpposite());
+    	boolean connect = (neighbor.getBlock() instanceof BlockPipe && !(neighbor.getBlock() instanceof BlockPipeExtract)) || canConnectToInventory(level, neighborPos, dir.getOpposite());
         return state.setValue(getProperty(dir), connect);
     }
     
