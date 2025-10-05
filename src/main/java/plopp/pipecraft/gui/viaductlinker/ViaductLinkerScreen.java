@@ -49,7 +49,7 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
     public void onClose() {
         super.onClose();
 
-        if (sentPacket) return; // nur einmal senden
+        if (sentPacket) return; 
         sentPacket = true;
 
         if (!menu.getCustomSortedLinkers().isEmpty()) {

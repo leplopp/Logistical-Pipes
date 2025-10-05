@@ -39,7 +39,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerChangeGameModeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
-import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import plopp.pipecraft.PipeCraftIndex;
@@ -257,7 +256,7 @@ public class CommonEvents {
 	        	            false
 	        	        );
 	        	        level.setBlock(pos, newState, 3);
-	        	        player.displayClientMessage(Component.translatable("viaduct.transparency.deaktivated"), true);
+	        	        player.displayClientMessage(Component.translatable("viaduct.transparency.deactivated"), true);
 	        	        event.setCancellationResult(InteractionResult.SUCCESS);
 	        	        event.setCanceled(true);
 	        	        return;
@@ -272,7 +271,7 @@ public class CommonEvents {
 		        	            true
 	        	        );
 	        	        level.setBlock(pos, newState, 3);
-	        	        player.displayClientMessage(Component.translatable("viaduct.transparency.aktivated"), true);
+	        	        player.displayClientMessage(Component.translatable("viaduct.transparency.activated"), true);
 	        	        event.setCancellationResult(InteractionResult.SUCCESS);
 	        	        event.setCanceled(true);
 	        	        return;
@@ -323,7 +322,7 @@ public class CommonEvents {
 	                }
 
 	                player.displayClientMessage(
-	                    Component.translatable(colored + "viaduct.multiple.color_change" + clickedColor.getName()),
+	                    Component.translatable("viaduct.multiple.color_change", colored, clickedColor.getName()),
 	                    true
 	                );
 	                event.setCancellationResult(InteractionResult.SUCCESS);
@@ -346,7 +345,7 @@ public class CommonEvents {
 	                    if (currentColor != clickedColor) {
 	                        newState = state.setValue(BlockViaduct.COLOR, clickedColor);
 	                    } else {
-	                        player.displayClientMessage(Component.translatable("viaduct.color_change.already" + clickedColor.getName() + "."), true);
+	                        player.displayClientMessage(Component.translatable("viaduct.color_change.already", clickedColor.getName() + "."), true);
 	                        event.setCancellationResult(InteractionResult.FAIL);
 	                        event.setCanceled(true);
 	                        return;
@@ -356,7 +355,7 @@ public class CommonEvents {
 	                    if (currentColor != clickedColor) {
 	                        newState = state.setValue(BlockViaductLinker.COLOR, clickedColor);
 	                    } else {
-	                        player.displayClientMessage(Component.translatable("viaduct.color_change.already" + clickedColor.getName() + "."), true);
+	                        player.displayClientMessage(Component.translatable("viaduct.color_change.already", clickedColor.getName() + "."), true);
 	                        event.setCancellationResult(InteractionResult.FAIL);
 	                        event.setCanceled(true);
 	                        return;
@@ -366,7 +365,7 @@ public class CommonEvents {
 	                    if (currentColor != clickedColor) {
 	                        newState = state.setValue(BlockViaductSpeed.COLOR, clickedColor);
 	                    } else {
-	                        player.displayClientMessage(Component.translatable("viaduct.color_change.already" + clickedColor.getName() + "."), true);
+	                        player.displayClientMessage(Component.translatable("viaduct.color_change.already", clickedColor.getName() + "."), true);
 	                        event.setCancellationResult(InteractionResult.FAIL);
 	                        event.setCanceled(true);
 	                        return;
@@ -376,7 +375,7 @@ public class CommonEvents {
 	                    if (currentColor != clickedColor) {
 	                        newState = state.setValue(BlockViaductDetector.COLOR, clickedColor);
 	                    } else {
-	                        player.displayClientMessage(Component.translatable("viaduct.color_change.already"+ clickedColor.getName() + "."), true);
+	                        player.displayClientMessage(Component.translatable("viaduct.color_change.already", clickedColor.getName() + "."), true);
 	                        event.setCancellationResult(InteractionResult.FAIL);
 	                        event.setCanceled(true);
 	                        return;
@@ -385,7 +384,7 @@ public class CommonEvents {
 
 	                level.setBlock(pos, newState, 3);
 	                if (!player.isCreative()) stack.shrink(1);
-	                player.displayClientMessage(Component.translatable("viaduct.color_change" + clickedColor.getName()), true);
+	                player.displayClientMessage(Component.translatable("viaduct.color_change", clickedColor.getName()), true);
 	                event.setCancellationResult(InteractionResult.SUCCESS);
 	                event.setCanceled(true);
 	            }
@@ -400,7 +399,7 @@ public class CommonEvents {
 	                    BlockState newState = state.setValue(BlockViaduct.LIGHT_LEVEL, currentLevel + toConsume);
 	                    level.setBlock(pos, newState, 3);
 	                    if (!player.isCreative()) stack.shrink(toConsume);
-	                    player.displayClientMessage(Component.translatable("viaduct.light_level.increased" + (currentLevel + toConsume)), true);
+	                    player.displayClientMessage(Component.translatable("viaduct.light_level.increased", (currentLevel + toConsume)), true);
 	                    event.setCancellationResult(InteractionResult.SUCCESS);
 	                    event.setCanceled(true);
 	                    return;
@@ -418,7 +417,7 @@ public class CommonEvents {
 	                    BlockState newState = state.setValue(BlockViaduct.LIGHT_LEVEL, newLevel);
 	                    level.setBlock(pos, newState, 3);
 	                    if (!player.isCreative()) stack.shrink(toConsume);
-	                    player.displayClientMessage(Component.translatable("viaduct.light_level.increased"  + newLevel), true);
+	                    player.displayClientMessage(Component.translatable("viaduct.light_level.increased",  newLevel), true);
 	                    event.setCancellationResult(InteractionResult.SUCCESS);
 	                    event.setCanceled(true);
 	                    return;

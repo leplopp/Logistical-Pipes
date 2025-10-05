@@ -26,31 +26,31 @@ public class BlockRegister {
     
     public static final DeferredBlock<Block> VIADUCTLINKER = registerBlock("viaduct_linker",
             () -> new BlockViaductLinker(BlockBehaviour.Properties.of()
-                    .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS).noOcclusion()));
+                    .strength(0.5f).explosionResistance(1.0f).sound(SoundType.GLASS)));
 
     public static final DeferredBlock<Block> VIADUCT = registerBlock("viaduct",
             () -> new BlockViaduct(BlockBehaviour.Properties.of()
-                    .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS)));
+            		.strength(0.5f).explosionResistance(1.0f).sound(SoundType.GLASS)));
     
     public static final DeferredBlock<Block> VIADUCTDETECTOR = registerBlock("viaduct_detector",
             () -> new BlockViaductDetector(BlockBehaviour.Properties.of()
-                    .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS).noOcclusion()));
+            		.strength(0.5f).explosionResistance(1.0f).sound(SoundType.GLASS)));
     
     public static final DeferredBlock<Block> VIADUCTSPEED = registerBlock("viaduct_speed",
             () -> new BlockViaductSpeed(BlockBehaviour.Properties.of()
-                    .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS).noOcclusion()));
+            		.strength(1f).explosionResistance(1.5f).sound(SoundType.GLASS)));
     
     public static final DeferredBlock<Block> VIADUCTTELEPORTER = registerBlock("viaduct_teleporter",
             () -> new BlockViaductTeleporter(BlockBehaviour.Properties.of()
-                    .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS).noOcclusion()));
+            		.strength(1f).explosionResistance(1.5f).sound(SoundType.GLASS)));
     
     public static final DeferredBlock<Block> BLOCKPIPE = registerBlock("pipe",
             () -> new BlockPipe(BlockBehaviour.Properties.of()
-                    .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS)));
+                    .strength(0.5f).explosionResistance(1.0f).sound(SoundType.GLASS)));
     
     public static final DeferredBlock<Block> BLOCKPIPEEXTRACT = registerBlock("pipeextract",
             () -> new BlockPipeExtract(BlockBehaviour.Properties.of()
-                    .strength(4f).requiresCorrectToolForDrops().sound(SoundType.GLASS), PipeConfig.defaultConfig()));
+                    .strength(0.5f).explosionResistance(1.0f).sound(SoundType.GLASS), PipeConfig.defaultConfig()));
     
     private static <T extends Block> DeferredBlock<T> registerBlock(String name, Supplier<T> block) {
         DeferredBlock<T> toReturn = (DeferredBlock<T>) BLOCKS.register(name, block);

@@ -7,6 +7,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
@@ -44,7 +45,7 @@ public class PipeCraftIndex
 /*ideen
  * 
  *  viaduct											<- Pre Release				/ hitbox vollenden /sounds hinzufügen
- *  viaduct Linker									<- Pre Release				/ hitbox vollenden /sounds hinzufügen 			
+ *  viaduct Linker									<- Pre Release				/ hitbox vollenden /sounds hinzufügen / noch anzeigen lassen wo, bzw welcher linker aktuell da ist	
  *  viaduct player detector 					    <- Released						
  *  viaduct Speed controller						<- Released						
  *  viaduct Teleporter								<- Pre Alpha 				/ 

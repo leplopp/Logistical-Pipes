@@ -53,8 +53,6 @@ import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
 import plopp.pipecraft.Network.NetworkHandler;
 import plopp.pipecraft.Network.speeder.SpeedChangePacket;
 import plopp.pipecraft.logic.ViaductTravel;
-import plopp.pipecraft.logic.pipe.PipeTravel;
-import plopp.pipecraft.logic.pipe.TravellingItem;
 
 @EventBusSubscriber(modid = PipeCraftIndex.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public class ClientRuntimeEvents {
