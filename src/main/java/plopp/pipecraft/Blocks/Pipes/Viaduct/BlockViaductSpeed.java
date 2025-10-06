@@ -126,19 +126,19 @@ public class BlockViaductSpeed  extends Block implements EntityBlock, Connectabl
 	               if (state.hasProperty(BlockViaductSpeed.SPEED)) {
 	            	    int speed = state.getValue(BlockViaductSpeed.SPEED).getValue();
 	                   player.displayClientMessage(
-	                       Component.literal("Geschwindigkeitsänderung beendet. Neue Geschwindigkeit: " + speed + " ticks pro Chunk"), 
+	                		   Component.translatable("viaduct.speed.change.end.correct", speed), 
 	                       true
 	                   );
 	               } else {
 	                   player.displayClientMessage(
-	                       Component.literal("Geschwindigkeitsänderung beendet."), 
+	                		   Component.translatable("viaduct.speed.change.end"), 
 	                       true
 	                   );
 	               }
 	           } else {
 	               BlockViaductSpeed.editingActive = true;
 	               BlockViaductSpeed.editingPos = pos;
-	               player.displayClientMessage(Component.literal("Geschwindigkeitsänderung gestartet."), true);
+	               player.displayClientMessage(Component.translatable("viaduct.speed.change.start"), true);
 	           }
 	       }
 

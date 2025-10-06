@@ -41,7 +41,7 @@ public record PacketTravelStart(BlockPos startPos, BlockPos targetPos) implement
 
                 ViaductTravel.start(serverPlayer, packet.startPos(), packet.targetPos(), 32); //speed
                 NetworkHandler.sendTravelStateToAll(serverPlayer, false);
-                serverPlayer.displayClientMessage(Component.literal("Fahrt gestartet."), true);
+                serverPlayer.displayClientMessage(Component.translatable("viaduct.travel.start"), true);
             });
         }
 }

@@ -94,12 +94,12 @@ public class ClientRuntimeEvents {
 	                     BlockViaductSpeed.editingActive = false;
 	                     BlockViaductSpeed.editingPos = null;
 	                     lostSightTicks = 0;
-	                     player.displayClientMessage(Component.translatable("speedblock.changed.chnageend"), true);
+	                     player.displayClientMessage(Component.translatable("viaduct.speed.change.end"), true);
 	                 } else {
 	                     BlockViaductSpeed.editingActive = true;
 	                     BlockViaductSpeed.editingPos = pos;
 	                     lostSightTicks = 0;
-	                     player.displayClientMessage(Component.literal("speedblock.changed.chnagestart"), true);
+	                     player.displayClientMessage(Component.translatable("viaduct.speed.change.start"), true);
 	                 }
 	                 toggleCooldownTicks = 5; 
 	             }
@@ -116,7 +116,7 @@ public class ClientRuntimeEvents {
 	             BlockViaductSpeed.editingActive = false;
 	             BlockViaductSpeed.editingPos = null;
 	             lostSightTicks = 0;
-	             player.displayClientMessage(Component.literal("speedblock.changed.toofar"), true);
+	             player.displayClientMessage(Component.translatable("viaduct.speed.changed.toofar"), true);
 	         } else {
 	             HitResult hit = mc.hitResult;
 	             if (!(hit instanceof BlockHitResult bhr) || !bhr.getBlockPos().equals(pos)) {
@@ -125,7 +125,7 @@ public class ClientRuntimeEvents {
 	                     BlockViaductSpeed.editingActive = false;
 	                     BlockViaductSpeed.editingPos = null;
 	                     lostSightTicks = 0;
-	                     player.displayClientMessage(Component.literal("speedblock.changed.insight"), true);
+	                     player.displayClientMessage(Component.translatable("viaduct.speed.changed.lookaway"), true);
 	                 }
 	             } else {
 	                 lostSightTicks = 0;

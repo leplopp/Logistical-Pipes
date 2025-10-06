@@ -23,6 +23,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.ChunkRenderTypeSet;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import net.neoforged.neoforge.client.model.data.ModelProperty;
+import plopp.pipecraft.Blocks.Facade.BlockViaductFacade;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductDetector;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
@@ -71,6 +72,7 @@ public class DynamicColorWrappedModel implements BakedModel {
             && ((state.hasProperty(BlockViaduct.TRANSPARENT) && state.getValue(BlockViaduct.TRANSPARENT)) ||
                 (state.hasProperty(BlockViaductLinker.TRANSPARENT) && state.getValue(BlockViaductLinker.TRANSPARENT))||
                 (state.hasProperty(BlockViaductSpeed.TRANSPARENT) && state.getValue(BlockViaductSpeed.TRANSPARENT))||
+                (state.hasProperty(BlockViaductFacade.TRANSPARENT) && state.getValue(BlockViaductFacade.TRANSPARENT))||
                 (state.hasProperty(BlockViaductDetector.TRANSPARENT) && state.getValue(BlockViaductDetector.TRANSPARENT)));
         return ChunkRenderTypeSet.of(translucent ? RenderType.translucent() : RenderType.cutout());
     }
@@ -91,6 +93,8 @@ public class DynamicColorWrappedModel implements BakedModel {
                 return data.derive().with(COLOR_MODEL_DATA_KEY, state.getValue(BlockViaductSpeed.COLOR)).build();
             }else if (state.hasProperty(BlockViaductDetector.COLOR)) {
                 return data.derive().with(COLOR_MODEL_DATA_KEY, state.getValue(BlockViaductDetector.COLOR)).build();
+            }else if (state.hasProperty(BlockViaductFacade.COLOR)) {
+                return data.derive().with(COLOR_MODEL_DATA_KEY, state.getValue(BlockViaductFacade.COLOR)).build();
             }
         }
         return data;
@@ -112,6 +116,7 @@ public class DynamicColorWrappedModel implements BakedModel {
             if (state.hasProperty(BlockViaductLinker.COLOR)) return state.getValue(BlockViaductLinker.COLOR);
             if (state.hasProperty(BlockViaductSpeed.COLOR)) return state.getValue(BlockViaductSpeed.COLOR);
             if (state.hasProperty(BlockViaductDetector.COLOR)) return state.getValue(BlockViaductDetector.COLOR);
+            if (state.hasProperty(BlockViaductFacade.COLOR)) return state.getValue(BlockViaductFacade.COLOR);
         }
         return modelData != null ? modelData.get(COLOR_MODEL_DATA_KEY) : null;
     }

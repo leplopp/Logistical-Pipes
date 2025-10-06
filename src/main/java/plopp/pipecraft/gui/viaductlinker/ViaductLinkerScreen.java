@@ -61,11 +61,9 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
 
             PacketUpdateSortedPositions packet = new PacketUpdateSortedPositions(menu.blockEntity.getBlockPos(), sorted);
             NetworkHandler.sendToServer(packet);
-            System.out.println("[Screen] PacketUpdateSortedPositions gesendet: " + sorted);
         }
 
         NetworkHandler.sendToServer(new PacketCancelScan(menu.blockEntity.getBlockPos()));
-        System.out.println("[Screen] PacketCancelScan gesendet");
     }
     
     public ViaductLinkerScreen(ViaductLinkerMenu menu, Inventory inv, Component title) {
@@ -353,25 +351,15 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
                     BlockPos start = menu.blockEntity.getBlockPos();
                     BlockPos target = menu.getLinkers().get(index).pos();
 
-                    // TravelStart-Packet senden
                     NetworkHandler.sendTravelStartPacket(start, target);
 
-                    // Nachricht anzeigen
-                    this.minecraft.player.displayClientMessage(
-                        Component.literal("Starte Fahrt zum Link " + menu.linkedNames.get(index).getString()), true);
-                    
                     this.onClose();
 
                     return true;
                 }
             }
         }
-
-        if (menu.isAsyncScanInProgress()) {
-            this.minecraft.player.displayClientMessage(Component.literal("Linker-Suche läuft..."), true);
-            return false;
-        }
-
+        
         int btnSize = 9;
         int distBtnX = leftPos + 175;
         int distBtnY = topPos + 4;

@@ -42,6 +42,7 @@ import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import plopp.pipecraft.PipeCraftIndex;
+import plopp.pipecraft.Blocks.Facade.BlockViaductFacade;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductSpeed;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductDetector;
@@ -78,7 +79,6 @@ public class CommonEvents {
 	        
 	        for (ServerPlayer player : level.players()) {
 	            if (ViaductTravel.isTravelActive(player)) {
-	                // Spieler-Reise-Tick
 	            }
 	        }
 	    }
@@ -132,7 +132,7 @@ public class CommonEvents {
 	    if (!added) serverPlayer.drop(glowstoneReturn, false);
 
 	    serverPlayer.displayClientMessage(
-	        Component.translatable("viaduct.lightlevel.brush" + currentLevel),
+	        Component.translatable("viaduct.lightlevel.brush"),
 	        true
 	    );
 	}
@@ -237,10 +237,12 @@ public class CommonEvents {
 	        boolean isLinker = block instanceof BlockViaductLinker;
 	        boolean isSpeed   = block instanceof BlockViaductSpeed;
 	        boolean isDetector   = block instanceof BlockViaductDetector;
+	        boolean isFacade   = block instanceof BlockViaductFacade;
 
 	        if ((isViaduct && state.hasProperty(BlockViaduct.TRANSPARENT)) ||
 	        	    (isLinker && state.hasProperty(BlockViaductLinker.TRANSPARENT)) ||
 	        	    (isSpeed   && state.hasProperty(BlockViaductSpeed.TRANSPARENT))||
+	        	    (isFacade   && state.hasProperty(BlockViaductFacade.TRANSPARENT))||
 	        	    (isDetector   && state.hasProperty(BlockViaductDetector.TRANSPARENT))) {
 
 	   
@@ -252,6 +254,7 @@ public class CommonEvents {
 	        	            isViaduct ? BlockViaduct.TRANSPARENT :
 	        	            isLinker ? BlockViaductLinker.TRANSPARENT :
 	        	            isSpeed ?        BlockViaductSpeed.TRANSPARENT :
+	        	            isFacade ?        BlockViaductFacade.TRANSPARENT :
 	        	            BlockViaductDetector.TRANSPARENT,
 	        	            false
 	        	        );
@@ -267,6 +270,7 @@ public class CommonEvents {
 		        	            isViaduct ? BlockViaduct.TRANSPARENT :
 		        	            isLinker ? BlockViaductLinker.TRANSPARENT :
 		        	            isSpeed ?        BlockViaductSpeed.TRANSPARENT :
+		        	            isFacade ?        BlockViaductFacade.TRANSPARENT :
 		        	            BlockViaductDetector.TRANSPARENT,
 		        	            true
 	        	        );
@@ -335,6 +339,7 @@ public class CommonEvents {
 	            if ((isViaduct && state.hasProperty(BlockViaduct.COLOR)) ||
 	                    (isLinker && state.hasProperty(BlockViaductLinker.COLOR)) ||
 	                    (isSpeed   && state.hasProperty(BlockViaductSpeed.COLOR))||
+	                    (isFacade   && state.hasProperty(BlockViaductFacade.COLOR))||
 	                    (isDetector   && state.hasProperty(BlockViaductDetector.COLOR))) {
 
 	                DyeColor currentColor;
@@ -370,10 +375,21 @@ public class CommonEvents {
 	                        event.setCanceled(true);
 	                        return;
 	                    }
-	                } else { 
+	                } else if (isDetector) {
 	                    currentColor = state.getValue(BlockViaductDetector.COLOR);
 	                    if (currentColor != clickedColor) {
 	                        newState = state.setValue(BlockViaductDetector.COLOR, clickedColor);
+	                    } else {
+	                        player.displayClientMessage(Component.translatable("viaduct.color_change.already", clickedColor.getName() + "."), true);
+	                        event.setCancellationResult(InteractionResult.FAIL);
+	                        event.setCanceled(true);
+	                        return;
+	                    }
+	                }
+	                else { 
+	                    currentColor = state.getValue(BlockViaductFacade.COLOR);
+	                    if (currentColor != clickedColor) {
+	                        newState = state.setValue(BlockViaductFacade.COLOR, clickedColor);
 	                    } else {
 	                        player.displayClientMessage(Component.translatable("viaduct.color_change.already", clickedColor.getName() + "."), true);
 	                        event.setCancellationResult(InteractionResult.FAIL);
