@@ -1,7 +1,6 @@
 package plopp.pipecraft.model.obj;
 
 import net.minecraft.client.renderer.block.model.ItemOverrides;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.*;
 import net.minecraft.resources.ResourceLocation;
@@ -12,7 +11,6 @@ import net.neoforged.neoforge.client.model.geometry.IGeometryBakingContext;
 import net.neoforged.neoforge.client.model.geometry.IUnbakedGeometry;
 import net.neoforged.neoforge.client.model.obj.ObjLoader;
 import net.neoforged.neoforge.client.model.obj.ObjModel;
-
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -66,5 +64,4 @@ public class ViaductModelGeometry implements IUnbakedGeometry<ViaductModelGeomet
 
         return new DynamicColorWrappedModel(modelGenerator, colorTextures, fallbackModel, modelState, particleSprites, fixedParticleSprite);
     }
-
 }

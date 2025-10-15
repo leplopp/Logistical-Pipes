@@ -4,7 +4,7 @@ license="All rights reserved"
 
 [[mods]]
 modId="logisticpipes"
-version="0.1.1"
+version="0.2.0.1"
 displayName="Pipecraft"
 authors="leplopp"
 description='''Logistical Pipes adds Pipes & viaducts with many Features and options'''

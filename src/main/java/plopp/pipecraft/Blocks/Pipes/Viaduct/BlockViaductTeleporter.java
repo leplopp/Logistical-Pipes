@@ -6,6 +6,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.Entity;
@@ -42,8 +44,7 @@ public class BlockViaductTeleporter  extends Block implements EntityBlock,Connec
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
     
 	   public BlockViaductTeleporter(Properties properties) {
-	        super(Properties.of()
-	            .strength(1.5f));
+	        super(properties);
 	        this.registerDefaultState(this.defaultBlockState()
 	            .setValue(FACING, Direction.NORTH));
 	    }
@@ -93,6 +94,16 @@ public class BlockViaductTeleporter  extends Block implements EntityBlock,Connec
 
 	       return InteractionResult.SUCCESS;
 	   }
+	   
+	   @Override
+	   public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+	       super.playerWillDestroy(level, pos, state, player);
+
+	        level.playSound(player, pos, SoundEvents.GLASS_BREAK, SoundSource.BLOCKS, 1.0f, 1.0f);
+	        level.playSound(player, pos, SoundEvents.METAL_BREAK, SoundSource.BLOCKS, 1.0f, 1.0f);
+	        level.playSound(player, pos, SoundEvents.END_PORTAL_FRAME_FILL, SoundSource.BLOCKS, 1.0f, 1.0f);
+			return state;
+	    }
 	   
 	    @Override
 	    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {

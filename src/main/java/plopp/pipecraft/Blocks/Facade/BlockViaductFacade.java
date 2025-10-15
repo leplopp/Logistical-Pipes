@@ -17,6 +17,8 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -29,7 +31,7 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import plopp.pipecraft.logic.ViaductTravel;
 
-public class BlockViaductFacade extends Block{
+public class BlockViaductFacade extends Block implements EntityBlock{
 	
 	   public static final BooleanProperty CONNECTED_NORTH = BooleanProperty.create("connected_north");
 	    public static final BooleanProperty CONNECTED_SOUTH = BooleanProperty.create("connected_south");
@@ -298,4 +300,8 @@ public class BlockViaductFacade extends Block{
 	        return true;
 	    }
 
+	    @Override
+	    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+	        return new BlockFacadeTileEntity(pos, state);
+	    }
 }

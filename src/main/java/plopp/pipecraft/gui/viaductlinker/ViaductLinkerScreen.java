@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
@@ -192,7 +193,7 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
         int x = (width - imageWidth) / 2;
         int y = (height - imageHeight) / 2;
 
-        guiGraphics.blit(VIADUCT_LINKER_GUI, x, y, 0, 0, imageWidth, imageHeight);
+        guiGraphics.blit(VIADUCT_LINKER_GUI, x, y, 0, 0, imageWidth, imageHeight,256, 320  );
 
         int scrollbarX = x + 161;
         int scrollbarY = getScrollbarY();
@@ -209,7 +210,7 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
             u = hovering ? 186 : 178;
         }
 
-        guiGraphics.blit(VIADUCT_LINKER_GUI, scrollbarX, scrollbarY, u, 1, scrollbarW, scrollbarH);
+        guiGraphics.blit(VIADUCT_LINKER_GUI, scrollbarX, scrollbarY, u, 1, scrollbarW, scrollbarH, 256, 320);
 
         int btnU = 1;
         int btnV = 224;
@@ -233,20 +234,32 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
                 btnY = (int)(mouseY - dragOffsetY);
             }
 
-            guiGraphics.blit(VIADUCT_LINKER_GUI, btnX, btnY, btnU, btnV, btnWidth, btnHeight);
+            BlockPos entryPos = menu.getLinkers().get(index).pos();
+            BlockPos currentPos = menu.blockEntity.getBlockPos();
 
-            int iconX = btnX - iconSize;
-            int iconY = btnY + (btnHeight - iconSize) / 4;
+            boolean isCurrent = entryPos.equals(currentPos);
 
-            boolean isHovering = mouseX >= btnX && mouseX < btnX + btnWidth
-                              && mouseY >= btnY && mouseY < btnY + btnHeight;
-            if (isHovering) {
-                int hoverU = 1;
-                int hoverV = 241;
-                guiGraphics.blit(VIADUCT_LINKER_GUI, btnX, btnY, hoverU, hoverV, btnWidth, btnHeight);
+            if (isCurrent) {
+                // eigener (aktueller) Connector → immer ausgegraut
+                guiGraphics.blit(VIADUCT_LINKER_GUI, btnX, btnY, 1, 258, 129, 14, 256, 320);
+            } else {
+                // normaler Button
+                guiGraphics.blit(VIADUCT_LINKER_GUI, btnX, btnY, btnU, btnV, btnWidth, btnHeight, 256, 320);
+
+                // nur bei anderen Buttons Hover-Effekt anzeigen
+                boolean isHovering = mouseX >= btnX && mouseX < btnX + btnWidth
+                                  && mouseY >= btnY && mouseY < btnY + btnHeight;
+                if (isHovering) {
+                    int hoverU = 1;
+                    int hoverV = 241;
+                    guiGraphics.blit(VIADUCT_LINKER_GUI, btnX, btnY, hoverU, hoverV, btnWidth, btnHeight, 256, 320);
+                }
             }
 
-            guiGraphics.blit(VIADUCT_LINKER_GUI, iconX, iconY, iconU, iconV, iconSize, iconSize);
+            // Icon wird immer gerendert
+            int iconX = btnX - iconSize;
+            int iconY = btnY + (btnHeight - iconSize) / 4;
+            guiGraphics.blit(VIADUCT_LINKER_GUI, iconX, iconY, iconU, iconV, iconSize, iconSize, 256, 320);
 
             ItemStack stack = menu.linkedItems.size() > index ? menu.linkedItems.get(index) : ItemStack.EMPTY;
             if (!stack.isEmpty()) {
@@ -284,7 +297,7 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
             distTexX = hoveredDist ? 202 : (distActive ? 178 : 190);
             distTexY = (currentSortMode == SortMode.DISTANCE_ASCENDING) ? 31 : 19;
         }
-        guiGraphics.blit(VIADUCT_LINKER_GUI, distBtnX, distBtnY, distTexX, distTexY, 9, 9);
+        guiGraphics.blit(VIADUCT_LINKER_GUI, distBtnX, distBtnY, distTexX, distTexY, 9, 9, 256, 320);
 
         int alphaBtnX = leftPos + 174;
         int alphaBtnY = topPos + 16;
@@ -299,7 +312,7 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
             alphaTexX = alphabeticalSortEnabled ? (hoveredAlpha ? 202 : 178) : (hoveredAlpha ? 202 : 190);
             alphaTexY = 43;
         }
-        guiGraphics.blit(VIADUCT_LINKER_GUI, alphaBtnX, alphaBtnY, alphaTexX, alphaTexY, 9, 9);
+        guiGraphics.blit(VIADUCT_LINKER_GUI, alphaBtnX, alphaBtnY, alphaTexX, alphaTexY, 9, 9, 256, 320);
 
         int customBtnX = leftPos + 174;
         int customBtnY = topPos + 28;
@@ -314,7 +327,7 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
             customTexX = customSortEnabled ? (hoveredCustom ? 202 : 178) : (hoveredCustom ? 202 : 190);
             customTexY = 55;
         }
-        guiGraphics.blit(VIADUCT_LINKER_GUI, customBtnX, customBtnY, customTexX, customTexY, 9, 9);
+        guiGraphics.blit(VIADUCT_LINKER_GUI, customBtnX, customBtnY, customTexX, customTexY, 9, 9, 256, 320);
     }
 
     @Override
@@ -351,10 +364,15 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
                     BlockPos start = menu.blockEntity.getBlockPos();
                     BlockPos target = menu.getLinkers().get(index).pos();
 
+                    if (start.equals(target)) {
+  
+                        minecraft.player.playSound(SoundEvents.ALLAY_THROW, 1f, 2f);
+                        return true;
+                    }
+                    
                     NetworkHandler.sendTravelStartPacket(start, target);
-
+                    minecraft.player.playSound(SoundEvents.UI_BUTTON_CLICK.value(), 0.5f, 0.5f);
                     this.onClose();
-
                     return true;
                 }
             }
@@ -371,6 +389,7 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
             customSortEnabled = false;
             currentSortMode = currentSortMode.toggle();
             updateLinkers(menu.getLinkers());
+            minecraft.player.playSound(SoundEvents.UI_BUTTON_CLICK.value(), 0.5f, 0.5f);
             return true;
         }
 
@@ -384,6 +403,7 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
             customSortEnabled = false;
             alphabeticalSortEnabled = !alphabeticalSortEnabled;
             updateLinkers(menu.getLinkers());
+            minecraft.player.playSound(SoundEvents.UI_BUTTON_CLICK.value(), 0.5f, 0.5f);
             return true;
         }
 
@@ -431,6 +451,8 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
 
                 updateLinkers(menu.getCustomSortedLinkers());
             }
+            
+            minecraft.player.playSound(SoundEvents.UI_BUTTON_CLICK.value(), 0.5f, 0.5f);
             return true;
         }
 

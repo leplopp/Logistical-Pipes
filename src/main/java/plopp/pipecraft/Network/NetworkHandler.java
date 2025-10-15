@@ -5,12 +5,15 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import plopp.pipecraft.PipeCraftIndex;
+import plopp.pipecraft.Network.facade.FacadeOverlayPacket;
 import plopp.pipecraft.Network.linker.PacketCancelScan;
 import plopp.pipecraft.Network.linker.PacketUpdateLinkerName;
 import plopp.pipecraft.Network.linker.PacketUpdateSortedPositions;
@@ -40,7 +43,8 @@ public class NetworkHandler {
 	    	.playToServer(PacketUpdateTeleporterNames.TYPE, PacketUpdateTeleporterNames.CODEC, PacketUpdateTeleporterNames::handle)
 	    	.playToServer(PacketUpdateTeleporterToggle.TYPE, PacketUpdateTeleporterToggle.CODEC, PacketUpdateTeleporterToggle::handle)
 	    	.playToServer(PacketCancelScan.TYPE, PacketCancelScan.CODEC, PacketCancelScan::handle)
-	    	.playToClient(PacketTravelStop.TYPE, PacketTravelStop.CODEC, PacketTravelStop::handle);
+	    	.playToClient(PacketTravelStop.TYPE, PacketTravelStop.CODEC, PacketTravelStop::handle)
+	    	.playToClient(FacadeOverlayPacket.TYPE, FacadeOverlayPacket.CODEC, FacadeOverlayPacket::handleClient);
 	}
 	
 	    public static void sendNameToServer(BlockPos pos, String name) {
@@ -66,8 +70,7 @@ public class NetworkHandler {
 	        var connection = Minecraft.getInstance().getConnection();
 	        if (connection != null) {
 	            connection.send(new PacketUpdateSortedPositions(pos, sortedPositions));
-	        } else {
-	        }
+	        } 
 	    }
 	    
 	    public static void sendToServer(CustomPacketPayload packet) {
@@ -78,9 +81,6 @@ public class NetworkHandler {
 	    }
 	    
 	    public static void sendTravelStateToAll(ServerPlayer sender, boolean resetModel) {
-	
-
-
 			TravelStatePacket packet = new TravelStatePacket(
 	            sender.getUUID(),
 	            ViaductTravel.isTravelActive(sender),
@@ -98,5 +98,12 @@ public class NetworkHandler {
 	        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
 	            player.connection.send(packet);
 	        }
+	    }
+	    
+	    public static void sendFacadeOverlayToTracking(Level level, BlockPos pos, FacadeOverlayPacket packet) {
+	        if (!(level instanceof ServerLevel serverLevel)) return;
+
+	        serverLevel.getPlayers(p -> p.blockPosition().closerThan(pos, 64))
+	                   .forEach(player -> sendToClient(player, packet));
 	    }
 }

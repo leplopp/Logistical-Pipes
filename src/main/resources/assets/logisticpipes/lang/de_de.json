@@ -4,6 +4,8 @@
 	"block.logisticpipes.viaduct_linker": "Viaduct Connector",
 	"block.logisticpipes.viaduct_detector": "Viaduct Detector",
 	"block.logisticpipes.viaduct_speed": "Viaduct Booster",
+	"block.logisticpipes.viaduct_facade": "Viaduct Facade",
+	"block.logisticpipes.viaduct_teleporter": "Viaduct Teleporter",
 	"viaduct.travel.drop_denied": "Dropen während der Fahrt nicht erlaubt",
 	"viaduct.travel.start": "Fahrt Gestartet",
 	"screen.pipecraft.viaduct_linker": "Viaduct Connector",
@@ -25,5 +27,16 @@
 	"viaduct.speed.change.end": "Geschwindigkeitsänderung beendet",
 	"viaduct.speed.change.start": "Geschwindigkeitsänderung gestartet",
 	"viaduct.speed.changed.toofar": "zu weit entfernt, Geschwindigkeitsänderung beendet",
-	"viaduct.speed.changed.lookaway": "Weggeschaut, Geschwindigkeitsänderung beendet"
+	"viaduct.speed.changed.lookaway": "Weggeschaut, Geschwindigkeitsänderung beendet",
+	"tooltip.hold_shift": "Drücke §eSHIFT§r für mehr Informationen",
+	"tooltip.viaduct.desc": "Standart viaduct zum Transportieren des Spielers",
+	"tooltip.viaduct.usage": "Die Farbe aller viadcute kann mit Farbe geändert werden, die Tranzparenz wird mit Wolle und Glas geändert, mit glowstone-dust ändert man das Licht-level (nur für das Standart & Facaden Viadcut.)",
+	"tooltip.viaduct_facade.desc": "eine Dekorative Facade für andere pipes und kabel",
+	"tooltip.viaduct_facade.usage": "Rechts-click auf jeder pipe oder kabel zum setzen der Facade, für bessere compabilität können blöcke aus anderen mods in der COnfig Datei hinzugefügt werden. nur anwendbar an blöcken dessen Hitbox kleiner ist als die Facade.",
+	"tooltip.viaduct_linker.desc": "Connector viaduct zum setzen von Start & Ziel",
+	"tooltip.viaduct_linker.usage": "Rechts-click zum öffnen der GUI, Shift+Rechts-click zum öffnen des ID GUIs.",
+	"tooltip.viaduct_detector.desc": "Detected Spieler",
+	"tooltip.viaduct_detector.usage": "Detected Spieler die hindurchfahren. hat ein Cooldown von 3s.",
+	"tooltip.viaduct_speed.desc": "Boosted Spieler die hindurchfahren",
+	"tooltip.viaduct_speed.usage": "Rechts-click zum ändern der Geschwindigkeit (ticks pro chunk, Standart wert 97=32 ticks), Shift+Rechts-click mit einem item/block zum setzten der ID, Mehrere Booster mit gleicher ID lassen sich Zeitgleich ändern."
 }

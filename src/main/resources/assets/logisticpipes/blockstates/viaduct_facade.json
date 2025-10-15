@@ -1,21 +1,18 @@
 {
-	"apply": {
-	    "model": "minecraft:block/stone"
-	},
 	"multipart": [
 		{
-			"when": {
-				"connected_up": false,
-				"connected_down": false,
-				"connected_north": false,
-				"connected_south": false,
-				"connected_east": false,
-				"connected_west": false
+				"when": {
+					"connected_up": false,
+					"connected_down": false,
+					"connected_north": false,
+					"connected_south": false,
+					"connected_east": false,
+					"connected_west": false
+				},
+				"apply": {
+					"model": "logisticpipes:block/viaduct/viaduct"
+				}
 			},
-			"apply": {
-				"model": "logisticpipes:block/viaduct/viaduct"
-			}
-		},
 		{
 			"when": {
 				"connected_up": true,

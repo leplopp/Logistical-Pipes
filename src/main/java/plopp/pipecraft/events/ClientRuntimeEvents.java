@@ -24,6 +24,8 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
@@ -132,8 +134,6 @@ public class ClientRuntimeEvents {
 	             }
 	         }
 	     }
-	 
-
 	     
 	     if (ViaductTravel.isTravelActive(player)) {
 	         player.setDeltaMovement(Vec3.ZERO);
@@ -190,7 +190,7 @@ public class ClientRuntimeEvents {
 	     Minecraft mc = Minecraft.getInstance();
 	     Level level = mc.level;
 	     Player player = mc.player;
-
+	    
 	     if (!BlockViaductSpeed.editingActive || BlockViaductSpeed.editingPos == null || level == null || player == null) return;
 
 	     BlockState state = level.getBlockState(BlockViaductSpeed.editingPos);
@@ -203,17 +203,16 @@ public class ClientRuntimeEvents {
 	     if (player.isShiftKeyDown()) {
 	         scrollStep *= 10;
 	     }
+	     
 	     int currentSpeed = state.getValue(BlockViaductSpeed.SPEED).getValue();
 	     int visualSpeed = 129 - currentSpeed; 
 	     visualSpeed += scrollStep;            
 	     visualSpeed = Mth.clamp(visualSpeed, 1, 128);
 	     int newSpeed = 129 - visualSpeed;     
-
+	     level.playSound( player,BlockViaductSpeed.editingPos, SoundEvents.ITEM_PICKUP,SoundSource.BLOCKS,0.3f, 3.0f);
 	     SpeedChangePacket pkt = new SpeedChangePacket(BlockViaductSpeed.editingPos, newSpeed - currentSpeed);
 	     NetworkHandler.sendToServer(pkt);
-
 	     event.setCanceled(true);
-	 
 	 }
 	 
 	 private static final RenderType GLOW_CUBE = RenderType.create(

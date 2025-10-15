@@ -30,6 +30,11 @@ public class BlockEntityRegister {
 			            BlockEntityType.Builder.of(BlockEntityViaductSpeed::new, BlockRegister.VIADUCTSPEED.get()).build(null)
 			        );
 		    
+		    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BlockEntityViaductSpeed>> VIADUCT_FACADE=
+			        BLOCK_ENTITIES.register("viaduct_facade", () ->
+			            BlockEntityType.Builder.of(BlockEntityViaductSpeed::new, BlockRegister.VIADUCTFACADE.get()).build(null)
+			        );
+		    
 		    public static void register(IEventBus bus) {
 		        BLOCK_ENTITIES.register(bus);
 		    }		

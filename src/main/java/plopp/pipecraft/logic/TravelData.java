@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 
 public class TravelData {
+	  public DimBlockPos targetTeleporterPos = null;
     public List<BlockPos> path = new ArrayList<>();
     public int progressIndex = 0;
     public double chunkProgress = 0.0;

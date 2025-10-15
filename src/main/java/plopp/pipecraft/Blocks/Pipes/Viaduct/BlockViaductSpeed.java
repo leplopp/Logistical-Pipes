@@ -1,10 +1,14 @@
 package plopp.pipecraft.Blocks.Pipes.Viaduct;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -50,8 +54,7 @@ public class BlockViaductSpeed  extends Block implements EntityBlock, Connectabl
 
     
 	   public BlockViaductSpeed(Properties properties) {
-	        super(Properties.of()
-	            .strength(1.5f));
+	        super(properties);
 	        this.registerDefaultState(this.defaultBlockState()
 	            .setValue(FACING, Direction.NORTH)
                 .setValue(COLOR, DyeColor.WHITE)
@@ -144,7 +147,15 @@ public class BlockViaductSpeed  extends Block implements EntityBlock, Connectabl
 
 	       return InteractionResult.SUCCESS;
 	   }
-	 
+	   
+	   @Override
+	   public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+	       super.playerWillDestroy(level, pos, state, player);
+
+	        level.playSound(player, pos, SoundEvents.GLASS_BREAK, SoundSource.BLOCKS, 1.0f, 1.0f);
+	        level.playSound(player, pos, SoundEvents.METAL_BREAK, SoundSource.BLOCKS, 1.0f, 1.0f);
+			return state;
+	    }
 	   
 	    @Override
 	    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {

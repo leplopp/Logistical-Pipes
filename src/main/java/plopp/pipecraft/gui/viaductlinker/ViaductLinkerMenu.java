@@ -29,7 +29,7 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
     public final BlockEntityViaductLinker blockEntity;
     public final List<Component> linkedNames = new ArrayList<>();
     public final List<ItemStack> linkedItems = new ArrayList<>();
-    private List<DataEntryRecord> linkers = new ArrayList<>();
+    private List<DataEntryRecord> linkers = new ArrayList<>(ViaductLinkerManager.getAllLinkersData());
 	private Level level;
 	private List<DataEntryRecord> latestLinkers = new ArrayList<>();
 	private boolean newDataAvailable = false;
@@ -62,10 +62,21 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
             Set<BlockPos> connected = tile.getLinkedTargets().stream()
                     .map(e -> e.pos)
                     .collect(Collectors.toSet());
-
+            
+            BlockPos currentPos = tile.getBlockPos();
+            
             this.linkers = ViaductLinkerManager.getAllLinkersData().stream()
-                    .filter(e -> connected.contains(e.pos()))
+                    .filter(e -> connected.contains(e.pos()) || e.pos().equals(currentPos))
                     .toList();
+            
+            if (this.linkers.stream().noneMatch(e -> e.pos().equals(currentPos))) {
+                this.linkers = new ArrayList<>(this.linkers);
+                this.linkers.add(new DataEntryRecord(
+                    currentPos,
+                    tile.getCustomName(),
+                    tile.getDisplayedItem()
+                ));
+            }
 
             List<BlockPos> savedOrder = blockEntity.getSortedTargetPositions();
             if (!savedOrder.isEmpty()) {
@@ -96,6 +107,8 @@ public class ViaductLinkerMenu extends AbstractContainerMenu {
             	);
             	NetworkHandler.sendToClient((ServerPlayer) inv.player, packet);
         }
+        
+        
     }
     
     public boolean isAsyncScanInProgress() {

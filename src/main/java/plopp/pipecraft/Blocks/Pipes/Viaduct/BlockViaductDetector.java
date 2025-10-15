@@ -3,19 +3,25 @@ package plopp.pipecraft.Blocks.Pipes.Viaduct;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -39,8 +45,7 @@ public class BlockViaductDetector  extends Block implements Connectable{
     private static final Map<BlockPos, Long> lastActivation = new HashMap<>();
     
 	   public BlockViaductDetector(Properties properties) {
-	        super(Properties.of()
-	            .strength(1.5f));
+	        super(properties);
 	        this.registerDefaultState(this.defaultBlockState()
 	            .setValue(FACING, Direction.NORTH)
                 .setValue(COLOR, DyeColor.WHITE)
@@ -71,6 +76,15 @@ public class BlockViaductDetector  extends Block implements Connectable{
 	       Direction face = context.getClickedFace();
 	       return this.defaultBlockState().setValue(FACING, face.getOpposite());
 	   }
+	   
+	   @Override
+	   public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+	       super.playerWillDestroy(level, pos, state, player);
+
+	        level.playSound(player, pos, SoundEvents.GLASS_BREAK, SoundSource.BLOCKS, 1.0f, 1.0f);
+	        level.playSound(player, pos, SoundEvents.METAL_BREAK, SoundSource.BLOCKS, 1.0f, 1.0f);
+			return state;
+	    }
 	   
 	    @Override
 	    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {

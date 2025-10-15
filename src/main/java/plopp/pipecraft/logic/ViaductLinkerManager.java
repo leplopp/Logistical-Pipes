@@ -1,5 +1,6 @@
 package plopp.pipecraft.logic;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -88,11 +89,22 @@ public class ViaductLinkerManager {
 	                .map(t -> t.pos)
 	                .collect(Collectors.toSet());
 
+	            BlockPos currentPos = currentLinker.getBlockPos();
+
 	            List<DataEntryRecord> filtered = allLinkersData.values().stream()
-	                .filter(e -> connectedPositions.contains(e.pos()))
-	                .sorted(Comparator.comparingDouble(e -> e.pos().distSqr(currentLinker.getBlockPos())))
+	                .filter(e -> connectedPositions.contains(e.pos()) || e.pos().equals(currentPos))
+	                .sorted(Comparator.comparingDouble(e -> e.pos().distSqr(currentPos)))
 	                .toList();
 
+	            if (filtered.stream().noneMatch(e -> e.pos().equals(currentPos))) {
+	                filtered = new ArrayList<>(filtered);
+	                filtered.add(new DataEntryRecord(
+	                    currentPos,
+	                    currentLinker.getCustomName(),
+	                    currentLinker.getDisplayedItem()
+	                ));
+	            }
+	            
 	            if (openMenu != null) {
 	                openMenu.updateLinkersData(filtered);
 	                openMenu.checkIfAllLoaded(filtered.size());

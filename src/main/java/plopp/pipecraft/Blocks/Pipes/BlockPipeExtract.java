@@ -6,7 +6,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import plopp.pipecraft.PipeConfig;
@@ -15,8 +14,8 @@ import plopp.pipecraft.logic.pipe.PipeTravel;
 public class BlockPipeExtract extends BlockPipe {
     private final PipeConfig config;
 
-    public BlockPipeExtract(Properties props, PipeConfig config) {
-        super(props);
+    public BlockPipeExtract(Properties properties, PipeConfig config) {
+        super(properties);
         this.config = config;
         this.registerDefaultState(this.defaultBlockState());
     }

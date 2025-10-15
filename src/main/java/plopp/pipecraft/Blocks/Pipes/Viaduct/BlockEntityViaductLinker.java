@@ -103,11 +103,11 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
     }
     
     public String getCustomName() {
-        return customName == null || customName.isEmpty() ? "Viaduct Link" : customName;
+        return customName == null || customName.isEmpty() ? "Viaduct Connector" : customName;
     }
     
     public void setCustomName(String name) {
-        this.customName = (name == null || name.isEmpty()) ? "Viaduct Link" : name;
+        this.customName = (name == null || name.isEmpty()) ? "Viaduct Connector" : name;
         setChanged();
         if (!level.isClientSide) {
             ViaductLinkerManager.addOrUpdateLinker(worldPosition, this.customName, this.displayedItem);

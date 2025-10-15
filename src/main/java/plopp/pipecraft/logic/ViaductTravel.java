@@ -11,6 +11,7 @@ import java.util.UUID;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -23,6 +24,7 @@ import net.minecraft.world.phys.Vec3;
 import plopp.pipecraft.Blocks.BlockRegister;
 import plopp.pipecraft.Blocks.ViaductBlockRegistry;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductTeleporter;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductDetector;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
@@ -134,30 +136,8 @@ public class ViaductTravel {
 	    };
 	}
 	
-	public static void start(Player player, BlockPos startPos, BlockPos targetPos, int ticksPerChunk) {
+	private static void setupPlayer(Player player, BlockPos startPos) {
 	    Level level = player.level();
-	    UUID uuid = player.getUUID();
-
-	    TravelData data = new TravelData(level, startPos, targetPos, ticksPerChunk, false);
-	    data.finalTargetPos = targetPos;
-
-	    BlockEntity startBE = level.getBlockEntity(startPos);
-	    if (startBE instanceof BlockEntityViaductLinker linker) {
-	        linker.asyncScanner = null;
-	        linker.setAsyncScanInProgress(false);
-
-	        List<BlockPos> pathToTarget = linker.scannedPaths.get(targetPos);
-	        if (pathToTarget != null && !pathToTarget.isEmpty()) {
-	            data.path = pathToTarget;
-	            data.phase = TravelData.TravelPhase.TO_FINAL_TARGET;
-	            data.hasTeleporterPhase = false;
-	        } else {
-	            stop(player, true);
-	            return;
-	        }
-	    }
-
-	    activeTravels.put(uuid, data);
 
 	    if (!level.isClientSide()) {
 	        player.setInvulnerable(true);
@@ -166,11 +146,6 @@ public class ViaductTravel {
 	        player.setNoGravity(true);
 	        player.setDeltaMovement(Vec3.ZERO);
 	        player.setPose(Pose.SWIMMING);
-
-	    }
-
-	    if (player instanceof ServerPlayer serverPlayer) {
-	        NetworkHandler.sendTravelStateToAll(serverPlayer, false);
 	    }
 
 	    for (Direction dir : Direction.values()) {
@@ -186,13 +161,9 @@ public class ViaductTravel {
 	            player.setYRot(yaw);
 	            player.setXRot(pitch);
 
-	            data.lockedX = start.x;
-	            data.lockedY = start.y - 1;
-	            data.lockedZ = start.z;
-
-	            travelYawMap.put(uuid, yaw);
-	            travelPitchMap.put(uuid, pitch);
-	            verticalDirMap.put(uuid, getVerticalDirection(dir));
+	            travelYawMap.put(player.getUUID(), yaw);
+	            travelPitchMap.put(player.getUUID(), pitch);
+	            verticalDirMap.put(player.getUUID(), getVerticalDirection(dir));
 	            return;
 	        }
 	    }
@@ -200,7 +171,52 @@ public class ViaductTravel {
 	    Vec3 fallback = new Vec3(startPos.getX() + 0.5, startPos.getY(), startPos.getZ() + 0.5);
 	    player.teleportTo(fallback.x, fallback.y, fallback.z);
 	}
-   
+	
+	public static void start(Player player, BlockPos startPos, BlockPos targetPos, int ticksPerChunk) {
+	    Level level = player.level();
+	    UUID uuid = player.getUUID();
+
+	    TravelData data = new TravelData(level, startPos, targetPos, ticksPerChunk, false);
+	    data.finalTargetPos = targetPos;
+
+	    BlockEntity startBE = level.getBlockEntity(startPos);
+	    if (!(startBE instanceof BlockEntityViaductLinker linker)) {
+	        stop(player, true);
+	        return;
+	    }
+
+	    // 1️⃣ Zuerst den Start-Teleporter suchen
+	    DimBlockPos startTeleporter = findStartTeleporterNear(startPos, level);
+
+	    if (startTeleporter != null) {
+	        // Es gibt einen Start-Teleporter → Phase TO_START_TELEPORTER
+	        data.phase = TravelData.TravelPhase.TO_START_TELEPORTER;
+	        data.hasTeleporterPhase = true;
+	        data.targetTeleporterPos = startTeleporter;
+
+	        // Pfad nur bis zum Start-Teleporter
+	        if (linker.asyncScanner != null) {
+	            data.path = linker.asyncScanner.constructPath(startTeleporter);
+	        } else {
+	            data.path = List.of(startPos, startTeleporter.pos);
+	        }
+	    } else {
+	        // Kein Start-Teleporter → direkt zum Ziel-Linker
+	        List<BlockPos> pathToTarget = linker.scannedPaths.get(targetPos);
+	        if (pathToTarget == null || pathToTarget.isEmpty()) {
+	            stop(player, true);
+	            return;
+	        }
+
+	        data.path = pathToTarget;
+	        data.phase = TravelData.TravelPhase.TO_FINAL_TARGET;
+	        data.hasTeleporterPhase = false;
+	    }
+
+	    activeTravels.put(uuid, data);
+	    setupPlayer(player, startPos);
+	}
+
 	public static void tick(Player player) {
 	    TravelData data = activeTravels.get(player.getUUID());
 	    if (data == null) return;
@@ -300,24 +316,60 @@ public class ViaductTravel {
 	    }
 
 	    if (data.progressIndex >= lastIndex) {
-	        if (data.phase == TravelData.TravelPhase.TO_START_TELEPORTER) {
-	            BlockPos startTeleporterPos = path.get(lastIndex);
-	            BlockEntity be = player.level().getBlockEntity(startTeleporterPos);
-	            if (be instanceof BlockEntityViaductLinker linker) {
-	                List<BlockPos> pathToFinalTarget = linker.scannedPaths.get(data.finalTargetPos);
-	                if (pathToFinalTarget != null && !pathToFinalTarget.isEmpty()) {
-	                    data.path = pathToFinalTarget;
-	                    data.progressIndex = 0;
-	                    data.chunkProgress = 0.0;
-	                    data.phase = TravelData.TravelPhase.TO_FINAL_TARGET;
-	                    return; 
-	                }
-	            }
-	            stop(player, true);
-	        } else {
-	            stop(player, true);
+	    	if (data.progressIndex >= lastIndex) {
+	    	    if (data.phase == TravelData.TravelPhase.TO_START_TELEPORTER) {
+	    	        if (data.targetTeleporterPos != null) {
+	    	            teleportPlayer(player, data.targetTeleporterPos);
+
+	    	            BlockEntityViaductLinker targetLinker = findLinkerForTeleporter(data.targetTeleporterPos.pos, player.level());
+	    	            if (targetLinker != null && targetLinker.scannedPaths.containsKey(data.finalTargetPos)) {
+	    	                data.path = targetLinker.scannedPaths.get(data.finalTargetPos);
+	    	                data.progressIndex = 0;
+	    	                data.chunkProgress = 0.0;
+	    	                data.phase = TravelData.TravelPhase.TO_FINAL_TARGET;
+	    	            } else {
+	    	                stop(player, true);
+	    	            }
+	    	        } else {
+	    	            stop(player, true);
+	    	        }
+	    	        return;
+	    	    } else if (data.phase == TravelData.TravelPhase.TO_FINAL_TARGET) {
+	    	        stop(player, true);
+	    	        return;
+	    	    }
+	    	}
+	    }
+	}
+	
+	private static void teleportPlayer(Player player, DimBlockPos pos) {
+	    ServerLevel level = player.getServer().getLevel(pos.dimension);
+	    if (level != null) {
+	        Vec3 target = new Vec3(pos.pos.getX() + 0.5, pos.pos.getY(), pos.pos.getZ() + 0.5);
+	        player.teleportTo(target.x, target.y, target.z);
+	    }
+	}
+
+	private static BlockEntityViaductLinker findLinkerForTeleporter(BlockPos pos, Level level) {
+	    for (Direction dir : Direction.values()) {
+	        BlockPos neighbor = pos.relative(dir);
+	        BlockEntity be = level.getBlockEntity(neighbor);
+	        if (be instanceof BlockEntityViaductLinker linker) {
+	            return linker;
 	        }
 	    }
+	    return null;
+	}
+	
+	private static DimBlockPos findStartTeleporterNear(BlockPos startPos, Level level) {
+	    for (Direction dir : Direction.values()) {
+	        BlockPos neighbor = startPos.relative(dir);
+	        BlockEntity be = level.getBlockEntity(neighbor);
+	        if (be instanceof BlockEntityViaductTeleporter teleporter && !teleporter.getStartName().isEmpty()) {
+	            return new DimBlockPos(level.dimension(), neighbor);
+	        }
+	    }
+	    return null;
 	}
 	
 	public static void updatePlayerDirection(Player player, Vec3 lerped, Vec3 lookTarget) {

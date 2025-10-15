@@ -1,25 +1,16 @@
 package plopp.pipecraft.logic.pipe;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.HopperBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.HopperBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.items.IItemHandler;
 import plopp.pipecraft.PipeConfig;
@@ -83,7 +74,6 @@ public class PipeTravel {
 
     public static Target getNextTarget(TravellingItem item, BlockPos current, BlockPos lastPos, Direction side) {
         ServerLevel level = item.level;
-        BlockEntity beHere = level.getBlockEntity(current);
         BlockState currentState = level.getBlockState(current);
 
         boolean isExtractorPipe = currentState.getBlock() instanceof BlockPipeExtract;
@@ -162,6 +152,6 @@ public class PipeTravel {
             }
         }
 
-        return null; // Kein Ziel
+        return null; 
     }
 }

@@ -1,5 +1,12 @@
 package plopp.pipecraft.Blocks;
 
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import java.util.List;
 import com.google.common.base.Supplier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
@@ -39,7 +46,7 @@ public class BlockRegister {
     
     public static final DeferredBlock<Block> VIADUCTDETECTOR = registerBlock("viaduct_detector",
             () -> new BlockViaductDetector(BlockBehaviour.Properties.of()
-            		.strength(0.5f).explosionResistance(1.0f).sound(SoundType.GLASS)));
+            		.strength(1f).explosionResistance(1.0f).sound(SoundType.GLASS)));
     
     public static final DeferredBlock<Block> VIADUCTSPEED = registerBlock("viaduct_speed",
             () -> new BlockViaductSpeed(BlockBehaviour.Properties.of()
@@ -53,7 +60,7 @@ public class BlockRegister {
             () -> new BlockPipe(BlockBehaviour.Properties.of()
                     .strength(0.5f).explosionResistance(1.0f).sound(SoundType.GLASS)));
     
-    public static final DeferredBlock<Block> BLOCKPIPEEXTRACT = registerBlock("pipeextract",
+    public static final DeferredBlock<Block> BLOCKPIPEEXTRACT = registerBlock("pipe_extract",
             () -> new BlockPipeExtract(BlockBehaviour.Properties.of()
                     .strength(0.5f).explosionResistance(1.0f).sound(SoundType.GLASS), PipeConfig.defaultConfig()));
     
@@ -64,7 +71,21 @@ public class BlockRegister {
     }
 
     private static <B extends Block> void registerBlockItem(String name, DeferredBlock<B> block) {
-        ITEMS.registerSimpleBlockItem(name, block, new Item.Properties());
+        if (name.startsWith("viaduct")) {
+            ITEMS.register(name, () -> new BlockItem(block.get(), new Item.Properties()) {
+                @Override
+                public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+                    if (Screen.hasShiftDown()) {
+                        tooltip.add(Component.translatable("tooltip." + name + ".desc").withStyle(ChatFormatting.AQUA));
+                        tooltip.add(Component.translatable("tooltip." + name + ".usage").withStyle(ChatFormatting.WHITE));
+                    } else {
+                        tooltip.add(Component.translatable("tooltip.hold_shift").withStyle(ChatFormatting.YELLOW));
+                    }
+                }
+            });
+        } else {
+            ITEMS.registerSimpleBlockItem(name, block, new Item.Properties());
+        }
     }
 
 	 public static void register(IEventBus bus) {

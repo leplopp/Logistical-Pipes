@@ -34,7 +34,6 @@ public class AsyncViaductScanner {
     private final Set<DimBlockPos> visited = new HashSet<>();
     private final Queue<DimBlockPos> toVisit = new ArrayDeque<>();
     private final List<LinkedTargetEntry> foundLinkers = new ArrayList<>();
-
     private final Map<DimBlockPos, DimBlockPos> cameFrom;
     private final int maxStepsPerTick;
 
@@ -150,12 +149,12 @@ public class AsyncViaductScanner {
                             foundLinkers.add(new LinkedTargetEntry(neighborPos, linker.getCustomName()));
                         }
                         toVisit.add(neighbor);
-                        cameFrom.put(neighbor, current); // Vorgänger setzen
+                        cameFrom.put(neighbor, current); 
                     }
                 } else if (ViaductBlockRegistry.isViaduct(neighborState)) {
                     if (ViaductBlockRegistry.areViaductBlocksConnected(currentServerLevel, current.pos, neighborPos)) {
                         toVisit.add(neighbor);
-                        cameFrom.put(neighbor, current); // Vorgänger setzen
+                        cameFrom.put(neighbor, current); 
                     }
                 }
             }

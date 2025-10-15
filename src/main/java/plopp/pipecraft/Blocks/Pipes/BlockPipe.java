@@ -1,6 +1,5 @@
 package plopp.pipecraft.Blocks.Pipes;
 
-import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.Container;
@@ -16,7 +15,6 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import plopp.pipecraft.logic.pipe.PipeTravel;
 
 public class BlockPipe extends Block {
     public static final BooleanProperty CONNECTED_NORTH = BooleanProperty.create("connected_north");
@@ -26,8 +24,8 @@ public class BlockPipe extends Block {
     public static final BooleanProperty CONNECTED_UP    = BooleanProperty.create("connected_up");
     public static final BooleanProperty CONNECTED_DOWN  = BooleanProperty.create("connected_down");
 
-    public BlockPipe(Properties props) {
-        super(props);
+    public BlockPipe(Properties properties) {
+        super(properties);
         this.registerDefaultState(this.stateDefinition.any()
             .setValue(CONNECTED_NORTH, false)
             .setValue(CONNECTED_SOUTH, false)
