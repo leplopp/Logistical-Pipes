@@ -17,7 +17,6 @@ import plopp.pipecraft.Network.data.DataEntryRecord;
 import plopp.pipecraft.Network.teleporter.PacketUpdateTeleporterToggle;
 import plopp.pipecraft.Network.teleporter.ViaductTeleporterManager;
 import plopp.pipecraft.gui.MenuTypeRegister;
-import plopp.pipecraft.logic.DimBlockPos;
 
 public class ViaductTeleporterMenu extends AbstractContainerMenu {
 

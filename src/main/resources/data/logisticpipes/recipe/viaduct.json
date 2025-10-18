@@ -7,7 +7,7 @@
   ],
   "key": {
     "I": { "item": "minecraft:iron_ingot" },
-    "G": { "item": "minecraft:glass_pane" }
+    "G": { "tag": "c:glass_panes" }
   },
   "result": {
     "id": "logisticpipes:viaduct",

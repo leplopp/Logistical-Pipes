@@ -38,6 +38,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
@@ -56,10 +57,10 @@ import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductDetector;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
 import plopp.pipecraft.Network.NetworkHandler;
-import plopp.pipecraft.Network.facade.FacadeOverlayPacket;
 import plopp.pipecraft.logic.FacadeOverlayManager;
 import plopp.pipecraft.logic.ViaductTravel;
 import plopp.pipecraft.logic.pipe.PipeTravel;
+import plopp.pipecraft.util.ViaductCommand;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -76,7 +77,10 @@ public class CommonEvents {
 	 * 
 	 * }
 	 */
-
+	@SubscribeEvent
+	public static void onRegisterCommands(RegisterCommandsEvent event) {
+		ViaductCommand.register(event.getDispatcher());
+	}
 	@SubscribeEvent
 	public static void onServerTick(ServerTickEvent.Post event) {
 		MinecraftServer server = event.getServer();
@@ -424,58 +428,6 @@ public class CommonEvents {
 				event.setCancellationResult(InteractionResult.SUCCESS);
 			}
 		}
-		
-		ItemStack heldItem = player.getMainHandItem();
-
-		if (!level.isClientSide) {
-		    if (heldItem.getItem() == BlockRegister.VIADUCTFACADE.asItem()) {
-		        DyeColor color = getColorFromItem(heldItem);
-
-		        FacadeOverlayManager.addFacade(pos, color, false);
-		        FacadeOverlayPacket pkt = new FacadeOverlayPacket(pos, color, false, false);
-		        NetworkHandler.sendFacadeOverlayToTracking(level, pos, pkt);
-
-		        event.setCanceled(true);
-		        event.setCancellationResult(InteractionResult.SUCCESS);
-		        return;
-		    }
-
-		    BlockPos hitFacade = getFacadeHit(level, player, 5.0);
-		    if (hitFacade != null) {
-		        ItemStack held = player.getMainHandItem();
-		        DyeColor color = getColorFromItem(held);
-		        FacadeOverlayManager.addFacade(hitFacade, color, false);
-		        NetworkHandler.sendFacadeOverlayToTracking(level, hitFacade,
-		                new FacadeOverlayPacket(hitFacade, color, false, false));
-
-		        event.setCanceled(true);
-		        event.setCancellationResult(InteractionResult.SUCCESS);
-		    }
-		}
-	}
-	
-	public static @Nullable BlockPos getFacadeHit(Level level, Player player, double reach) {
-	    Vec3 eyePos = player.getEyePosition(1.0F);
-	    Vec3 lookVec = player.getViewVector(1.0F);
-	    Vec3 reachVec = eyePos.add(lookVec.scale(reach));
-
-	    for (var entry : FacadeOverlayManager.getAll()) {
-	        BlockPos pos = entry.getKey();
-	        // Eigene Hitbox über/um den Block
-	        AABB aabb = new AABB(pos.getX(), pos.getY(), pos.getZ(),
-	                             pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1);
-	        if (aabb.clip(eyePos, reachVec).isPresent()) {
-	            return pos;
-	        }
-	    }
-	    return null;
-	}
-	
-	private static DyeColor getColorFromItem(ItemStack stack) {
-	    if (stack.getItem() instanceof DyeItem dye) {
-	        return dye.getDyeColor();
-	    }
-	    return DyeColor.WHITE;
 	}
 	
 	@SubscribeEvent

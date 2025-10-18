@@ -29,9 +29,8 @@ public record PacketTravelStop(UUID playerUUID) implements CustomPacketPayload {
     }
 
     public static void handle(PacketTravelStop packet, IPayloadContext context) {
-        // Nur Client
         if (context.player() instanceof LocalPlayer player) {
-            // Dimensions zurücksetzen
+
             player.refreshDimensions();
             EntityDimensions dim = player.getDimensions(Pose.STANDING);
 

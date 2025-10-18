@@ -49,7 +49,7 @@ public class ViaductLinkerIDMenu extends AbstractContainerMenu {
     }
     
     public void setCustomName(String name) {
-        this.customName = (name == null || name.isEmpty()) ? "Viaduct Link" : name;
+        this.customName = (name == null || name.isEmpty()) ? "Viaduct Connector" : name;
         
     }
     
@@ -77,7 +77,7 @@ public class ViaductLinkerIDMenu extends AbstractContainerMenu {
     }
 
     public void setName(String name) {
-        this.customName = (name == null || name.isEmpty()) ? "Viaduct Link" : name;
+        this.customName = (name == null || name.isEmpty()) ? "Viaduct Connector" : name;
     }
   
     @Override

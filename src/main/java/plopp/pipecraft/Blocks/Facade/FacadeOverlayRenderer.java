@@ -102,7 +102,15 @@ public class FacadeOverlayRenderer {
 			e.printStackTrace();
 		}
 	}
-
+	
+	public static void markForReRender(BlockPos pos) {
+	    Minecraft mc = Minecraft.getInstance();
+	    if (mc.level != null) {
+	        BlockState state = mc.level.getBlockState(pos);
+	        mc.level.sendBlockUpdated(pos, state, state, 3);
+	    }
+	}
+	
 	private static void renderConnections(Level level, PoseStack poseStack, VertexConsumer consumer, BlockPos pos,
 			float r, float g, float b, boolean transparent, int light) {
 		float alpha = transparent ? 0.4f : 1.0f;

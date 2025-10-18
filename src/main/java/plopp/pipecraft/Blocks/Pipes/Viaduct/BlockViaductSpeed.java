@@ -1,7 +1,5 @@
 package plopp.pipecraft.Blocks.Pipes.Viaduct;
 
-import javax.annotation.Nullable;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;

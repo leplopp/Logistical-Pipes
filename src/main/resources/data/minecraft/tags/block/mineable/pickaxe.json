@@ -4,6 +4,7 @@
     "logisticpipes:viaduct",
 	"logisticpipes:viaduct_linker",
 	"logisticpipes:viaduct_detector",
-	"logisticpipes:viaduct_speed"
+	"logisticpipes:viaduct_speed",
+	"logisticpipes:viaduct_teleporter"
   ]
 }

@@ -240,13 +240,10 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
             boolean isCurrent = entryPos.equals(currentPos);
 
             if (isCurrent) {
-                // eigener (aktueller) Connector → immer ausgegraut
                 guiGraphics.blit(VIADUCT_LINKER_GUI, btnX, btnY, 1, 258, 129, 14, 256, 320);
             } else {
-                // normaler Button
                 guiGraphics.blit(VIADUCT_LINKER_GUI, btnX, btnY, btnU, btnV, btnWidth, btnHeight, 256, 320);
 
-                // nur bei anderen Buttons Hover-Effekt anzeigen
                 boolean isHovering = mouseX >= btnX && mouseX < btnX + btnWidth
                                   && mouseY >= btnY && mouseY < btnY + btnHeight;
                 if (isHovering) {
@@ -256,7 +253,6 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
                 }
             }
 
-            // Icon wird immer gerendert
             int iconX = btnX - iconSize;
             int iconY = btnY + (btnHeight - iconSize) / 4;
             guiGraphics.blit(VIADUCT_LINKER_GUI, iconX, iconY, iconU, iconV, iconSize, iconSize, 256, 320);

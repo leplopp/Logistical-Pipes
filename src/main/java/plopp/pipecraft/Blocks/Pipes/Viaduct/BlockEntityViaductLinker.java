@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -37,7 +36,7 @@ import plopp.pipecraft.logic.ViaductLinkerManager;
 public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvider, IBlockEntityExtension  {
 	
 	private ItemStack displayedItem = new ItemStack(BlockRegister.VIADUCTLINKER.get());
-	private String customName = "Viaduct Link";
+	private String customName = "Viaduct Connector";
 	final List<LinkedTargetEntry> linkedTargets = new ArrayList<>();
 	private boolean asyncScanInProgress = false;
 	private List<BlockPos> sortedTargetPositions = new ArrayList<>();
@@ -82,7 +81,6 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
     }
 
     public void setSortedTargetPositions(List<BlockPos> positions) {
-        System.out.println("[BlockEntity] setSortedTargetPositions aufgerufen: " + positions);
         this.sortedTargetPositions = new ArrayList<>(positions);
         setChanged();
         if (level instanceof ServerLevel serverLevel) {
@@ -246,9 +244,7 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
         }
 
         if (asyncScanner == null) {
-            // Neue cameFrom Map anlegen
             Map<DimBlockPos, DimBlockPos> cameFromMap = new HashMap<>();
-            // Scanner mit cameFromMap initialisieren
             asyncScanner = new AsyncViaductScanner(level, worldPosition, 99, cameFromMap);
             setAsyncScanInProgress(true);
         }
@@ -282,7 +278,6 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
                 }
             }
 
-            // Pfade bei jedem Tick aktualisieren (für alle gefundenen Ziele)
             List<LinkedTargetEntry> allTargets = be.asyncScanner.getFoundLinkers();
             for (LinkedTargetEntry entry : allTargets) {
                 DimBlockPos dimPos = new DimBlockPos(level.dimension(), entry.getPos());

@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -30,6 +29,8 @@ import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductDetector;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
 import plopp.pipecraft.Network.NetworkHandler;
+import plopp.pipecraft.Network.linker.PacketTravelJump;
+import plopp.pipecraft.Network.linker.PacketTravelRotate;
 import plopp.pipecraft.Network.travel.ClientTravelDataManager;
 import plopp.pipecraft.Network.travel.PacketTravelStop;
 import plopp.pipecraft.Network.travel.TravelStatePacket;
@@ -185,23 +186,21 @@ public class ViaductTravel {
 	        return;
 	    }
 
-	    // 1️⃣ Zuerst den Start-Teleporter suchen
 	    DimBlockPos startTeleporter = findStartTeleporterNear(startPos, level);
 
 	    if (startTeleporter != null) {
-	        // Es gibt einen Start-Teleporter → Phase TO_START_TELEPORTER
+
 	        data.phase = TravelData.TravelPhase.TO_START_TELEPORTER;
 	        data.hasTeleporterPhase = true;
 	        data.targetTeleporterPos = startTeleporter;
+	        data.ticksPerChunk = data.defaultTicksPerChunk;
 
-	        // Pfad nur bis zum Start-Teleporter
 	        if (linker.asyncScanner != null) {
 	            data.path = linker.asyncScanner.constructPath(startTeleporter);
 	        } else {
 	            data.path = List.of(startPos, startTeleporter.pos);
 	        }
 	    } else {
-	        // Kein Start-Teleporter → direkt zum Ziel-Linker
 	        List<BlockPos> pathToTarget = linker.scannedPaths.get(targetPos);
 	        if (pathToTarget == null || pathToTarget.isEmpty()) {
 	            stop(player, true);
@@ -211,6 +210,7 @@ public class ViaductTravel {
 	        data.path = pathToTarget;
 	        data.phase = TravelData.TravelPhase.TO_FINAL_TARGET;
 	        data.hasTeleporterPhase = false;
+	        data.ticksPerChunk = data.defaultTicksPerChunk;
 	    }
 
 	    activeTravels.put(uuid, data);
@@ -236,7 +236,6 @@ public class ViaductTravel {
 	    if (currentIndex >= lastIndex || data.ticksPerChunk <= 0) return;
 
 	    data.tickCounter++;
-	    data.chunkProgress += (1.0 / data.ticksPerChunk);
 	    
 	    int remaining = lastIndex - currentIndex;
 	    int stepsLeft = remaining > 16 ? 16 : remaining;
@@ -256,16 +255,21 @@ public class ViaductTravel {
 	    BlockPos max = BlockPos.containing(Math.max(from.x, to.x),
 	                                       Math.max(from.y, to.y),
 	                                       Math.max(from.z, to.z));
+	    int ticksThisTick = data.ticksPerChunk; 
 
-	    for (BlockPos pos : BlockPos.betweenClosed(min, max)) {
-	        BlockState state = player.level().getBlockState(pos);
-	        if (state.getBlock() instanceof BlockViaductSpeed speedBlock) {
-	            data.ticksPerChunk = speedBlock.getSpeed(state);
-	        }
-	        if (state.getBlock() instanceof BlockViaductDetector detectorBlock) {
-	            detectorBlock.trigger(player.level(), pos, state);
-	        }
-	    }
+	 for (BlockPos pos : BlockPos.betweenClosed(min, max)) {
+	     BlockState state = player.level().getBlockState(pos);
+	     if (state.getBlock() instanceof BlockViaductSpeed speedBlock) {
+	         ticksThisTick = speedBlock.getSpeed(state); 
+	         data.ticksPerChunk = ticksThisTick;        
+	         break; 
+	     }
+	     if (state.getBlock() instanceof BlockViaductDetector detectorBlock) {
+	         detectorBlock.trigger(player.level(), pos, state);
+	     }
+	 }
+
+	 data.chunkProgress += (1.0 / ticksThisTick);
 
 	    Vec3 lerped = from.lerp(to, lerpProgress);
 
@@ -566,20 +570,43 @@ public class ViaductTravel {
             }
 
             player.teleportTo(teleportPos.x, teleportPos.y, teleportPos.z);
-
+            
             if (targetState.is(BlockRegister.VIADUCTLINKER)) {
                 Direction facing = targetState.getValue(BlockViaductLinker.FACING);
 
+                float yaw;
+                float pitch;
+
+                switch (facing) {
+                    case NORTH -> yaw = 180f;
+                    case SOUTH -> yaw = 0f;
+                    case WEST  -> yaw = 90f;
+                    case EAST  -> yaw = -90f;
+                    default -> yaw = player.getYRot();
+                }
+
                 if (facing == Direction.UP) {
-                    if (player.level().isClientSide() && player instanceof LocalPlayer localPlayer) {
-                        localPlayer.jumpFromGround();
-                    } else {
-                        jumpTrigger.add(player.getUUID());
-                    }
+                    pitch = -90f;
+                } else if (facing == Direction.DOWN) {
+                    pitch = 90f;
+                } else {
+                    pitch = 0f;
+                }
+
+                player.setYRot(yaw);
+                player.setYHeadRot(yaw);
+                player.setXRot(pitch);
+
+                if (player instanceof ServerPlayer sp) {
+                    NetworkHandler.sendToClient(sp, new PacketTravelRotate(sp.getUUID(), yaw, pitch));
+                }
+
+                if (facing == Direction.UP && player instanceof ServerPlayer sp2) {
+                    NetworkHandler.sendToClient(sp2, new PacketTravelJump(sp2.getUUID()));
                 }
             }
         }
-        
+   
         if (player instanceof ServerPlayer serverPlayer) {
         	NetworkHandler.sendTravelStateToAll(serverPlayer, true);
             
