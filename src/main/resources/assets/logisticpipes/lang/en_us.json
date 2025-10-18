@@ -31,14 +31,14 @@
 	"viaduct.speed.changed.toofar": "too far away, end speed change",
 	"viaduct.speed.changed.lookaway": "looked away, end speed change",
 	"tooltip.hold_shift": "Press §eSHIFT§r for details",
-	"tooltip.viaduct.desc": "Basic viaduct to transport player",
-	"tooltip.viaduct.usage": "can color all viadcuts with dye, change transparency with wool and glass, with glowstone-dust change light level (only for Basic & Facade Viadcut).",
-	"tooltip.viaduct_facade.desc": "A decorative cover for other pipes and cables",
-	"tooltip.viaduct_facade.usage": "Right-click on any pipe or cable to apply the facade, for compability you can add blocks/pipes/cables in config. can only apply to blocks that have a smaller hitbox.",
-	"tooltip.viaduct_linker.desc": "Connector viaduct Used as Start and goal",
-	"tooltip.viaduct_linker.usage": "Right-click to open GUI, shift+Right-click to Open ID Screen.",
+	"tooltip.viaduct.desc": "Basic viaduct for transporting players",
+	"tooltip.viaduct.usage": "Can color all viaducts with dyes, change transparency using wool or glass, and adjust light level with glowstone dust (only for Basic & Facade Viaducts).",
+	"tooltip.viaduct_facade.desc": "A decorative cover for pipes and cables",
+	"tooltip.viaduct_facade.usage": "Right-click any pipe or cable to apply the facade. For compatibility, additional blocks/pipes/cables can be added via config. Only applicable to blocks with a smaller hitbox.",
+	"tooltip.viaduct_linker.desc": "Connector viaduct used as start and goal",
+	"tooltip.viaduct_linker.usage": "Right-click to open GUI, shift+Right-click to open ID screen.",
 	"tooltip.viaduct_detector.desc": "Detect Players",
-	"tooltip.viaduct_detector.usage": "Detect Players that drive through it. with 3s cooldwon.",
-	"tooltip.viaduct_speed.desc": "Boosts player that drive through",
-	"tooltip.viaduct_speed.usage": "Right click to change speed (ticks per chunks, Standart 97=32 ticks), shift+Right-click with item/block to set ID, multiple Booster with Same ID chnaged the Speed together."
+	"tooltip.viaduct_detector.usage": "Detects players passing through. Has a 3-second cooldown.",
+	"tooltip.viaduct_speed.desc": "Boosts players passing through",
+	"tooltip.viaduct_speed.usage": "Right-click to change speed (ticks per chunk, default 97 = 32 ticks). Shift+Right-click with an item/block to set ID. Multiple boosters with the same ID change the speed together."
 }

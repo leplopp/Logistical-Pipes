@@ -11,6 +11,8 @@
 	"screen.pipecraft.viaduct_linker": "Viaduct Connector",
 	"screen.pipecraft.viaduct_linker_id": "Viaduct Connector ID",
 	"screen.pipecraft.linkerid.inventory": "Inventar",
+	"screen.pipecraft.linkerid.close": "Schließen",
+	"screen.pipecraft.linkerid.clear": "Clear Text",
 	"gui.linkerscreen.sortmode_distance": "Sortieren nach Entfernung",
 	"gui.linkerscreen.sortmode_alphabet": "Alphabetisch Sortieren",
 	"gui.linkerscreen.sortmode_custom": "benutzerdefiniertes Sortieren (rechtsklick drag&drop)",

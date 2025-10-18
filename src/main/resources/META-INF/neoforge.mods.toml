@@ -1,13 +1,14 @@
 modLoader="javafml"
 loaderVersion="[2,)"
-license="All rights reserved"
+license="MIT"
 
 [[mods]]
 modId="logisticpipes"
-version="0.2.0.1"
-displayName="Pipecraft"
+version="0.2.2"
+displayName="PipeCraft"
+logoFile="logo.png"
 authors="leplopp"
-description='''Logistical Pipes adds Pipes & viaducts with many Features and options'''
+description='''Adds player transport pipes (Viaducts).'''
 
 [[mixins]]
 config="pipecraft.mixins.json"
