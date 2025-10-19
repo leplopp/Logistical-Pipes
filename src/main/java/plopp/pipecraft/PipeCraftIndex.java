@@ -53,11 +53,11 @@ public class PipeCraftIndex
  *   
  *  item & fluid pipes: 							
  *   
- *  pipe		/ iron								<- Pre Alpha
- *  sorter pipe	/ diamond							<- concept
- *  vacuum pipe / wooden /stone /netherite			<- concept
+ *  pipe		 	/ iron						    <- Beta
+ *  extractor pipe  / iron						    <- Beta
+ *  sorter pipe	/ diamond							<- concept		<- concept
  *  speed up pipe	/gold							<- concept
  *  detector pipe	/iron							<- concept
- *	blocker pipe	/ iron							<- concept
+ *	Direction blocker pipe	/ iron							<- concept
  *  
  */

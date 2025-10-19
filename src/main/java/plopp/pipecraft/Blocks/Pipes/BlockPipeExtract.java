@@ -26,14 +26,14 @@ public class BlockPipeExtract extends BlockPipe {
             BlockPos neighbor = pos.relative(dir);
             BlockEntity be = level.getBlockEntity(neighbor);
             if (be instanceof Container container) {
-                ItemStack extracted = extractItems(container, 1);
+                ItemStack extracted = extractItems(container, 64);
                 if (!extracted.isEmpty()) {
                 	PipeTravel.insertItem(extracted, neighbor, dir, level, config);
                 }
             }
         }
 
-        level.scheduleTick(pos, this, 20); // immer wieder ticken
+        level.scheduleTick(pos, this, 20); 
     }
 
     private ItemStack extractItems(Container container, int amount) {

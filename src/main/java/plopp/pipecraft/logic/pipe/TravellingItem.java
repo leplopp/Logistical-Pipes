@@ -2,20 +2,13 @@ package plopp.pipecraft.logic.pipe;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import plopp.pipecraft.PipeConfig;
-import plopp.pipecraft.Blocks.Pipes.BlockPipe;
-import plopp.pipecraft.Blocks.Pipes.BlockPipeExtract;
 
 public class TravellingItem {
     public final ItemStack stack;
@@ -28,11 +21,11 @@ public class TravellingItem {
     public double speed = 0.05;
     private int segmentIndex = 0;
     private double[] segmentOffsets;
-    public final ServerLevel level; // hinzufügen
+    public final ServerLevel level; 
     public boolean pendingContainer = false;
     public double containerProgress = 0.0;
     public BlockPos containerPos = null;
-    public boolean fromContainer; // neu
+    public boolean fromContainer; 
     public int lastExtractorIndex = -1;
     public static final Map<BlockPos, Integer> containerExtractorIndex = new HashMap<>();
     public static Map<BlockPos, Integer> pipeDirectionIndex = new HashMap<>();
@@ -42,12 +35,12 @@ public class TravellingItem {
         this.stack = stack.copy();
         this.startContainer = startContainer;
         this.lastPos = startContainer;
-        this.currentPos = startContainer; // Item startet IM Container
+        this.currentPos = startContainer;
         this.side = side;
         this.segmentOffsets = config.defaultSegmentOffsets;
         this.progress = segmentOffsets[0];
         this.segmentIndex = 0;
-        this.level = level; // speichern
+        this.level = level; 
     }
 
     public void tick(Level level) {
@@ -72,19 +65,31 @@ public class TravellingItem {
                         return;
                     }
                 } else {
-                    PipeTravel.spawnItemEntity(this.level, currentPos, stack);
+                	PipeTravel.spawnItemEntity(this.level, currentPos, stack);
                     PipeTravel.activeItems.remove(this);
-                    return;
+                	return;
                 }
             }
         }
     }
+    
+    public void clientTick(Level level) {
+        progress += speed;
+        if (progress >= 1.0) {
+            progress = 0.0;
+            lastPos = currentPos;
+        }
+    }
 
-    public Vec3 getInterpolatedPos() {
+    public Vec3 getInterpolatedPos(float partialTick) {
         Vec3 from = Vec3.atCenterOf(lastPos);
         Vec3 to = Vec3.atCenterOf(currentPos);
-        double t = Math.max(0, Math.min(1, (progress - segmentOffsets[segmentIndex]) /
-                (segmentOffsets[segmentIndex + 1] - segmentOffsets[segmentIndex])));
-        return from.lerp(to, t);
+        double interp = Math.min(1.0, Math.max(0.0, progress + partialTick * speed));
+        return from.lerp(to, interp);
     }
+    
+    public boolean isFinished() {
+        return stack.isEmpty();
+    }
+
 }

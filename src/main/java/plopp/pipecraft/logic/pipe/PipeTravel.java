@@ -16,16 +16,32 @@ import net.neoforged.neoforge.items.IItemHandler;
 import plopp.pipecraft.PipeConfig;
 import plopp.pipecraft.Blocks.Pipes.BlockPipe;
 import plopp.pipecraft.Blocks.Pipes.BlockPipeExtract;
+import plopp.pipecraft.Network.data.PipeTravelWorldData;
 
 public class PipeTravel {
 	public static final List<TravellingItem> activeItems = new ArrayList<>();
 
-    public static void tick(Level level) {
-        for (TravellingItem item : new ArrayList<>(activeItems)) {
-            item.tick(level);
-        }
-    }
+	public static void tick(Level level) {
+	    if (activeItems.isEmpty()) return;
 
+	    List<TravellingItem> toRemove = new ArrayList<>();
+	    List<TravellingItem> toAdd = new ArrayList<>();
+
+	    for (TravellingItem item : List.copyOf(activeItems)) {
+	        item.tick(level);
+
+	        if (item.isFinished()) {
+	            toRemove.add(item);
+	        }
+	    }
+
+	    if (!toRemove.isEmpty()) activeItems.removeAll(toRemove);
+	    if (!toAdd.isEmpty()) activeItems.addAll(toAdd);
+	    if (!level.isClientSide && level instanceof ServerLevel serverLevel) {
+	        PipeTravelWorldData data = PipeTravelWorldData.get(serverLevel);
+	        data.setItems(activeItems);
+	    }
+	}
 
     public static void insertItem(ItemStack stack, BlockPos startContainer, Direction side, ServerLevel level, PipeConfig config) {
         TravellingItem item = new TravellingItem(stack, startContainer, side, config, level);
@@ -36,9 +52,8 @@ public class PipeTravel {
 
     public static void finishItem(TravellingItem item, ServerLevel level) {
         BlockEntity be = level.getBlockEntity(item.currentPos);
-        // Falls ein Container existiert
+  
         if (be instanceof Container container) {
-            // Item kurz animiert Richtung Container-Ende (optional)
             item.progress = 1;
 
             ItemStack leftover = item.stack.copy();
@@ -56,15 +71,12 @@ public class PipeTravel {
                     break;
                 }
             }
-
-            // Alles, was nicht mehr passt, rausploppen
             if (!leftover.isEmpty()) spawnItemEntity(level, item.currentPos, leftover);
         } else {
-            // Kein Container → Item ploppt raus
             spawnItemEntity(level, item.currentPos, item.stack);
         }
 
-        activeItems.remove(item);
+        item.stack.setCount(0); 
     }
 
     public static void spawnItemEntity(Level level, BlockPos pos, ItemStack stack) {
@@ -78,16 +90,12 @@ public class PipeTravel {
 
         boolean isExtractorPipe = currentState.getBlock() instanceof BlockPipeExtract;
 
-        // === Inventar am aktuellen Block ===
         IItemHandler hereInv = level.getCapability(Capabilities.ItemHandler.BLOCK, current, side);
         if (hereInv != null) {
             if (!item.justExtracted) {
-                // Item kommt gerade aus Pipe → muss zuerst in Inventar
                 return new Target(current, side, false, true);
             }
-
-
-            // Item startet frisch aus Inventar → Extractor prüfen
+            
             List<Target> extractors = new ArrayList<>();
             for (Direction d : Direction.values()) {
                 BlockPos candidate = current.relative(d);
@@ -109,8 +117,7 @@ public class PipeTravel {
             item.justExtracted = false;
             return new Target(current, side, false, true);
         }
-
-        // === Pipes und Inventare sammeln ===
+        
         List<Target> possibleTargets = new ArrayList<>();
         for (Direction d : Direction.values()) {
             BlockPos candidate = current.relative(d);
@@ -120,7 +127,6 @@ public class PipeTravel {
             BlockState state = level.getBlockState(candidate);
             BlockEntity be = level.getBlockEntity(candidate);
 
-            // Normale Pipes immer als Ziel
             if (state.getBlock() instanceof BlockPipe && !(state.getBlock() instanceof BlockPipeExtract)) {
                 possibleTargets.add(new Target(candidate, d, false, false));
             }
@@ -139,7 +145,6 @@ public class PipeTravel {
             return chosen;
         }
 
-        // === Extraktor-Pipes prüfen, falls Item aus Container kommt ===
         if (item.fromContainer) {
             for (Direction d : Direction.values()) {
                 BlockPos candidate = current.relative(d);

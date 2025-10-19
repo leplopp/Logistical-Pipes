@@ -91,14 +91,14 @@ public class BlockPipe extends Block {
         return state.setValue(getProperty(dir), connect);
     }
     
-    private static final VoxelShape CORE = Block.box(5, 5, 5, 11, 11, 11);
+    private static final VoxelShape CORE = Block.box(4, 4, 4, 12, 12, 12);
 
-    private static final VoxelShape ARM_NORTH = Block.box(5, 5, 0, 11, 11, 5);
-    private static final VoxelShape ARM_SOUTH = Block.box(5, 5, 11, 11, 11, 16);
-    private static final VoxelShape ARM_WEST  = Block.box(0, 5, 5, 5, 11, 11);
-    private static final VoxelShape ARM_EAST  = Block.box(11, 5, 5, 16, 11, 11);
-    private static final VoxelShape ARM_UP    = Block.box(5, 11, 5, 11, 16, 11);
-    private static final VoxelShape ARM_DOWN  = Block.box(5, 0, 5, 11, 5, 11);
+    private static final VoxelShape ARM_NORTH = Block.box(4, 4, 0, 12, 12, 4);
+    private static final VoxelShape ARM_SOUTH = Block.box(4, 4, 12, 12, 12, 16);
+    private static final VoxelShape ARM_WEST  = Block.box(0, 4, 4, 4, 12, 12);
+    private static final VoxelShape ARM_EAST  = Block.box(12, 4, 4, 16, 12, 12);
+    private static final VoxelShape ARM_UP    = Block.box(4, 12, 4, 12, 16, 12);
+    private static final VoxelShape ARM_DOWN  = Block.box(4, 0, 4, 12, 4, 12);
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext ctx) {
