@@ -16,11 +16,11 @@ import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import plopp.pipecraft.PipeCraftIndex;
 import plopp.pipecraft.gui.MenuTypeRegister;
+import plopp.pipecraft.gui.pipes.PipeExtractScreen;
 import plopp.pipecraft.gui.teleporter.ViaductTeleporterScreen;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerIDScreen;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerScreen;
 import plopp.pipecraft.model.LyingPlayerModel;
-//import plopp.pipecraft.model.LyingPlayerModel;
 import plopp.pipecraft.model.obj.ViaductModelLoader;
 
 @EventBusSubscriber(modid = PipeCraftIndex.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
@@ -31,6 +31,7 @@ public class ClientEvent {
     	event.register(MenuTypeRegister.VIADUCT_LINKER.get(), ViaductLinkerScreen::new);
     	event.register(MenuTypeRegister.VIADUCT_LINKER_ID.get(), ViaductLinkerIDScreen::new);
     	event.register(MenuTypeRegister.VIADUCT_TELEPORTER.get(), ViaductTeleporterScreen::new);
+    	event.register(MenuTypeRegister.EXTRACT_PIPE.get(), PipeExtractScreen::new);
     }
 
     @SubscribeEvent

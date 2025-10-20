@@ -97,9 +97,9 @@ public class ViaductLinkerIDScreen extends AbstractContainerScreen<ViaductLinker
         int okH = 14;
 
         if (mouseX >= clearX && mouseX < clearX + clearW && mouseY >= clearY && mouseY < clearY + clearH) {
-            guiGraphics.renderTooltip(font,  Component.translatable("screen.pipecraft.linkerid.clear"), mouseX, mouseY);
+            guiGraphics.renderTooltip(font,  Component.translatable("screen.pipecraft.guisbtn.clear"), mouseX, mouseY);
         } else if (mouseX >= okX && mouseX < okX + okW && mouseY >= okY && mouseY < okY + okH) {
-            guiGraphics.renderTooltip(font,  Component.translatable("screen.pipecraft.linkerid.close"), mouseX, mouseY);
+            guiGraphics.renderTooltip(font,  Component.translatable("screen.pipecraft.guisbtn.close"), mouseX, mouseY);
         }
     }
 

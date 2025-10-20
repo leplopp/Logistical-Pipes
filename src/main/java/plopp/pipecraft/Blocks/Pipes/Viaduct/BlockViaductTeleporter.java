@@ -80,10 +80,6 @@ public class BlockViaductTeleporter  extends Block implements EntityBlock,Connec
 	   @Override
 	   protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
 	       if (!level.isClientSide()) {
-	           if (player.isCrouching() && player instanceof ServerPlayer serverPlayer) {
-	               serverPlayer.openMenu(new ViaductGuiProvider(pos), buf -> buf.writeBlockPos(pos));
-	               return InteractionResult.CONSUME;
-	           }
 
 	           BlockEntity be = level.getBlockEntity(pos);
 	           if (be instanceof MenuProvider provider && player instanceof ServerPlayer sp) {

@@ -3,15 +3,26 @@ package plopp.pipecraft.Blocks.Pipes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Container;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 import plopp.pipecraft.PipeConfig;
+import plopp.pipecraft.Blocks.Facade.BlockFacadeTileEntity;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
+import plopp.pipecraft.gui.ViaductGuiProvider;
 import plopp.pipecraft.logic.pipe.PipeTravel;
 
-public class BlockPipeExtract extends BlockPipe {
+public class BlockPipeExtract extends BlockPipe implements EntityBlock{
     private final PipeConfig config;
 
     public BlockPipeExtract(Properties properties, PipeConfig config) {
@@ -35,7 +46,21 @@ public class BlockPipeExtract extends BlockPipe {
 
         level.scheduleTick(pos, this, 20); 
     }
+    
+    @Override
+	   protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
+	       if (!level.isClientSide()) {
 
+	           BlockEntity be = level.getBlockEntity(pos);
+	           if (be instanceof MenuProvider provider && player instanceof ServerPlayer sp) {
+	               sp.openMenu(provider, buf -> buf.writeBlockPos(pos));
+	               return InteractionResult.CONSUME;
+	           }
+	       }
+
+	       return InteractionResult.SUCCESS;
+	   }
+    
     private ItemStack extractItems(Container container, int amount) {
         ItemStack result = ItemStack.EMPTY;
         for (int i = 0; i < container.getContainerSize() && amount > 0; i++) {
@@ -53,5 +78,10 @@ public class BlockPipeExtract extends BlockPipe {
             }
         }
         return result;
+    }
+    
+    @Override
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new BlockPipeExtractEntity(pos, state);
     }
 }
