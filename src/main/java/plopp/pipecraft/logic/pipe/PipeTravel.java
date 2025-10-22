@@ -11,12 +11,16 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.items.IItemHandler;
 import plopp.pipecraft.PipeConfig;
 import plopp.pipecraft.Blocks.Pipes.BlockPipe;
 import plopp.pipecraft.Blocks.Pipes.BlockPipeExtract;
+import plopp.pipecraft.Network.NetworkHandler;
 import plopp.pipecraft.Network.data.PipeTravelWorldData;
+import plopp.pipecraft.Network.pipes.TravellingItemRemovePacket;
+import plopp.pipecraft.Network.pipes.TravellingItemSyncPacket;
 
 public class PipeTravel {
 	public static final List<TravellingItem> activeItems = new ArrayList<>();
@@ -25,21 +29,39 @@ public class PipeTravel {
 	    if (activeItems.isEmpty()) return;
 
 	    List<TravellingItem> toRemove = new ArrayList<>();
-	    List<TravellingItem> toAdd = new ArrayList<>();
+	    boolean isServer = level instanceof ServerLevel;
+	    ServerLevel serverLevel = isServer ? (ServerLevel) level : null;
 
 	    for (TravellingItem item : List.copyOf(activeItems)) {
-	        item.tick(level);
+	        if (isServer) {
+	            item.tick(serverLevel);
 
-	        if (item.isFinished()) {
-	            toRemove.add(item);
+	            if (item.isFinished()) {
+	                toRemove.add(item);
+
+	                TravellingItemRemovePacket removePkt = new TravellingItemRemovePacket(item.id);
+	                serverLevel.getPlayers(p -> p.distanceToSqr(Vec3.atCenterOf(item.currentPos)) < 64*64)
+	                           .forEach(p -> NetworkHandler.sendToClient(p, removePkt));
+
+	                continue; 
+	            }
+	            
+	            if (!serverLevel.getServer().isDedicatedServer()) continue;
+	            if (!item.stack.isEmpty()) {
+	                TravellingItemSyncPacket pkt = new TravellingItemSyncPacket(item);
+	                serverLevel.getPlayers(p -> p.distanceToSqr(Vec3.atCenterOf(item.currentPos)) < 64*64)
+	                           .forEach(p -> NetworkHandler.sendToClient(p, pkt));
+	            }
+	        } else {
+	            item.clientTick(level);
 	        }
 	    }
 
-	    if (!toRemove.isEmpty()) activeItems.removeAll(toRemove);
-	    if (!toAdd.isEmpty()) activeItems.addAll(toAdd);
-	    if (!level.isClientSide && level instanceof ServerLevel serverLevel) {
-	        PipeTravelWorldData data = PipeTravelWorldData.get(serverLevel);
-	        data.setItems(activeItems);
+
+	    activeItems.removeAll(toRemove);
+
+	    if (isServer) {
+	        PipeTravelWorldData.get(serverLevel).setItems(activeItems);
 	    }
 	}
 
@@ -71,12 +93,13 @@ public class PipeTravel {
                     break;
                 }
             }
-            if (!leftover.isEmpty()) spawnItemEntity(level, item.currentPos, leftover);
+            if (!leftover.isEmpty()) {
+                spawnItemEntity(level, item.currentPos, leftover);
+            }
         } else {
             spawnItemEntity(level, item.currentPos, item.stack);
         }
-
-        item.stack.setCount(0); 
+        item.stack.setCount(0);
     }
 
     public static void spawnItemEntity(Level level, BlockPos pos, ItemStack stack) {
@@ -84,7 +107,8 @@ public class PipeTravel {
         level.addFreshEntity(entity);
     }
 
-    public static Target getNextTarget(TravellingItem item, BlockPos current, BlockPos lastPos, Direction side) {
+    @SuppressWarnings("deprecation")
+	public static Target getNextTarget(TravellingItem item, BlockPos current, BlockPos lastPos, Direction side) {
         ServerLevel level = item.level;
         BlockState currentState = level.getBlockState(current);
 
@@ -125,8 +149,6 @@ public class PipeTravel {
             if (!level.hasChunkAt(candidate)) continue;
 
             BlockState state = level.getBlockState(candidate);
-            BlockEntity be = level.getBlockEntity(candidate);
-
             if (state.getBlock() instanceof BlockPipe && !(state.getBlock() instanceof BlockPipeExtract)) {
                 possibleTargets.add(new Target(candidate, d, false, false));
             }
@@ -158,5 +180,14 @@ public class PipeTravel {
         }
 
         return null; 
+    }
+    
+    public static void cleanupOnWorldUnload(ServerLevel level) {
+        PipeTravelWorldData data = PipeTravelWorldData.get(level);
+        data.setItems(PipeTravel.activeItems);
+
+        PipeTravel.activeItems.clear();
+        TravellingItem.containerExtractorIndex.clear();
+        TravellingItem.pipeDirectionIndex.clear();
     }
 }

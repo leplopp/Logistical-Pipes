@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
-import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -33,7 +32,6 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -46,10 +44,10 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerChangeGameModeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import plopp.pipecraft.PipeCraftIndex;
-import plopp.pipecraft.Blocks.BlockRegister;
 import plopp.pipecraft.Blocks.Facade.BlockViaductFacade;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductSpeed;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
@@ -57,7 +55,6 @@ import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductDetector;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
 import plopp.pipecraft.Network.NetworkHandler;
-import plopp.pipecraft.logic.FacadeOverlayManager;
 import plopp.pipecraft.logic.ViaductTravel;
 import plopp.pipecraft.logic.pipe.PipeTravel;
 import plopp.pipecraft.util.ViaductCommand;
@@ -77,25 +74,33 @@ public class CommonEvents {
 	 * 
 	 * }
 	 */
+	
+	@SubscribeEvent
+	public static void onWorldUnload(LevelEvent.Unload event) {
+	    if (!(event.getLevel() instanceof ServerLevel level)) return;
+	    PipeTravel.cleanupOnWorldUnload(level);
+	}
+
+	
 	@SubscribeEvent
 	public static void onRegisterCommands(RegisterCommandsEvent event) {
 		ViaductCommand.register(event.getDispatcher());
 	}
+	
 	@SubscribeEvent
 	public static void onServerTick(ServerTickEvent.Post event) {
-		MinecraftServer server = event.getServer();
+	    MinecraftServer server = event.getServer();
 
-		for (ServerLevel level : server.getAllLevels()) {
-			if (level == null)
-				continue;
+	    for (ServerLevel level : server.getAllLevels()) {
+	        if (level == null) continue;
 
-			PipeTravel.tick(level.getLevel());
+	        PipeTravel.tick(level);
 
-			for (ServerPlayer player : level.players()) {
-				if (ViaductTravel.isTravelActive(player)) {
-				}
-			}
-		}
+	        for (ServerPlayer player : level.players()) {
+	            if (ViaductTravel.isTravelActive(player)) {
+	            }
+	        }
+	    }
 	}
 
 	@SubscribeEvent

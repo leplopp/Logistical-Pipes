@@ -42,7 +42,9 @@ public class PipeTravelWorldData extends SavedData {
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag list = new ListTag();
         for (TravellingItemRecord rec : items) {
-            list.add(rec.toNBT(registries));
+        	   if (!rec.stack().isEmpty() && rec.stack().getCount() > 0) { // <-- nur nicht-leere Items speichern
+        	        list.add(rec.toNBT(registries));
+        	    }
         }
         tag.put("TravellingItems", list);
         return tag;

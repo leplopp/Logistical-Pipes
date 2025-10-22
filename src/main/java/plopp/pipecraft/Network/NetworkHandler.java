@@ -17,6 +17,8 @@ import plopp.pipecraft.Network.linker.PacketTravelRotate;
 import plopp.pipecraft.Network.linker.PacketUpdateLinkerName;
 import plopp.pipecraft.Network.linker.PacketUpdateSortedPositions;
 import plopp.pipecraft.Network.linker.ViaductLinkerListPacket;
+import plopp.pipecraft.Network.pipes.TravellingItemRemovePacket;
+import plopp.pipecraft.Network.pipes.TravellingItemSyncPacket;
 import plopp.pipecraft.Network.speeder.SpeedChangePacket;
 import plopp.pipecraft.Network.teleporter.PacketUpdateTeleporterNames;
 import plopp.pipecraft.Network.teleporter.PacketUpdateTeleporterToggle;
@@ -44,7 +46,9 @@ public class NetworkHandler {
 	    	.playToServer(PacketCancelScan.TYPE, PacketCancelScan.CODEC, PacketCancelScan::handle)
 	    	.playToClient(PacketTravelStop.TYPE, PacketTravelStop.CODEC, PacketTravelStop::handle)
 	    	.playToClient(PacketTravelJump.TYPE, PacketTravelJump.CODEC, PacketTravelJump::handle)
-	    	.playToClient(PacketTravelRotate.TYPE, PacketTravelRotate.CODEC, PacketTravelRotate::handle);
+	    	.playToClient(PacketTravelRotate.TYPE, PacketTravelRotate.CODEC, PacketTravelRotate::handle)
+	    	.playToClient(TravellingItemSyncPacket.TYPE, TravellingItemSyncPacket.CODEC, TravellingItemSyncPacket::handle)
+	    	.playToClient(TravellingItemRemovePacket.TYPE, TravellingItemRemovePacket.CODEC, TravellingItemRemovePacket::handle);
 	}
 	
 	    public static void sendNameToServer(BlockPos pos, String name) {

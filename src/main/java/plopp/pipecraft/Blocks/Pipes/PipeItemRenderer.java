@@ -1,6 +1,8 @@
 package plopp.pipecraft.Blocks.Pipes;
 
 import java.util.List;
+import java.util.Objects;
+
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -8,6 +10,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.MultiBufferSource.BufferSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
@@ -19,7 +22,6 @@ import plopp.pipecraft.logic.pipe.TravellingItem;
 
 @EventBusSubscriber(value = Dist.CLIENT)
 public class PipeItemRenderer {
-
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
@@ -33,10 +35,15 @@ public class PipeItemRenderer {
         float partialTicks = event.getPartialTick().getRealtimeDeltaTicks();
         Vec3 cameraPos = mc.gameRenderer.getMainCamera().getPosition();
 
-        List<TravellingItem> items = List.copyOf(PipeTravel.activeItems);
+        List<TravellingItem> snapshot;
+        synchronized (PipeTravel.activeItems) {
+            snapshot = PipeTravel.activeItems.stream()
+                .filter(Objects::nonNull)
+                .toList();
+        }
 
-        for (TravellingItem item : items) {
-            if (item.stack.isEmpty()) continue;
+        for (TravellingItem item : snapshot) {
+        	if (item.stack.isEmpty() || !(item.stack.getItem() instanceof BlockItem)) continue;
 
             Vec3 from = Vec3.atCenterOf(item.lastPos);
             Vec3 to = Vec3.atCenterOf(item.currentPos);

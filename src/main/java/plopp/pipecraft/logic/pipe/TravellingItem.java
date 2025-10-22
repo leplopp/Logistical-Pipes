@@ -2,6 +2,7 @@ package plopp.pipecraft.logic.pipe;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -11,7 +12,7 @@ import net.minecraft.world.phys.Vec3;
 import plopp.pipecraft.PipeConfig;
 
 public class TravellingItem {
-    public final ItemStack stack;
+    public ItemStack stack;
     public final BlockPos startContainer;
     public BlockPos lastPos;
     public BlockPos currentPos;
@@ -21,7 +22,7 @@ public class TravellingItem {
     public double speed = 0.05;
     private int segmentIndex = 0;
     private double[] segmentOffsets;
-    public final ServerLevel level; 
+    public ServerLevel level; 
     public boolean pendingContainer = false;
     public double containerProgress = 0.0;
     public BlockPos containerPos = null;
@@ -30,6 +31,7 @@ public class TravellingItem {
     public static final Map<BlockPos, Integer> containerExtractorIndex = new HashMap<>();
     public static Map<BlockPos, Integer> pipeDirectionIndex = new HashMap<>();
     public boolean justExtracted = false;
+    public UUID id = UUID.randomUUID(); 
     
     public TravellingItem(ItemStack stack, BlockPos startContainer, Direction side, PipeConfig config, ServerLevel level) {
         this.stack = stack.copy();
@@ -42,6 +44,7 @@ public class TravellingItem {
         this.segmentIndex = 0;
         this.level = level; 
     }
+    
 
     public void tick(Level level) {
         progress += speed;
@@ -74,6 +77,7 @@ public class TravellingItem {
     }
     
     public void clientTick(Level level) {
+    	
         progress += speed;
         if (progress >= 1.0) {
             progress = 0.0;
@@ -91,5 +95,4 @@ public class TravellingItem {
     public boolean isFinished() {
         return stack.isEmpty();
     }
-
 }
