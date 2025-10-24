@@ -77,9 +77,11 @@ public class TravellingItemSyncPacket implements CustomPacketPayload {
     public static void handle(TravellingItemSyncPacket packet, IPayloadContext context) {
         Minecraft.getInstance().execute(() -> {
             TravellingItemData d = packet.data;
+            
             Optional<TravellingItem> opt = PipeTravel.activeItems.stream()
                     .filter(i -> i.id.equals(d.id))
                     .findFirst();
+            
             if (opt.isPresent()) {
                 TravellingItem item = opt.get();
                 item.stack = d.stack;

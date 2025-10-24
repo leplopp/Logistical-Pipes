@@ -22,7 +22,7 @@ public class PipeTravelWorldEvents {
                 rec.stack(),
                 rec.currentPos(),
                 rec.side(),
-                PipeConfig.defaultConfig(), // falls du Configs je nach Pipe ändern willst → anpassen
+                PipeConfig.defaultConfig(),
                 level
             );
             item.lastPos = rec.lastPos();
@@ -31,7 +31,6 @@ public class PipeTravelWorldEvents {
             PipeTravel.activeItems.add(item);
         }
 
-        // Liste leeren, sonst wird beim nächsten Speichern doppelt gespeichert
         data.getItems().clear();
     }
 

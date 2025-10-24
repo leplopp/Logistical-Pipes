@@ -32,7 +32,7 @@ public enum SpeedLevel implements StringRepresentable {
 
     @Override
     public String getSerializedName() {
-        int visual = 129 - value; // 1 → 128, 128 → 1
+        int visual = 129 - value; 
         return String.valueOf(visual);
     }
 

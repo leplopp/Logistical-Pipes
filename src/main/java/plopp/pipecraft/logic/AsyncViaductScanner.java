@@ -17,7 +17,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import plopp.pipecraft.PipeCraftIndex;
 import plopp.pipecraft.Blocks.ViaductBlockRegistry;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductTeleporter;
@@ -79,10 +78,10 @@ public class AsyncViaductScanner {
 
             BlockState currentState = currentLevel.getBlockState(current.pos);
             BlockEntity currentBe = currentLevel.getBlockEntity(current.pos);
-            PipeCraftIndex.LOGGER.info("Scan current position: {} mit BlockEntity: {}", current, currentBe);
+           // PipeCraftIndex.LOGGER.info("Scan current position: {} mit BlockEntity: {}", current, currentBe);
 
             if (currentBe instanceof BlockEntityViaductTeleporter teleporter) {
-                PipeCraftIndex.LOGGER.info("Scanne Teleporter an Position {}", current);
+               // PipeCraftIndex.LOGGER.info("Scanne Teleporter an Position {}", current);
 
                 ItemStack goalIcon = teleporter.getTargetDisplayedItem();
                 if (!goalIcon.isEmpty()) {

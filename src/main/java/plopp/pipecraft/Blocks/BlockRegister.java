@@ -19,8 +19,8 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import plopp.pipecraft.PipeConfig;
 import plopp.pipecraft.PipeCraftIndex;
 import plopp.pipecraft.Blocks.Facade.BlockViaductFacade;
-import plopp.pipecraft.Blocks.Pipes.BlockPipe;
-import plopp.pipecraft.Blocks.Pipes.BlockPipeExtract;
+import plopp.pipecraft.Blocks.Pipes.ItemPipes.BlockPipe;
+import plopp.pipecraft.Blocks.Pipes.ItemPipes.BlockPipeExtract;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductDetector;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
@@ -71,7 +71,7 @@ public class BlockRegister {
     }
 
     private static <B extends Block> void registerBlockItem(String name, DeferredBlock<B> block) {
-        if (name.startsWith("viaduct")) {
+        if (name.startsWith("viaduct") || name.startsWith("pipe") ) {
             ITEMS.register(name, () -> new BlockItem(block.get(), new Item.Properties()) {
                 @Override
                 public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {

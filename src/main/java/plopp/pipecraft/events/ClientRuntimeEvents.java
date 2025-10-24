@@ -48,6 +48,7 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import plopp.pipecraft.Config;
 import plopp.pipecraft.PipeCraftIndex;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductSpeed;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductDetector;
@@ -205,13 +206,16 @@ public class ClientRuntimeEvents {
 	     }
 	     
 	     int currentSpeed = state.getValue(BlockViaductSpeed.SPEED).getValue();
-	     int visualSpeed = 129 - currentSpeed; 
-	     visualSpeed += scrollStep;            
-	     visualSpeed = Mth.clamp(visualSpeed, 1, 128);
-	     int newSpeed = 129 - visualSpeed;     
-	     level.playSound( player,BlockViaductSpeed.editingPos, SoundEvents.ITEM_PICKUP,SoundSource.BLOCKS,0.3f, 3.0f);
-	     SpeedChangePacket pkt = new SpeedChangePacket(BlockViaductSpeed.editingPos, newSpeed - currentSpeed);
-	     NetworkHandler.sendToServer(pkt);
+	     //int visualSpeed = 129 - currentSpeed; 
+	     int newSpeed = currentSpeed + scrollStep;   
+	     newSpeed = Mth.clamp(newSpeed, Config.getSpeedViaductMin(), Config.getSpeedViaductMax());
+	     level.playSound(player, BlockViaductSpeed.editingPos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.3f, 3.0f);
+	     int delta = newSpeed - currentSpeed;
+	     if (delta != 0) {
+	         SpeedChangePacket pkt = new SpeedChangePacket(BlockViaductSpeed.editingPos, delta);
+	         NetworkHandler.sendToServer(pkt);
+	     }
+
 	     event.setCanceled(true);
 	 }
 	 
@@ -231,9 +235,9 @@ public class ClientRuntimeEvents {
 			);
 	 
 	   @SuppressWarnings("incomplete-switch")
-	@SubscribeEvent
+	   @SubscribeEvent
 	   public static void onRenderLevel(RenderLevelStageEvent event) {
-	       if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
+	       if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
 
 	       Minecraft mc = Minecraft.getInstance();
 	       Level level = mc.level;
@@ -320,8 +324,8 @@ public class ClientRuntimeEvents {
 	           if (!(state.getBlock() instanceof BlockViaductSpeed)) continue;
 
 	           int speed = state.getValue(BlockViaductSpeed.SPEED).getValue();
-	           int visualSpeed = 129 - speed; // 1 -> 128, 128 -> 1
-	           String text = String.valueOf(visualSpeed);
+	           // int visualSpeed = -129- speed; // 1 -> 128, 128 -> 1
+	           String text = String.valueOf(speed);
 	           Direction blockFacing = state.getValue(BlockViaductSpeed.FACING);
 
 	           BlockEntity be = level.getBlockEntity(pos);

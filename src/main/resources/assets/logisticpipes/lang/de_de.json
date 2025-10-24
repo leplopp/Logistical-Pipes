@@ -8,8 +8,6 @@
 	"block.logisticpipes.viaduct_teleporter": "Viaduct Teleporter",
 	"block.logisticpipes.pipe": "Item Pipe",
 	"block.logisticpipes.pipe_extract": "Extractor Item Pipe",
-	"viaduct.travel.drop_denied": "Dropen während der Fahrt nicht erlaubt",
-	"viaduct.travel.start": "Fahrt Gestartet",
 	"screen.pipecraft.pipe_extractor": "Extractor Pipe",
 	"screen.pipecraft.viaduct_linker": "Viaduct Connector",
 	"screen.pipecraft.viaduct_linker_id": "Viaduct Connector ID",
@@ -23,6 +21,8 @@
 	"gui.linkerscreen.sortmode_alphabet": "Alphabetisch Sortieren",
 	"gui.linkerscreen.sortmode_custom": "benutzerdefiniertes Sortieren (rechtsklick drag&drop)",
 	"gui.linkerscreen.sortmode_loading": "Suche nach Connectoren",
+	"viaduct.travel.drop_denied": "Dropen während der Fahrt nicht erlaubt",
+	"viaduct.travel.start": "Fahrt Gestartet",
 	"viaduct.color_change": "Farbe geändert zu: %s",
 	"viaduct.color_change.already": "Farbe ist bereits: %s",
 	"viaduct.multiple.color_change": "%d farbe(n) geändert zu: %s",
@@ -38,7 +38,7 @@
 	"viaduct.speed.changed.lookaway": "Weggeschaut, Geschwindigkeitsänderung beendet",
 	"tooltip.hold_shift": "Drücke §eSHIFT§r für mehr Informationen",
 	"tooltip.viaduct.desc": "Standart viaduct zum Transportieren des Spielers",
-	"tooltip.viaduct.usage": "Die Farbe aller viadcute kann mit Farbe geändert werden, die Tranzparenz wird mit Wolle und Glas geändert, mit glowstone-dust ändert man das Licht-level (nur für das Standart & Facaden Viadcut.)",
+	"tooltip.viaduct.usage": "Die Farbe aller viadcute kann mit Farbe geändert werden, die Tranzparenz wird mit Wolle und Glas geändert, mit glowstone-dust ändert man das Licht-level und Entferne es mit einem Brush (nur für das Standart Viadcut).",
 	"tooltip.viaduct_facade.desc": "eine Dekorative Facade für andere pipes und kabel",
 	"tooltip.viaduct_facade.usage": "Rechts-click auf jeder pipe oder kabel zum setzen der Facade, für bessere compabilität können blöcke aus anderen mods in der COnfig Datei hinzugefügt werden. nur anwendbar an blöcken dessen Hitbox kleiner ist als die Facade.",
 	"tooltip.viaduct_linker.desc": "Connector viaduct zum setzen von Start & Ziel",
@@ -46,5 +46,9 @@
 	"tooltip.viaduct_detector.desc": "Detected Spieler",
 	"tooltip.viaduct_detector.usage": "Detected Spieler die hindurchfahren. hat ein Cooldown von 3s.",
 	"tooltip.viaduct_speed.desc": "Boosted Spieler die hindurchfahren",
-	"tooltip.viaduct_speed.usage": "Rechts-click zum ändern der Geschwindigkeit (ticks pro chunk, Standart wert 97=32 ticks), Shift+Rechts-click mit einem item/block zum setzten der ID, Mehrere Booster mit gleicher ID lassen sich Zeitgleich ändern."
+	"tooltip.viaduct_speed.usage": "Rechts-click zum ändern der Geschwindigkeit (ticks pro chunk, Standart wert ist 32 ticks), Shift+Rechts-click mit einem item/block zum setzten der ID, Mehrere Booster mit gleicher ID lassen sich Zeitgleich ändern.",
+	"tooltip.pipe.desc": "Item pipe für Item-transport",
+	"tooltip.pipe.usage": "Place it on containers and make a pipe network, only usable in loaded chunks.",
+	"tooltip.pipe_extract.desc": "Item pipe Extractor, placed on container to extract items",
+	"tooltip.pipe_extract.usage": "Still Very very very very pre pre pre WIP this can crash lol."
 }

@@ -35,7 +35,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import plopp.pipecraft.Network.data.ViaductTeleporterWorldData;
 import plopp.pipecraft.Network.teleporter.ViaductTeleporterIdRegistry;
 import plopp.pipecraft.Network.teleporter.ViaductTeleporterManager;
-import plopp.pipecraft.gui.ViaductGuiProvider;
 import plopp.pipecraft.logic.Connectable;
 import plopp.pipecraft.logic.ViaductTravel;
 

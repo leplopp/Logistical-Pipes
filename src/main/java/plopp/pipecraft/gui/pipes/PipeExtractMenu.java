@@ -1,16 +1,13 @@
 package plopp.pipecraft.gui.pipes;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import plopp.pipecraft.Blocks.BlockRegister;
-import plopp.pipecraft.Blocks.Pipes.BlockPipeExtractEntity;
+import plopp.pipecraft.Blocks.Pipes.ItemPipes.BlockPipeExtractEntity;
 import plopp.pipecraft.gui.MenuTypeRegister;
 
 public class PipeExtractMenu extends AbstractContainerMenu {

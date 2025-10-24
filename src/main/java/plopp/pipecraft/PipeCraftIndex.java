@@ -20,25 +20,22 @@ public class PipeCraftIndex
     public static final String MODID = "logisticpipes";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public PipeCraftIndex(IEventBus modEventBus, ModContainer modContainer)
-    {
+    public PipeCraftIndex(IEventBus modEventBus, ModContainer modContainer){
 
         NeoForge.EVENT_BUS.register(this);
         BlockRegister.register(modEventBus);
         PipeCreativeModeTab.register(modEventBus);
         modEventBus.addListener(this::addCreative);
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        modContainer.registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
         BlockEntityRegister.register(modEventBus);
         MenuTypeRegister.MENUS.register(modEventBus);
     }
 
-    private void addCreative(BuildCreativeModeTabContentsEvent event){
-    	
-    }
+    private void addCreative(BuildCreativeModeTabContentsEvent event){}
+    
     @SubscribeEvent
-    public void onServerStarting(ServerStartingEvent event)
-    {
-    }
+    public void onServerStarting(ServerStartingEvent event){}
 }
 
 /*ideen
@@ -55,9 +52,9 @@ public class PipeCraftIndex
  *   
  *  pipe		 	/ iron						    <- Beta
  *  extractor pipe  / iron						    <- Beta
- *  sorter pipe	/ diamond							<- concept		<- concept
+ *  sorter pipe	/ diamond							<- concept		
  *  speed up pipe	/gold							<- concept
  *  detector pipe	/iron							<- concept
- *	Direction blocker pipe	/ iron							<- concept
+ *	Direction blocker pipe	/ iron					<- concept
  *  
  */

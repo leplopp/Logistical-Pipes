@@ -25,6 +25,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.extensions.IBlockEntityExtension;
+import plopp.pipecraft.Config;
 import plopp.pipecraft.Blocks.BlockEntityRegister;
 import plopp.pipecraft.Blocks.BlockRegister;
 import plopp.pipecraft.Network.linker.LinkedTargetEntry;
@@ -245,7 +246,7 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
 
         if (asyncScanner == null) {
             Map<DimBlockPos, DimBlockPos> cameFromMap = new HashMap<>();
-            asyncScanner = new AsyncViaductScanner(level, worldPosition, 99, cameFromMap);
+            asyncScanner = new AsyncViaductScanner(level, worldPosition, Config.getScanSpeed(), cameFromMap);
             setAsyncScanInProgress(true);
         }
 

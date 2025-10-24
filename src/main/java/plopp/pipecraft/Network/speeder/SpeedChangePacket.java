@@ -12,6 +12,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import plopp.pipecraft.Config;
 import plopp.pipecraft.PipeCraftIndex;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductSpeed;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
@@ -49,10 +50,10 @@ public class SpeedChangePacket implements CustomPacketPayload {
         }
 
         public static void handle(SpeedChangePacket pkt, IPayloadContext context) {
-            System.out.println("[SpeedChangePacket] Empfang auf Server für pos=" + pkt.pos + " delta=" + pkt.delta);
+           // System.out.println("[SpeedChangePacket] Empfang auf Server für pos=" + pkt.pos + " delta=" + pkt.delta);
 
             if (!(context.player() instanceof ServerPlayer player)) {
-                System.out.println("[SpeedChangePacket] Spieler ist kein ServerPlayer!");
+               // System.out.println("[SpeedChangePacket] Spieler ist kein ServerPlayer!");
                 return;
             }
 
@@ -63,19 +64,19 @@ public class SpeedChangePacket implements CustomPacketPayload {
                 BlockEntity be = level.getBlockEntity(pkt.pos);
 
                 if (!(state.getBlock() instanceof BlockViaductSpeed) || !(be instanceof BlockEntityViaductSpeed speedBe)) {
-                    System.out.println("[SpeedChangePacket] Kein SpeedBlock/BE an Pos " + pkt.pos);
+                    //System.out.println("[SpeedChangePacket] Kein SpeedBlock/BE an Pos " + pkt.pos);
                     return;
                 }
 
                 SpeedLevel current = state.getValue(BlockViaductSpeed.SPEED);
-                int currentIndex = current.ordinal();
-                int newIndex = Mth.clamp(currentIndex + pkt.delta, 0, SpeedLevel.values().length - 1);
-                SpeedLevel newVal = SpeedLevel.values()[newIndex];
+                int currentValue = current.getValue(); 
+                int newValue = currentValue + pkt.delta;
+                newValue = Mth.clamp(newValue, Config.getSpeedViaductMin(), Config.getSpeedViaductMax());
+                SpeedLevel newVal = SpeedLevel.fromInt(newValue);
 
                 ItemStack idStack = speedBe.getIdStack();
 
                 if (!idStack.isEmpty()) {
-                    // bestehende globale Update-Logik für Item-SpeedBlocks
                     SpeedManager.setSpeed(idStack, newVal);
                     for (BlockEntityViaductSpeed otherBe : BlockEntityViaductSpeed.getAll()) {
                         ItemStack otherStack = otherBe.getIdStack();
@@ -89,18 +90,16 @@ public class SpeedChangePacket implements CustomPacketPayload {
                         }
                     }
                 } else {
-                    // Einzelblock: nur diesen SpeedBlock updaten
                     BlockState state1 = level.getBlockState(pkt.pos);
                     if (state1.getBlock() instanceof BlockViaductSpeed) {
                         level.setBlock(pkt.pos, state1.setValue(BlockViaductSpeed.SPEED, newVal), 3);
-                        // Item entfernen, damit Renderer nichts mehr zeigt
                         speedBe.setIdStack(ItemStack.EMPTY);
                         speedBe.setChanged();
                         level.sendBlockUpdated(pkt.pos, state1, state1, 3);
                     }
                 }
 
-                System.out.println("[SpeedChangePacket] Alter Speed: " + current + " → Neuer Speed: " + newVal + " für idStack=" + idStack);
+               // System.out.println("[SpeedChangePacket] Alter Speed: " + current + " → Neuer Speed: " + newVal + " für idStack=" + idStack);
             });
         }
 }

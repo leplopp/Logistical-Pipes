@@ -6,10 +6,13 @@ import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import plopp.pipecraft.PipeConfig;
+import plopp.pipecraft.Network.NetworkHandler;
+import plopp.pipecraft.Network.pipes.TravellingItemRemovePacket;
 
 public class TravellingItem {
     public ItemStack stack;
@@ -64,24 +67,36 @@ public class TravellingItem {
 
                     if (nextTarget.isInContainer) {
                         PipeTravel.finishItem(this, this.level);
-         
+                        TravellingItemRemovePacket removePkt = new TravellingItemRemovePacket(this.id);
+                        for (ServerPlayer p : this.level.players()) {
+                                NetworkHandler.sendToClient(p, removePkt);
+                        }
                         return;
                     }
                 } else {
-                	PipeTravel.spawnItemEntity(this.level, currentPos, stack);
-                    PipeTravel.activeItems.remove(this);
-                	return;
+                	   ItemStack dropStack = this.stack.copy();
+
+                	    PipeTravel.spawnItemEntity(this.level, currentPos, dropStack);
+
+                	    this.stack.setCount(0); 
+                	    PipeTravel.activeItems.remove(this);
+
+                	    TravellingItemRemovePacket removePkt = new TravellingItemRemovePacket(this.id);
+                	    for (ServerPlayer p : this.level.players()) {
+                	        NetworkHandler.sendToClient(p, removePkt);
+                	    }
+                	    return;
                 }
             }
         }
     }
     
     public void clientTick(Level level) {
-    	
         progress += speed;
         if (progress >= 1.0) {
-            progress = 0.0;
+            progress = 1.0;
             lastPos = currentPos;
+            stack = ItemStack.EMPTY; 
         }
     }
 

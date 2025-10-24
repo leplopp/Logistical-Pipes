@@ -40,7 +40,12 @@ public class TravellingItemRemovePacket implements CustomPacketPayload {
 
     public static void handle(TravellingItemRemovePacket pkt, IPayloadContext context) {
         Minecraft.getInstance().execute(() -> {
-            PipeTravel.activeItems.removeIf(item -> item.id.equals(pkt.itemId));
+            try {
+                PipeTravel.activeItems.removeIf(item -> item.id.equals(pkt.itemId));
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("ERROR during TravellingItemRemovePacket handle for " + pkt.itemId);
+            }
         });
     }
 }

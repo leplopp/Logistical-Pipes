@@ -64,17 +64,16 @@ import net.minecraft.world.entity.Entity;
 
 @EventBusSubscriber(modid = PipeCraftIndex.MODID)
 public class CommonEvents {
-
 	public static final Map<UUID, BlockPos> brushingPlayers = new HashMap<>();
-
-	/*
-	 * @SubscribeEvent+ public static void onLevelTick(LevelTickEvent.Post event) {
-	 * if (!(event.getLevel() instanceof ServerLevel level)) return;
-	 * PipeTravel.tick(level.getLevel());
-	 * 
-	 * }
-	 */
-	
+	 
+	  @SubscribeEvent
+	  public static void onServerTick(ServerTickEvent.Post event) {
+	      MinecraftServer server = event.getServer();
+	      for (ServerLevel level : server.getAllLevels()) {
+	          PipeTravel.tick(level.getLevel());
+	      }
+	  }
+		
 	@SubscribeEvent
 	public static void onWorldUnload(LevelEvent.Unload event) {
 	    if (!(event.getLevel() instanceof ServerLevel level)) return;
@@ -85,22 +84,6 @@ public class CommonEvents {
 	@SubscribeEvent
 	public static void onRegisterCommands(RegisterCommandsEvent event) {
 		ViaductCommand.register(event.getDispatcher());
-	}
-	
-	@SubscribeEvent
-	public static void onServerTick(ServerTickEvent.Post event) {
-	    MinecraftServer server = event.getServer();
-
-	    for (ServerLevel level : server.getAllLevels()) {
-	        if (level == null) continue;
-
-	        PipeTravel.tick(level);
-
-	        for (ServerPlayer player : level.players()) {
-	            if (ViaductTravel.isTravelActive(player)) {
-	            }
-	        }
-	    }
 	}
 
 	@SubscribeEvent

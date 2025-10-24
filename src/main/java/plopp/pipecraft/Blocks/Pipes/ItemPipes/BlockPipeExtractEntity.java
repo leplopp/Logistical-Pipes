@@ -1,4 +1,4 @@
-package plopp.pipecraft.Blocks.Pipes;
+package plopp.pipecraft.Blocks.Pipes.ItemPipes;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;

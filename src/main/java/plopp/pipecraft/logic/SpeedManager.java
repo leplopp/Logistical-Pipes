@@ -2,41 +2,43 @@ package plopp.pipecraft.logic;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import plopp.pipecraft.Config;
 
 public class SpeedManager {
 
-    private static final Map<Item, SpeedLevel> GLOBAL_SPEEDS = new ConcurrentHashMap<>();
+	private static final Map<Item, SpeedLevel> GLOBAL_SPEEDS = new ConcurrentHashMap<>();
 
-    public static void setSpeed(ItemStack stack, SpeedLevel speed) {
-        if (stack.isEmpty()) return;
+	public static void setSpeed(ItemStack stack, SpeedLevel speed) {
+		if (stack.isEmpty())
+			return;
 
-        // Prüfen, ob der SpeedLevel erlaubt ist
-        if (!Config.isSpeedLevelAllowed(speed)) {
-            // auf min oder max korrigieren
-            int clamped = Math.max(Config.speedViaductMin, Math.min(Config.speedViaductMax, speed.getValue()));
-            speed = SpeedLevel.fromInt(clamped);
-        }
+		if (!Config.isSpeedLevelAllowed(speed)) {
 
-        GLOBAL_SPEEDS.put(stack.getItem(), speed);
-    }
+			int clamped = Math.max(Config.getSpeedViaductMin(),
+					Math.min(Config.getSpeedViaductMax(), speed.getValue()));
+			speed = SpeedLevel.fromInt(clamped);
+		}
 
-    public static SpeedLevel getSpeed(ItemStack stack) {
-        if (stack.isEmpty()) return null;
+		GLOBAL_SPEEDS.put(stack.getItem(), speed);
+	}
 
-        SpeedLevel speed = GLOBAL_SPEEDS.get(stack.getItem());
-        if (speed == null) return null;
+	public static SpeedLevel getSpeed(ItemStack stack) {
+		if (stack.isEmpty())
+			return null;
 
-        // Falls die Config geändert wurde, nochmal prüfen
-        if (!Config.isSpeedLevelAllowed(speed)) {
-            int clamped = Math.max(Config.speedViaductMin, Math.min(Config.speedViaductMax, speed.getValue()));
-            speed = SpeedLevel.fromInt(clamped);
-            GLOBAL_SPEEDS.put(stack.getItem(), speed);
-        }
+		SpeedLevel speed = GLOBAL_SPEEDS.get(stack.getItem());
+		if (speed == null)
+			return null;
 
-        return speed;
-    }
+		if (!Config.isSpeedLevelAllowed(speed)) {
+			int clamped = Math.max(Config.getSpeedViaductMin(),
+					Math.min(Config.getSpeedViaductMax(), speed.getValue()));
+			speed = SpeedLevel.fromInt(clamped);
+			GLOBAL_SPEEDS.put(stack.getItem(), speed);
+		}
+
+		return speed;
+	}
 }

@@ -3,9 +3,7 @@ package plopp.pipecraft.logic;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.annotation.Nullable;
-
 import net.neoforged.api.distmarker.Dist;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.DyeColor;
@@ -47,9 +45,7 @@ public class FacadeOverlayManager {
     public static void updateColor(BlockPos pos, DyeColor newColor) {
         FacadeData old = FACADE_MAP.get(pos);
         if (old != null) {
-            // Map aktualisieren
             FACADE_MAP.put(pos.immutable(), new FacadeData(newColor, old.transparent()));
-            // Renderer informieren, dass Position neu gerendert werden soll
             FacadeOverlayRenderer.markForReRender(pos);
         }
     }

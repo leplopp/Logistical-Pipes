@@ -40,5 +40,4 @@ public class ClientTravelDataManager {
 	    public static boolean hasData(UUID uuid) {
 	        return travelDataMap.containsKey(uuid);
 	    }
-
 	}

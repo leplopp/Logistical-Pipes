@@ -8,8 +8,6 @@
 	"block.logisticpipes.viaduct_teleporter": "Viaduct Teleporter",
 	"block.logisticpipes.pipe": "Item Pipe",
 	"block.logisticpipes.pipe_extract": "Item Pipe Extractor",
-	"viaduct.travel.drop_denied": "Dropping while riding is not allowed",
-	"viaduct.travel.start": "Start moving",
 	"screen.pipecraft.pipe_extractor": "Extractor Pipe",
 	"screen.pipecraft.viaduct_linker": "Viaduct Connector",
 	"screen.pipecraft.viaduct_linker_id": "Viaduct Connector ID",
@@ -23,6 +21,8 @@
 	"gui.linkerscreen.sortmode_alphabet": "Sort Alphabetically",
 	"gui.linkerscreen.sortmode_custom": "Sort Custom (right click drag&drop)",
 	"gui.linkerscreen.sortmode_loading": "Searching Connectors",
+	"viaduct.travel.drop_denied": "Dropping while riding is not allowed",
+	"viaduct.travel.start": "Start moving",
 	"viaduct.color_change": "changed Color to: %s",
 	"viaduct.color_change.already": "Color already set in: %s",
 	"viaduct.multiple.color_change": "%d Color(s) changed to: %s",
@@ -38,7 +38,7 @@
 	"viaduct.speed.changed.lookaway": "looked away, end speed change",
 	"tooltip.hold_shift": "Press §eSHIFT§r for details",
 	"tooltip.viaduct.desc": "Basic viaduct for transporting players",
-	"tooltip.viaduct.usage": "Can color all viaducts with dyes, change transparency using wool or glass, and adjust light level with glowstone dust (only for Basic & Facade Viaducts).",
+	"tooltip.viaduct.usage": "Can color all viaducts with dyes, change transparency using wool or glass, and adjust light level with glowstone dust and removed it with a Brush (only for Basic Viaducts).",
 	"tooltip.viaduct_facade.desc": "A decorative cover for pipes and cables",
 	"tooltip.viaduct_facade.usage": "Right-click any pipe or cable to apply the facade. For compatibility, additional blocks/pipes/cables can be added via config. Only applicable to blocks with a smaller hitbox.",
 	"tooltip.viaduct_linker.desc": "Connector viaduct used as start and goal",
@@ -46,5 +46,9 @@
 	"tooltip.viaduct_detector.desc": "Detect Players",
 	"tooltip.viaduct_detector.usage": "Detects players passing through. Has a 3-second cooldown.",
 	"tooltip.viaduct_speed.desc": "Boosts players passing through",
-	"tooltip.viaduct_speed.usage": "Right-click to change speed (ticks per chunk, default 97 = 32 ticks). Shift+Right-click with an item/block to set ID. Multiple boosters with the same ID change the speed together."
+	"tooltip.viaduct_speed.usage": "Right-click to change speed (ticks per chunk, default 32 ticks). Shift+Right-click with an item/block to set ID. Multiple boosters with the same ID change the speed together.",
+	"tooltip.pipe.desc": "Item pipe for pipe Transportation",
+	"tooltip.pipe.usage": "Place it on containers and make a pipe network, only usable in loaded chunks.",
+	"tooltip.pipe_extract.desc": "Item pipe Extractor, placed on container to extract items",
+	"tooltip.pipe_extract.usage": "Still Very very very very pre pre pre WIP this can crash lol."
 }

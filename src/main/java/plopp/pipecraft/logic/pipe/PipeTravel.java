@@ -5,18 +5,18 @@ import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.items.IItemHandler;
 import plopp.pipecraft.PipeConfig;
-import plopp.pipecraft.Blocks.Pipes.BlockPipe;
-import plopp.pipecraft.Blocks.Pipes.BlockPipeExtract;
+import plopp.pipecraft.Blocks.Pipes.ItemPipes.BlockPipe;
+import plopp.pipecraft.Blocks.Pipes.ItemPipes.BlockPipeExtract;
 import plopp.pipecraft.Network.NetworkHandler;
 import plopp.pipecraft.Network.data.PipeTravelWorldData;
 import plopp.pipecraft.Network.pipes.TravellingItemRemovePacket;
@@ -40,23 +40,19 @@ public class PipeTravel {
 	                toRemove.add(item);
 
 	                TravellingItemRemovePacket removePkt = new TravellingItemRemovePacket(item.id);
-	                serverLevel.getPlayers(p -> p.distanceToSqr(Vec3.atCenterOf(item.currentPos)) < 64*64)
-	                           .forEach(p -> NetworkHandler.sendToClient(p, removePkt));
-
+	                for (ServerPlayer p : serverLevel.players()) {NetworkHandler.sendToClient(p, removePkt);
+                    }
 	                continue; 
 	            }
 	            
 	            if (!serverLevel.getServer().isDedicatedServer()) continue;
-	            if (!item.stack.isEmpty()) {
 	                TravellingItemSyncPacket pkt = new TravellingItemSyncPacket(item);
-	                serverLevel.getPlayers(p -> p.distanceToSqr(Vec3.atCenterOf(item.currentPos)) < 64*64)
-	                           .forEach(p -> NetworkHandler.sendToClient(p, pkt));
+	                for (ServerPlayer p : serverLevel.players()) {NetworkHandler.sendToClient(p, pkt);     
 	            }
 	        } else {
 	            item.clientTick(level);
 	        }
 	    }
-
 
 	    activeItems.removeAll(toRemove);
 
@@ -65,6 +61,7 @@ public class PipeTravel {
 	    }
 	}
 
+	
     public static void insertItem(ItemStack stack, BlockPos startContainer, Direction side, ServerLevel level, PipeConfig config) {
         TravellingItem item = new TravellingItem(stack, startContainer, side, config, level);
         item.fromContainer = true; 
@@ -99,7 +96,14 @@ public class PipeTravel {
         } else {
             spawnItemEntity(level, item.currentPos, item.stack);
         }
+        
         item.stack.setCount(0);
+        activeItems.remove(item);
+
+        TravellingItemRemovePacket removePkt = new TravellingItemRemovePacket(item.id);
+        for (ServerPlayer p : level.players()) {
+            if (p.connection != null) NetworkHandler.sendToClient(p, removePkt);
+        }
     }
 
     public static void spawnItemEntity(Level level, BlockPos pos, ItemStack stack) {
