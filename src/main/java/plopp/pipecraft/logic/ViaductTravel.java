@@ -12,6 +12,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -34,16 +35,15 @@ import plopp.pipecraft.Network.linker.PacketTravelRotate;
 import plopp.pipecraft.Network.travel.ClientTravelDataManager;
 import plopp.pipecraft.Network.travel.PacketTravelStop;
 import plopp.pipecraft.Network.travel.TravelStatePacket;
+import plopp.pipecraft.sounds.SoundRegister;
 
 public class ViaductTravel {
 	
-	private static final Map<UUID, Float> travelPitchMap = new HashMap<>();
+	public static final Map<UUID, Float> travelPitchMap = new HashMap<>();
 	public static final Map<UUID, TravelData> activeTravels = new HashMap<>();
-    private static final Set<UUID> jumpAfterTravel = new HashSet<>();
-    private static final Set<UUID> jumpTrigger = new HashSet<>();
-    private static final Set<UUID> resetModelSet = new HashSet<>();
-    private static final Map<UUID, Float> travelYawMap = new HashMap<>();
-    private static final Map<UUID, VerticalDirection> verticalDirMap = new HashMap<>();
+	public static final Set<UUID> resetModelSet = new HashSet<>();
+    public static final Map<UUID, Float> travelYawMap = new HashMap<>();
+    public static final Map<UUID, VerticalDirection> verticalDirMap = new HashMap<>();
     public enum VerticalDirection {NONE, UP, DOWN}
     
     public static void markResetModel(UUID id) {
@@ -54,21 +54,6 @@ public class ViaductTravel {
 		
     return resetModelSet.remove(id);
 	}
-    
-    public static void markJumpAfterTravel(Player player) {
-        jumpAfterTravel.add(player.getUUID());
-    }
-
-    public static boolean shouldJumpAfterTravel(Player player) {
-        return jumpAfterTravel.contains(player.getUUID());
-    }
-
-    public static void clearJumpFlag(Player player) {
-        jumpAfterTravel.remove(player.getUUID());
-    }
-    public static boolean shouldTriggerJump(UUID id) {
-        return jumpTrigger.remove(id); 
-    }
     
     private static Vec3 vecFromBlockPos(BlockPos pos) {
         return new Vec3(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
@@ -213,6 +198,16 @@ public class ViaductTravel {
 	        data.ticksPerChunk = data.defaultTicksPerChunk;
 	    }
 
+	    if (!player.level().isClientSide()) {
+            player.level().playSound(
+                null,
+                player.blockPosition(),
+                SoundRegister.VIADUCT_START.value(), 
+                SoundSource.AMBIENT,
+                1.0F,
+                1.0F  
+            );
+        }
 	    activeTravels.put(uuid, data);
 	    setupPlayer(player, startPos);
 	}
@@ -493,9 +488,7 @@ public class ViaductTravel {
         player.setInvisible(false);
         player.setInvulnerable(false);
         player.setNoGravity(false);
-        
-        markJumpAfterTravel(player);
-        
+
         if (player instanceof ServerPlayer sp) {
             NetworkHandler.sendTravelStateToAll(sp, true);
             NetworkHandler.sendToClient(sp, new PacketTravelStop(sp.getUUID()));
@@ -610,6 +603,17 @@ public class ViaductTravel {
         if (player instanceof ServerPlayer serverPlayer) {
         	NetworkHandler.sendTravelStateToAll(serverPlayer, true);
             
+        }
+        
+        if (!player.level().isClientSide()) {
+            player.level().playSound(
+                null,
+                player.blockPosition(),
+                SoundRegister.VIADUCT_STOP.value(), 
+                SoundSource.AMBIENT,
+                1.5F,
+                1.0F  
+            );
         }
     }
 }

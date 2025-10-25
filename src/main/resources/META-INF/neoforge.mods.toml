@@ -4,7 +4,7 @@ license="MIT"
 
 [[mods]]
 modId="logisticpipes"
-version="0.2.5"
+version="0.2.5.1"
 displayName="PipeCraft"
 logoFile="logo.png"
 authors="leplopp"

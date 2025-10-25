@@ -367,7 +367,6 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
                     }
                     
                     NetworkHandler.sendTravelStartPacket(start, target);
-                    minecraft.player.playSound(SoundEvents.UI_BUTTON_CLICK.value(), 0.5f, 0.5f);
                     this.onClose();
                     return true;
                 }

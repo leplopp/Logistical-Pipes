@@ -1,10 +1,8 @@
 package plopp.pipecraft.model;
 
 import java.util.UUID;
-
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.PlayerModel;
@@ -206,7 +204,7 @@ public class LyingPlayerModel<T extends AbstractClientPlayer> extends PlayerMode
     }
     
     public void resetModelToDefaultPose() {
-    	   System.out.println("Reset Model Pose for: " + this.getClass().getSimpleName());
+    	  // System.out.println("Reset Model Pose for: " + this.getClass().getSimpleName());
         this.body.xRot = 0f;
         this.body.yRot = 0f;
         this.body.zRot = 0f;

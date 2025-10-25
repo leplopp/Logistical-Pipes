@@ -19,6 +19,8 @@ public class TravelStatePacket implements CustomPacketPayload {
     private final float travelPitch;
     private final VerticalDirection verticalDirection;
     private final boolean resetModel;
+    private final int ticksPerChunk;
+    private final int defaultTicksPerChunk;
 
     public static final CustomPacketPayload.Type<TravelStatePacket> TYPE =
         new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(PipeCraftIndex.MODID, "travel_state"));
@@ -31,6 +33,8 @@ public class TravelStatePacket implements CustomPacketPayload {
                 buf.writeFloat(pkt.travelPitch);
                 buf.writeEnum(pkt.verticalDirection);
                 buf.writeBoolean(pkt.resetModel);
+                buf.writeInt(pkt.ticksPerChunk);
+                buf.writeInt(pkt.defaultTicksPerChunk);
             },
             (buf) -> new TravelStatePacket(
                 buf.readUUID(),
@@ -38,19 +42,24 @@ public class TravelStatePacket implements CustomPacketPayload {
                 buf.readFloat(),
                 buf.readFloat(),
                 buf.readEnum(VerticalDirection.class),
-                buf.readBoolean()
+                buf.readBoolean(),
+                buf.readInt(), 
+                buf.readInt()
             )
         );
 
-    public TravelStatePacket(UUID playerUUID, boolean active, float travelYaw, float travelPitch, VerticalDirection verticalDirection, boolean resetModel) {
-        this.playerUUID = playerUUID;
-        this.active = active;
-        this.travelYaw = travelYaw;
-        this.travelPitch = travelPitch;
-        this.verticalDirection = verticalDirection;
-        this.resetModel = resetModel;
-
-    }
+    public TravelStatePacket(UUID playerUUID, boolean active, float travelYaw, float travelPitch,
+            VerticalDirection verticalDirection, boolean resetModel,
+            int ticksPerChunk, int defaultTicksPerChunk) {
+this.playerUUID = playerUUID;
+this.active = active;
+this.travelYaw = travelYaw;
+this.travelPitch = travelPitch;
+this.verticalDirection = verticalDirection;
+this.resetModel = resetModel;
+this.ticksPerChunk = ticksPerChunk;
+this.defaultTicksPerChunk = defaultTicksPerChunk;
+}
 
     public UUID getPlayerUUID() { return playerUUID; }
     public boolean isActive() { return active; }
@@ -58,6 +67,8 @@ public class TravelStatePacket implements CustomPacketPayload {
     public float getTravelPitch() { return travelPitch; }
     public VerticalDirection getVerticalDirection() { return verticalDirection; }
     public boolean shouldResetModel() { return resetModel; }
+    public int getTicksPerChunk() { return ticksPerChunk; }
+    public int getDefaultTicksPerChunk() { return defaultTicksPerChunk; }
 
     @Override
     public CustomPacketPayload.Type<TravelStatePacket> type() {
@@ -77,6 +88,7 @@ public class TravelStatePacket implements CustomPacketPayload {
     }
     
     public static TravelStatePacket empty(UUID playerUUID) {
-        return new TravelStatePacket(playerUUID, false, 0f, 0f, VerticalDirection.NONE, true);
+        int defaultTicks = 32;
+        return new TravelStatePacket(playerUUID, false, 0f, 0f, VerticalDirection.NONE, true, defaultTicks, defaultTicks);
     }
 }

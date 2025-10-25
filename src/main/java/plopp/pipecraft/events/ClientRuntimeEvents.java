@@ -2,7 +2,6 @@ package plopp.pipecraft.events;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import org.joml.Matrix4f;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -47,7 +46,6 @@ import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import net.neoforged.neoforge.client.model.data.ModelData;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import plopp.pipecraft.Config;
 import plopp.pipecraft.PipeCraftIndex;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductSpeed;
@@ -63,19 +61,6 @@ public class ClientRuntimeEvents {
 	private static boolean wasRightClickPressedLastTick = false;
 	private static int lostSightTicks = 0;
 	private static int toggleCooldownTicks = 5;
-	
-	@SubscribeEvent
-	public static void onClientPlayerTick(PlayerTickEvent.Post event) {
-	    Player player = event.getEntity();
-	    if (!(player instanceof LocalPlayer localPlayer)) return;
-
-	    UUID id = localPlayer.getUUID();
-
-	    if (ViaductTravel.shouldTriggerJump(id)) {
-	        localPlayer.jumpFromGround();
-	    }
-
-	}
 	
 	@SubscribeEvent
 	public static void onClientTick(ClientTickEvent.Post event) {

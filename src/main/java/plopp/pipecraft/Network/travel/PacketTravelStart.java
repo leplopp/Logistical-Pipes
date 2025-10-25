@@ -39,9 +39,9 @@ public record PacketTravelStart(BlockPos startPos, BlockPos targetPos) implement
 
             serverPlayer.level().getServer().execute(() -> {
 
-                ViaductTravel.start(serverPlayer, packet.startPos(), packet.targetPos(), 32); //speed
+                ViaductTravel.start(serverPlayer, packet.startPos(), packet.targetPos(), 32);
                 NetworkHandler.sendTravelStateToAll(serverPlayer, false);
                 serverPlayer.displayClientMessage(Component.translatable("viaduct.travel.start"), true);
-            });
-        }
+			});
+		}
 }

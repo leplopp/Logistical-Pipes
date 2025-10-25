@@ -1,0 +1,17 @@
+{
+  "viaduct.loop": {
+    "sounds": [
+      { "name": "logisticpipes:viaduct_travel_active", "stream": true }
+    ]
+  },
+  "viaduct.stop": {
+    "sounds": [
+      { "name": "logisticpipes:plopp_out", "stream": false }
+    ]
+  },
+  "viaduct.start": {
+    "sounds": [
+      { "name": "logisticpipes:plopp_in", "stream": false }
+    ]
+  }
+}
