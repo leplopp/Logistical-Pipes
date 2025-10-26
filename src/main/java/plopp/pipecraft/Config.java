@@ -1,6 +1,7 @@
 package plopp.pipecraft;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec.BooleanValue;
 import plopp.pipecraft.logic.SpeedLevel;
 
 public class Config {
@@ -10,6 +11,10 @@ public class Config {
 	private static final ModConfigSpec.IntValue SPEED_VIADUCT_MIN;
 	private static final ModConfigSpec.IntValue SPEED_VIADUCT_MAX;
 	private static final ModConfigSpec.IntValue SCAN_SPEED;
+	private static final BooleanValue ENABLE_VIADUCT_TELEPORTER;
+	private static final BooleanValue ENABLE_VIADUCT_FACADE;
+	private static final BooleanValue ENABLE_BLOCKPIPE;
+	private static final BooleanValue ENABLE_BLOCKPIPE_EXTRACT;
 
 	static {
 
@@ -30,14 +35,35 @@ public class Config {
 		BUILDER.pop();
 
 		BUILDER.push("Viaduct Connector");
-
-		SCAN_SPEED = BUILDER.comment(
+		BUILDER.comment("");
+		 BUILDER.comment(
 				"change the scann speed e.g 512 = 512 blocks per tick, default is 99 for best performance and speed,\n "
-						+ "set this lower to slow down the scan speed and make scan performance better")
-				.comment("Scan speed (steps per tick) for AsyncViaductScanner. Default: 99, range: 1–512.")
+						+ "set this lower to slow down the scan speed and make scan performance better");
+		 BUILDER.comment("");		
+		 SCAN_SPEED =BUILDER.comment("Scan speed (steps per tick) for AsyncViaductScanner. Default: 99, range: 1–512.")
 				.defineInRange("scanSpeed", 99, 1, 512);
 
 		BUILDER.pop();
+		
+		BUILDER.push("Experimental Content");
+		BUILDER.comment("");
+		ENABLE_VIADUCT_TELEPORTER = BUILDER
+		    .comment("Enable the Viaduct Teleporter block in the creative tab (experimental).")
+		    .define("enableViaductTeleporter", false);
+		BUILDER.comment("");
+		ENABLE_VIADUCT_FACADE = BUILDER
+		    .comment("Enable the Viaduct Facade block in the creative tab (experimental).")
+		    .define("enableViaductFacade", false);
+		BUILDER.comment("");
+		ENABLE_BLOCKPIPE = BUILDER
+		    .comment("Enable the Block Pipe in the creative tab (experimental).")
+		    .define("enableBlockPipe", false);
+		BUILDER.comment("");
+		ENABLE_BLOCKPIPE_EXTRACT = BUILDER
+		    .comment("Enable the Pipe Extractor block in the creative tab (experimental).")
+		    .define("enableBlockPipeExtract", false);
+
+		BUILDER.pop();	
 
 		SPEC = BUILDER.build();
 
@@ -53,6 +79,22 @@ public class Config {
 
 	public static int getScanSpeed() {
 		return SCAN_SPEED.get();
+	}
+	
+	public static boolean isViaductTeleporterEnabled() {
+	    return ENABLE_VIADUCT_TELEPORTER.get();
+	}
+
+	public static boolean isViaductFacadeEnabled() {
+	    return ENABLE_VIADUCT_FACADE.get();
+	}
+
+	public static boolean isBlockPipeEnabled() {
+	    return ENABLE_BLOCKPIPE.get();
+	}
+
+	public static boolean isBlockPipeExtractEnabled() {
+	    return ENABLE_BLOCKPIPE_EXTRACT.get();
 	}
 
 	public static boolean isSpeedLevelAllowed(SpeedLevel level) {

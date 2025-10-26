@@ -12,7 +12,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -35,7 +34,6 @@ import plopp.pipecraft.Network.linker.PacketTravelRotate;
 import plopp.pipecraft.Network.travel.ClientTravelDataManager;
 import plopp.pipecraft.Network.travel.PacketTravelStop;
 import plopp.pipecraft.Network.travel.TravelStatePacket;
-import plopp.pipecraft.sounds.SoundRegister;
 
 public class ViaductTravel {
 	
@@ -198,16 +196,6 @@ public class ViaductTravel {
 	        data.ticksPerChunk = data.defaultTicksPerChunk;
 	    }
 
-	    if (!player.level().isClientSide()) {
-            player.level().playSound(
-                null,
-                player.blockPosition(),
-                SoundRegister.VIADUCT_START.value(), 
-                SoundSource.AMBIENT,
-                1.0F,
-                1.0F  
-            );
-        }
 	    activeTravels.put(uuid, data);
 	    setupPlayer(player, startPos);
 	}
@@ -232,113 +220,81 @@ public class ViaductTravel {
 
 	    data.tickCounter++;
 	    
-	    int remaining = lastIndex - currentIndex;
-	    int stepsLeft = remaining > 16 ? 16 : remaining;
-	    double totalStepProgress = data.chunkProgress * stepsLeft;
-	    int subIndex = (int) totalStepProgress;
-	    double lerpProgress = totalStepProgress - subIndex;
+	    int ticksThisTick = data.ticksPerChunk;
+	    Vec3 from = vecFromBlockPos(path.get(currentIndex));
+	    Vec3 to = vecFromBlockPos(path.get(Math.min(currentIndex + 1, lastIndex)));
 
-	    int fromIndex = Math.min(currentIndex + subIndex, lastIndex - 1);
-	    int toIndex = Math.min(fromIndex + 1, lastIndex);
+	    BlockPos min = BlockPos.containing(Math.min(from.x, to.x), Math.min(from.y, to.y), Math.min(from.z, to.z));
+	    BlockPos max = BlockPos.containing(Math.max(from.x, to.x), Math.max(from.y, to.y), Math.max(from.z, to.z));
 
-	    Vec3 from = vecFromBlockPos(path.get(fromIndex));
-	    Vec3 to   = vecFromBlockPos(path.get(toIndex));
-
-	    BlockPos min = BlockPos.containing(Math.min(from.x, to.x),
-	                                       Math.min(from.y, to.y),
-	                                       Math.min(from.z, to.z));
-	    BlockPos max = BlockPos.containing(Math.max(from.x, to.x),
-	                                       Math.max(from.y, to.y),
-	                                       Math.max(from.z, to.z));
-	    int ticksThisTick = data.ticksPerChunk; 
-
-	 for (BlockPos pos : BlockPos.betweenClosed(min, max)) {
-	     BlockState state = player.level().getBlockState(pos);
-	     if (state.getBlock() instanceof BlockViaductSpeed speedBlock) {
-	         ticksThisTick = speedBlock.getSpeed(state); 
-	         data.ticksPerChunk = ticksThisTick;        
-	         break; 
-	     }
-	     if (state.getBlock() instanceof BlockViaductDetector detectorBlock) {
-	         detectorBlock.trigger(player.level(), pos, state);
-	     }
-	 }
-
-	 data.chunkProgress += (1.0 / ticksThisTick);
-
-	    Vec3 lerped = from.lerp(to, lerpProgress);
-
-	    BlockState fromState = player.level().getBlockState(path.get(fromIndex));
-	    if (fromState.getBlock() instanceof BlockViaductSpeed speedBlock) {
-	        data.ticksPerChunk = speedBlock.getSpeed(fromState);
+	    for (BlockPos pos : BlockPos.betweenClosed(min, max)) {
+	        BlockState state = player.level().getBlockState(pos);
+	        if (state.getBlock() instanceof BlockViaductSpeed speedBlock) {
+	            ticksThisTick = speedBlock.getSpeed(state);
+	            data.ticksPerChunk = ticksThisTick; 
+	            break;
+	        }
+	        if (state.getBlock() instanceof BlockViaductDetector detectorBlock) {
+	            detectorBlock.trigger(player.level(), pos, state);
+	        }
 	    }
 
-	    double lookAheadProgress = lerpProgress + 0.1;
-	    int lookAheadSubIndex = subIndex;
+	    data.chunkProgress += 16.0 / ticksThisTick;
 
-	    while (lookAheadProgress > 1.0) {
-	        lookAheadProgress -= 1.0;
-	        lookAheadSubIndex++;
+	    Vec3 lerped = from.lerp(to, data.chunkProgress);
+	    player.teleportTo(lerped.x, lerped.y, lerped.z);
+
+	    while (data.chunkProgress >= 1.0) {
+	        data.chunkProgress -= 1.0;
+	        data.progressIndex++;
+	        if (data.progressIndex >= lastIndex) {
+	            data.progressIndex = lastIndex;
+	            data.chunkProgress = 0.0;
+	            break;
+	        }
 	    }
 
-	    int lookFromIndex = Math.min(currentIndex + lookAheadSubIndex, lastIndex - 1);
-	    int lookToIndex = Math.min(lookFromIndex + 1, lastIndex);
 	    Vec3 lookTarget;
-
-	    if (currentIndex + lookAheadSubIndex >= lastIndex) {
-	        Vec3 prev = vecFromBlockPos(path.get(lastIndex - 1));
+	    if (data.progressIndex >= lastIndex) {
+	        Vec3 prev = vecFromBlockPos(path.get(Math.max(lastIndex - 1, 0)));
 	        Vec3 last = vecFromBlockPos(path.get(lastIndex));
-	        lookTarget = last.add(last.subtract(prev)); 
-	    
+	        lookTarget = last.add(last.subtract(prev));
 	    } else {
-	        Vec3 lookFrom = vecFromBlockPos(path.get(lookFromIndex));
-	        Vec3 lookTo = vecFromBlockPos(path.get(lookToIndex));
-	        lookTarget = lookFrom.lerp(lookTo, lookAheadProgress);
+	        int nextIndex = Math.min(data.progressIndex + 2, lastIndex);
+	        lookTarget = vecFromBlockPos(path.get(nextIndex));
 	    }
 	    
 	    updatePlayerDirection(player, lerped, lookTarget);
 
 	    if (player instanceof ServerPlayer sp) {
 	        NetworkHandler.sendTravelStateToAll(sp, false);
-	    }
-
-	    if (player instanceof ServerPlayer sp && sp.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
-	        stop(player, false);
-	        return;
-	    }
-
-	    player.teleportTo(lerped.x, lerped.y - 0, lerped.z);
-
-	    if (data.chunkProgress >= 1.0) {
-	        data.progressIndex += stepsLeft;
-	        data.chunkProgress = 0.0;
+	        if (sp.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
+	            stop(player, false);
+	            return;
+	        }
 	    }
 
 	    if (data.progressIndex >= lastIndex) {
-	    	if (data.progressIndex >= lastIndex) {
-	    	    if (data.phase == TravelData.TravelPhase.TO_START_TELEPORTER) {
-	    	        if (data.targetTeleporterPos != null) {
-	    	            teleportPlayer(player, data.targetTeleporterPos);
-
-	    	            BlockEntityViaductLinker targetLinker = findLinkerForTeleporter(data.targetTeleporterPos.pos, player.level());
-	    	            if (targetLinker != null && targetLinker.scannedPaths.containsKey(data.finalTargetPos)) {
-	    	                data.path = targetLinker.scannedPaths.get(data.finalTargetPos);
-	    	                data.progressIndex = 0;
-	    	                data.chunkProgress = 0.0;
-	    	                data.phase = TravelData.TravelPhase.TO_FINAL_TARGET;
-	    	            } else {
-	    	                stop(player, true);
-	    	            }
-	    	        } else {
-	    	            stop(player, true);
-	    	        }
-	    	        return;
-	    	    } else if (data.phase == TravelData.TravelPhase.TO_FINAL_TARGET) {
-	    	        stop(player, true);
-	    	        return;
-	    	    }
-	    	}
+	        if (data.phase == TravelData.TravelPhase.TO_START_TELEPORTER) {
+	            if (data.targetTeleporterPos != null) {
+	                teleportPlayer(player, data.targetTeleporterPos);
+	                BlockEntityViaductLinker targetLinker = findLinkerForTeleporter(data.targetTeleporterPos.pos, player.level());
+	                if (targetLinker != null && targetLinker.scannedPaths.containsKey(data.finalTargetPos)) {
+	                    data.path = targetLinker.scannedPaths.get(data.finalTargetPos);
+	                    data.progressIndex = 0;
+	                    data.chunkProgress = 0.0;
+	                    data.phase = TravelData.TravelPhase.TO_FINAL_TARGET;
+	                } else {
+	                    stop(player, true);
+	                }
+	            } else {
+	                stop(player, true);
+	            }
+	        } else if (data.phase == TravelData.TravelPhase.TO_FINAL_TARGET) {
+	            stop(player, true);
+	        }
 	    }
+	
 	}
 	
 	private static void teleportPlayer(Player player, DimBlockPos pos) {
@@ -376,7 +332,7 @@ public class ViaductTravel {
 
 	    float pitch = (float) Math.toDegrees(Math.asin(lookDirection.y));
 	    VerticalDirection vdir = VerticalDirection.NONE;
-	    double verticalThreshold = 0.8;
+	    double verticalThreshold = 0.2;
 	    if (lookDirection.y > verticalThreshold) vdir = VerticalDirection.UP;
 	    else if (lookDirection.y < -verticalThreshold) vdir = VerticalDirection.DOWN;
 
@@ -602,18 +558,6 @@ public class ViaductTravel {
    
         if (player instanceof ServerPlayer serverPlayer) {
         	NetworkHandler.sendTravelStateToAll(serverPlayer, true);
-            
-        }
-        
-        if (!player.level().isClientSide()) {
-            player.level().playSound(
-                null,
-                player.blockPosition(),
-                SoundRegister.VIADUCT_STOP.value(), 
-                SoundSource.AMBIENT,
-                1.5F,
-                1.0F  
-            );
-        }
+        } 
     }
 }

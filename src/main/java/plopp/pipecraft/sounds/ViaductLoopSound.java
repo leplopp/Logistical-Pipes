@@ -5,6 +5,7 @@ import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
+import plopp.pipecraft.ClientConfig;
 import plopp.pipecraft.Network.travel.ClientTravelDataManager;
 import plopp.pipecraft.Network.travel.TravelStatePacket;
 import net.minecraft.util.Mth;
@@ -18,8 +19,8 @@ public class ViaductLoopSound extends AbstractTickableSoundInstance {
         super(SoundRegister.VIADUCT_LOOP.value(), SoundSource.BLOCKS, RandomSource.create());
         this.player = player;
         this.looping = true;
-        this.volume = 0.8f;
-        this.maxVolume = 0.5f;
+        this.volume = 1f;
+        this.maxVolume = ClientConfig.getViaductTravelVolume();
         this.pitch = 1.0f;
         this.x = player.getX();
         this.y = player.getY();

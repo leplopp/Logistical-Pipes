@@ -4,11 +4,13 @@ license="MIT"
 
 [[mods]]
 modId="logisticpipes"
-version="0.2.5.1"
+version="0.3.0"
 displayName="PipeCraft"
 logoFile="logo.png"
 authors="leplopp"
 description='''Adds player transport pipes (Viaducts) inspired by the old Thermal mods.'''
+issueTrackerURL="https://github.com/leplopp/Logistical-Pipes/issues"
+displayURL="https://modrinth.com/mod/pipecraft"
 
 [[mixins]]
 config="pipecraft.mixins.json"

@@ -11,7 +11,7 @@ public class DebugTravelCommand {
 	  public static void register(net.neoforged.neoforge.event.RegisterCommandsEvent event) {
 	        event.getDispatcher().register(
 	            Commands.literal("inspecttravels")
-	                .requires(source -> source.hasPermission(0)) // 0 = alle Spieler, 2 = nur Operatoren
+	                .requires(source -> source.hasPermission(2))
 	                .executes(DebugTravelCommand::runInspect)
 	        );
 	    }

@@ -9,7 +9,7 @@ import net.minecraft.world.level.Level;
 
 public class TravelData {
 	public DimBlockPos targetTeleporterPos = null;
-	public int defaultTicksPerChunk = 32;
+    public final int defaultTicksPerChunk; 
 	public List<BlockPos> path = new ArrayList<>();
 	public int progressIndex = 0;
 	public double chunkProgress = 0.0;
@@ -34,6 +34,7 @@ public class TravelData {
 
 	public TravelData(Level level, BlockPos start, BlockPos end, int ticksPerChunk, boolean startWithScan) {
 		this.ticksPerChunk = ticksPerChunk;
+	    this.defaultTicksPerChunk = ticksPerChunk;
 		this.path.add(start);
 		this.startPos = start;
 		this.targetPos = end;

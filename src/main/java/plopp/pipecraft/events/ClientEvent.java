@@ -20,7 +20,7 @@ import plopp.pipecraft.gui.pipes.PipeExtractScreen;
 import plopp.pipecraft.gui.teleporter.ViaductTeleporterScreen;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerIDScreen;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerScreen;
-import plopp.pipecraft.model.LyingPlayerModel;
+import plopp.pipecraft.model.TravelPlayerModel;
 import plopp.pipecraft.model.obj.ViaductModelLoader;
 
 @EventBusSubscriber(modid = PipeCraftIndex.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
@@ -45,7 +45,7 @@ public class ClientEvent {
                     slim ? ModelLayers.PLAYER_SLIM : ModelLayers.PLAYER
                 );
 
-                LyingPlayerModel<AbstractClientPlayer> newModel = new LyingPlayerModel<>(root, slim);
+                TravelPlayerModel<AbstractClientPlayer> newModel = new TravelPlayerModel<>(root, slim);
 
                 try {
                     Field modelField = LivingEntityRenderer.class.getDeclaredField("model");

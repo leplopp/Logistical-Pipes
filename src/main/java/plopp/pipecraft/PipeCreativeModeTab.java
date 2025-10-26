@@ -23,12 +23,19 @@ public class PipeCreativeModeTab {
     	                output.accept(BlockRegister.VIADUCT.get().asItem());
     	                output.accept(BlockRegister.VIADUCTLINKER.get().asItem());
     	                output.accept(BlockRegister.VIADUCTDETECTOR.get().asItem());
-    	                output.accept(BlockRegister.VIADUCTSPEED.get().asItem());
-     	               	// output.accept(BlockRegister.VIADUCTTELEPORTER.get().asItem());
-    	                // output.accept(BlockRegister.VIADUCTFACADE.get().asItem());
-    	                output.accept(BlockRegister.BLOCKPIPE.get().asItem());
-    	                output.accept(BlockRegister.BLOCKPIPEEXTRACT.get().asItem());
-
+    	                output.accept(BlockRegister.VIADUCTSPEED.get().asItem());	                
+    	                if (Config.isViaductTeleporterEnabled()) {
+    	                    output.accept(BlockRegister.VIADUCTTELEPORTER.get().asItem());
+    	                }
+    	                if (Config.isViaductFacadeEnabled()) {
+    	                    output.accept(BlockRegister.VIADUCTFACADE.get().asItem());
+    	                }
+    	                if (Config.isBlockPipeEnabled()) {
+    	                    output.accept(BlockRegister.BLOCKPIPE.get().asItem());
+    	                }
+    	                if (Config.isBlockPipeExtractEnabled()) {
+    	                    output.accept(BlockRegister.BLOCKPIPEEXTRACT.get().asItem());
+    	                }
     	            })
     	            .build()
     	    );

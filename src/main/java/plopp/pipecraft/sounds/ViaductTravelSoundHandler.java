@@ -9,13 +9,14 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import plopp.pipecraft.ClientConfig;
 import plopp.pipecraft.PipeCraftIndex;
 import plopp.pipecraft.Network.travel.ClientTravelDataManager;
 
 @EventBusSubscriber(modid = PipeCraftIndex.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public class ViaductTravelSoundHandler {
 	private static final Map<UUID, ViaductLoopSound> loopMap = new HashMap<>();
-
+	
 	@SubscribeEvent
 	public static void onClientTick(ClientTickEvent.Post event) {
 		Minecraft mc = Minecraft.getInstance();
@@ -36,18 +37,25 @@ public class ViaductTravelSoundHandler {
 		            if (loop != null) {
 		                mc.getSoundManager().stop(loop);
 		                loopMap.remove(uuid);
+		                mc.getSoundManager().play(new ViaductOneShotSound(player, SoundRegister.VIADUCT_STOP.value(), ClientConfig.getViaductStopVolume()));
 		            }
 		            continue;
 		        }
 
 		        if (loop == null || !mc.getSoundManager().isActive(loop)) {
+
 		            loop = new ViaductLoopSound(player);
 		            loopMap.put(uuid, loop);
 		            mc.getSoundManager().play(loop);
+                    mc.getSoundManager().play(new ViaductOneShotSound(player, SoundRegister.VIADUCT_START.value(), ClientConfig.getViaductStartVolume()));
+			    
 		        }
 		    } else if (loop != null) {
 		        mc.getSoundManager().stop(loop);
 		        loopMap.remove(uuid);
+		        ViaductOneShotSound stopSound = new ViaductOneShotSound(player, SoundRegister.VIADUCT_STOP.value(), ClientConfig.getViaductStopVolume());
+		        stopSound.startFadeOut();
+		        mc.getSoundManager().play(stopSound);
 		    }
 		}
 	}

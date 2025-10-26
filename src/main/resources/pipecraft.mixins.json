@@ -3,7 +3,8 @@
   "package": "plopp.pipecraft.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "MixinPlayerDimensions"
+    "MixinPlayerDimensions",
+	"MixinDisablePlayerInput"
   ],
   "injectors": {
     "defaultRequire": 1

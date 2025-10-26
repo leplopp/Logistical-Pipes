@@ -124,13 +124,6 @@ public class ClientRuntimeEvents {
 	     if (ViaductTravel.isTravelActive(player)) {
 	         player.setDeltaMovement(Vec3.ZERO);
 
-	         if (player instanceof LocalPlayer localPlayer) {
-	             localPlayer.input.forwardImpulse = 0;
-	             localPlayer.input.leftImpulse = 0;
-	             localPlayer.input.jumping = false;
-	             localPlayer.input.shiftKeyDown = false;
-	             player.setOnGround(true);
-
 	             if (mc.options.getCameraType().isFirstPerson()) {
 	                 float currentYaw = player.getYRot();
 	                 float targetYaw = ViaductTravel.getTravelYaw(player.getUUID(),  player.level());
@@ -148,8 +141,6 @@ public class ClientRuntimeEvents {
 	                 player.yBodyRot = newYaw;
 	             }
 	         }
-	     }
-
 	 }
 	 
 	 private static float lerpAngle(float from, float to, float alpha) {

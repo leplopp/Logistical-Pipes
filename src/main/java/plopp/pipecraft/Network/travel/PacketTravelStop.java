@@ -1,8 +1,9 @@
 package plopp.pipecraft.Network.travel;
 
 import java.util.UUID;
-
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -10,8 +11,13 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.phys.AABB;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import plopp.pipecraft.ClientConfig;
 import plopp.pipecraft.PipeCraftIndex;
+import plopp.pipecraft.sounds.SoundRegister;
+import plopp.pipecraft.sounds.ViaductTravelSoundHandler;
 
 public record PacketTravelStop(UUID playerUUID) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<PacketTravelStop> TYPE =
@@ -29,8 +35,8 @@ public record PacketTravelStop(UUID playerUUID) implements CustomPacketPayload {
     }
 
     public static void handle(PacketTravelStop packet, IPayloadContext context) {
-        if (context.player() instanceof LocalPlayer player) {
-
+    
+            if (context.player() instanceof LocalPlayer player) {
             player.refreshDimensions();
             EntityDimensions dim = player.getDimensions(Pose.STANDING);
 

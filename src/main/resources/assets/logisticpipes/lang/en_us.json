@@ -33,7 +33,7 @@
 	"viaduct.transparency.activated": "activate transparency",
 	"viaduct.speed.change.end.correct": "change Speed to %s ticks per chunk",
 	"viaduct.speed.change.end": "end speed change",
-	"viaduct.speed.change.start": "Start Speed chnage",
+	"viaduct.speed.change.start": "Start Speed change",
 	"viaduct.speed.changed.toofar": "too far away, end speed change",
 	"viaduct.speed.changed.lookaway": "looked away, end speed change",
 	"tooltip.hold_shift": "Press §eSHIFT§r for details",
