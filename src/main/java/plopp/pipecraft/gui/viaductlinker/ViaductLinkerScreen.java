@@ -21,7 +21,6 @@ import plopp.pipecraft.Network.NetworkHandler;
 import plopp.pipecraft.Network.data.DataEntryRecord;
 import plopp.pipecraft.Network.linker.PacketCancelScan;
 import plopp.pipecraft.Network.linker.PacketUpdateSortedPositions;
-import plopp.pipecraft.sounds.ViaductTravelSoundHandler;
 
 public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMenu> {
 

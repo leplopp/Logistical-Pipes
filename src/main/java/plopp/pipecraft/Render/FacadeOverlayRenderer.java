@@ -1,4 +1,4 @@
-package plopp.pipecraft.Blocks.Facade;
+package plopp.pipecraft.Render;
 
 import java.util.Collection;
 import java.util.Map;
@@ -23,6 +23,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import plopp.pipecraft.Blocks.BlockRegister;
+import plopp.pipecraft.Blocks.Facade.BlockViaductFacade;
 import plopp.pipecraft.logic.FacadeOverlayManager;
 import plopp.pipecraft.model.obj.DynamicColorWrappedModel;
 
@@ -102,29 +103,26 @@ public class FacadeOverlayRenderer {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static void markForReRender(BlockPos pos) {
-	    Minecraft mc = Minecraft.getInstance();
-	    if (mc.level != null) {
-	        BlockState state = mc.level.getBlockState(pos);
-	        mc.level.sendBlockUpdated(pos, state, state, 3);
-	    }
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.level != null) {
+			BlockState state = mc.level.getBlockState(pos);
+			mc.level.sendBlockUpdated(pos, state, state, 3);
+		}
 	}
-	
+
 	private static void renderConnections(Level level, PoseStack poseStack, VertexConsumer consumer, BlockPos pos,
 			float r, float g, float b, boolean transparent, int light) {
 		float alpha = transparent ? 0.4f : 1.0f;
 		PoseStack.Pose pose = poseStack.last();
 
-// Debug: Ausgabe der Nachbarn
 		boolean north = FacadeOverlayManager.hasFacade(pos.north());
 		boolean south = FacadeOverlayManager.hasFacade(pos.south());
 		boolean east = FacadeOverlayManager.hasFacade(pos.east());
 		boolean west = FacadeOverlayManager.hasFacade(pos.west());
 		boolean up = FacadeOverlayManager.hasFacade(pos.above());
 		boolean down = FacadeOverlayManager.hasFacade(pos.below());
-
-//System.out.println("[FacadeDebug] Block " + pos + " Nachbarn: " +"N=" + north + ", S=" + south + ", E=" + east + ", W=" + west + ", U=" + up + ", D=" + down);
 
 		if (north)
 			renderArm(pose, consumer, Direction.NORTH, r, g, b, alpha, light);
@@ -162,38 +160,62 @@ public class FacadeOverlayRenderer {
 			float y2, float z2, float r, float g, float b, float a, int light) {
 
 // Vorderseite (Z+)
-		consumer.addVertex(pose, x1, y1, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 0, 1).setUv(0f,0f);
-		consumer.addVertex(pose, x2, y1, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 0, 1).setUv(0f,0f);
-		consumer.addVertex(pose, x2, y2, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 0, 1).setUv(0f,0f);
-		consumer.addVertex(pose, x1, y2, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 0, 1).setUv(0f,0f);
+		consumer.addVertex(pose, x1, y1, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 0, 1).setUv(0f,
+				0f);
+		consumer.addVertex(pose, x2, y1, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 0, 1).setUv(0f,
+				0f);
+		consumer.addVertex(pose, x2, y2, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 0, 1).setUv(0f,
+				0f);
+		consumer.addVertex(pose, x1, y2, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 0, 1).setUv(0f,
+				0f);
 
 // Rückseite (Z-)
-		consumer.addVertex(pose, x1, y1, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 0, -1).setUv(0f,0f);
-		consumer.addVertex(pose, x1, y2, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 0, -1).setUv(0f,0f);
-		consumer.addVertex(pose, x2, y2, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 0, -1).setUv(0f,0f);
-		consumer.addVertex(pose, x2, y1, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 0, -1).setUv(0f,0f);
+		consumer.addVertex(pose, x1, y1, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 0, -1).setUv(0f,
+				0f);
+		consumer.addVertex(pose, x1, y2, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 0, -1).setUv(0f,
+				0f);
+		consumer.addVertex(pose, x2, y2, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 0, -1).setUv(0f,
+				0f);
+		consumer.addVertex(pose, x2, y1, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 0, -1).setUv(0f,
+				0f);
 
 // Oben (Y+)
-		consumer.addVertex(pose, x1, y2, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 1, 0).setUv(0f,0f);
-		consumer.addVertex(pose, x1, y2, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 1, 0).setUv(0f,0f);
-		consumer.addVertex(pose, x2, y2, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 1, 0).setUv(0f,0f);
-		consumer.addVertex(pose, x2, y2, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 1, 0).setUv(0f,0f);
+		consumer.addVertex(pose, x1, y2, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 1, 0).setUv(0f,
+				0f);
+		consumer.addVertex(pose, x1, y2, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 1, 0).setUv(0f,
+				0f);
+		consumer.addVertex(pose, x2, y2, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 1, 0).setUv(0f,
+				0f);
+		consumer.addVertex(pose, x2, y2, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, 1, 0).setUv(0f,
+				0f);
 
 // Unten (Y-)
-		consumer.addVertex(pose, x1, y1, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, -1, 0).setUv(0f,0f);
-		consumer.addVertex(pose, x2, y1, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, -1, 0).setUv(0f,0f);
-		consumer.addVertex(pose, x2, y1, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, -1, 0).setUv(0f,0f);
-		consumer.addVertex(pose, x1, y1, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, -1, 0).setUv(0f,0f);
+		consumer.addVertex(pose, x1, y1, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, -1, 0).setUv(0f,
+				0f);
+		consumer.addVertex(pose, x2, y1, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, -1, 0).setUv(0f,
+				0f);
+		consumer.addVertex(pose, x2, y1, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, -1, 0).setUv(0f,
+				0f);
+		consumer.addVertex(pose, x1, y1, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 0, -1, 0).setUv(0f,
+				0f);
 
 // Links (X-)
-		consumer.addVertex(pose, x1, y1, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, -1, 0, 0).setUv(0f,0f);
-		consumer.addVertex(pose, x1, y1, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, -1, 0, 0).setUv(0f,0f);
-		consumer.addVertex(pose, x1, y2, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, -1, 0, 0).setUv(0f,0f);
-		consumer.addVertex(pose, x1, y2, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, -1, 0, 0).setUv(0f,0f);
+		consumer.addVertex(pose, x1, y1, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, -1, 0, 0).setUv(0f,
+				0f);
+		consumer.addVertex(pose, x1, y1, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, -1, 0, 0).setUv(0f,
+				0f);
+		consumer.addVertex(pose, x1, y2, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, -1, 0, 0).setUv(0f,
+				0f);
+		consumer.addVertex(pose, x1, y2, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, -1, 0, 0).setUv(0f,
+				0f);
 // Rechts (X+)
-		consumer.addVertex(pose, x2, y1, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 1, 0, 0).setUv(0f,0f);
-		consumer.addVertex(pose, x2, y2, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 1, 0, 0).setUv(0f,0f);
-		consumer.addVertex(pose, x2, y2, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 1, 0, 0).setUv(0f,0f);
-		consumer.addVertex(pose, x2, y1, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 1, 0, 0).setUv(0f,0f);
+		consumer.addVertex(pose, x2, y1, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 1, 0, 0).setUv(0f,
+				0f);
+		consumer.addVertex(pose, x2, y2, z1).setColor(r, g, b, a).setLight(light).setNormal(pose, 1, 0, 0).setUv(0f,
+				0f);
+		consumer.addVertex(pose, x2, y2, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 1, 0, 0).setUv(0f,
+				0f);
+		consumer.addVertex(pose, x2, y1, z2).setColor(r, g, b, a).setLight(light).setNormal(pose, 1, 0, 0).setUv(0f,
+				0f);
 	}
 }

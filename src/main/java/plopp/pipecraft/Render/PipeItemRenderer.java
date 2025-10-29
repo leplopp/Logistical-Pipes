@@ -1,4 +1,4 @@
-package plopp.pipecraft.Blocks.Pipes;
+package plopp.pipecraft.Render;
 
 import java.util.List;
 import com.mojang.blaze3d.vertex.PoseStack;

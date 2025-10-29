@@ -1,7 +1,6 @@
 package plopp.pipecraft.Blocks.Pipes.Viaduct;
 
 import java.util.UUID;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -25,7 +24,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -40,7 +39,7 @@ import plopp.pipecraft.logic.ViaductTravel;
 
 public class BlockViaductTeleporter  extends Block implements EntityBlock,Connectable{
 	
-    public static final DirectionProperty FACING = BlockStateProperties.FACING;
+	  public static final EnumProperty<Direction> FACING = BlockStateProperties.FACING; 
     
 	   public BlockViaductTeleporter(Properties properties) {
 	        super(properties);

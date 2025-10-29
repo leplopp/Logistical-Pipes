@@ -10,6 +10,7 @@ import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.MinecraftServer;
@@ -32,7 +33,6 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -54,7 +54,7 @@ import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductDetector;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
-import plopp.pipecraft.Network.NetworkHandler;
+import plopp.pipecraft.Network.data.ViaductTravelWorldData;
 import plopp.pipecraft.logic.ViaductTravel;
 import plopp.pipecraft.logic.pipe.PipeTravel;
 import plopp.pipecraft.util.ViaductCommand;
@@ -65,22 +65,22 @@ import net.minecraft.world.entity.Entity;
 @EventBusSubscriber(modid = PipeCraftIndex.MODID)
 public class CommonEvents {
 	public static final Map<UUID, BlockPos> brushingPlayers = new HashMap<>();
-	 
-	  @SubscribeEvent
-	  public static void onServerTick(ServerTickEvent.Post event) {
-	      MinecraftServer server = event.getServer();
-	      for (ServerLevel level : server.getAllLevels()) {
-	          PipeTravel.tick(level.getLevel());
-	      }
-	  }
-		
+
 	@SubscribeEvent
-	public static void onWorldUnload(LevelEvent.Unload event) {
-	    if (!(event.getLevel() instanceof ServerLevel level)) return;
-	    PipeTravel.cleanupOnWorldUnload(level);
+	public static void onServerTick(ServerTickEvent.Post event) {
+		MinecraftServer server = event.getServer();
+		for (ServerLevel level : server.getAllLevels()) {
+			PipeTravel.tick(level.getLevel());
+		}
 	}
 
-	
+	@SubscribeEvent
+	public static void onWorldUnload(LevelEvent.Unload event) {
+		if (!(event.getLevel() instanceof ServerLevel level))
+			return;
+		PipeTravel.cleanupOnWorldUnload(level);
+	}
+
 	@SubscribeEvent
 	public static void onRegisterCommands(RegisterCommandsEvent event) {
 		ViaductCommand.register(event.getDispatcher());
@@ -121,24 +121,24 @@ public class CommonEvents {
 		boolean isFacade = block instanceof BlockViaductFacade;
 
 		if (!isViaduct && !isFacade) {
-		    brushingPlayers.remove(uuid);
-		    return;
+			brushingPlayers.remove(uuid);
+			return;
 		}
 
 		IntegerProperty lightProp = null;
 		if (isViaduct && state.hasProperty(BlockViaduct.LIGHT_LEVEL)) {
-		    lightProp = BlockViaduct.LIGHT_LEVEL;
+			lightProp = BlockViaduct.LIGHT_LEVEL;
 		} else if (isFacade && state.hasProperty(BlockViaductFacade.LIGHT_LEVEL)) {
-		    lightProp = BlockViaductFacade.LIGHT_LEVEL;
+			lightProp = BlockViaductFacade.LIGHT_LEVEL;
 		} else {
-		    brushingPlayers.remove(uuid);
-		    return;
+			brushingPlayers.remove(uuid);
+			return;
 		}
 
 		int currentLevel = state.getValue(lightProp);
 		if (currentLevel <= 0) {
-		    brushingPlayers.remove(uuid);
-		    return;
+			brushingPlayers.remove(uuid);
+			return;
 		}
 
 		BlockState newState = state.setValue(lightProp, 0);
@@ -147,12 +147,12 @@ public class CommonEvents {
 		ItemStack glowstoneReturn = new ItemStack(Items.GLOWSTONE_DUST, currentLevel);
 		boolean added = serverPlayer.getInventory().add(glowstoneReturn);
 		if (!added)
-		    serverPlayer.drop(glowstoneReturn, false);
+			serverPlayer.drop(glowstoneReturn, false);
 
 		serverPlayer.displayClientMessage(Component.translatable("viaduct.lightlevel.brush"), true);
 		brushingPlayers.remove(uuid);
 
-		}
+	}
 
 	@SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
 	public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
@@ -223,60 +223,60 @@ public class CommonEvents {
 			DyeColor clickedColor = dyeItem.getDyeColor();
 
 			if (player.isShiftKeyDown() && (isViaduct || isFacade)) {
-			    int maxBlocks = stack.getCount();
-			    Set<BlockPos> visited = new HashSet<>();
-			    Queue<BlockPos> queue = new ArrayDeque<>();
-			    int colored = 0;
+				int maxBlocks = stack.getCount();
+				Set<BlockPos> visited = new HashSet<>();
+				Queue<BlockPos> queue = new ArrayDeque<>();
+				int colored = 0;
 
-			    queue.add(pos);
-			    visited.add(pos);
+				queue.add(pos);
+				visited.add(pos);
 
-			    while (!queue.isEmpty() && colored < maxBlocks) {
-			        BlockPos currentPos = queue.poll();
-			        BlockState currentState = level.getBlockState(currentPos);
-			        Block currentBlock = currentState.getBlock();
+				while (!queue.isEmpty() && colored < maxBlocks) {
+					BlockPos currentPos = queue.poll();
+					BlockState currentState = level.getBlockState(currentPos);
+					Block currentBlock = currentState.getBlock();
 
-			        boolean isCurrentViaduct = currentBlock instanceof BlockViaduct;
-			        boolean isCurrentFacade = currentBlock instanceof BlockViaductFacade;
+					boolean isCurrentViaduct = currentBlock instanceof BlockViaduct;
+					boolean isCurrentFacade = currentBlock instanceof BlockViaductFacade;
 
-			        if (!isCurrentViaduct && !isCurrentFacade)
-			            continue;
+					if (!isCurrentViaduct && !isCurrentFacade)
+						continue;
 
-			        EnumProperty<DyeColor> colorProp = null;
-			        if (isCurrentViaduct && currentState.hasProperty(BlockViaduct.COLOR)) {
-			            colorProp = BlockViaduct.COLOR;
-			        } else if (isCurrentFacade && currentState.hasProperty(BlockViaductFacade.COLOR)) {
-			            colorProp = BlockViaductFacade.COLOR;
-			        } else {
-			            continue;
-			        }
+					EnumProperty<DyeColor> colorProp = null;
+					if (isCurrentViaduct && currentState.hasProperty(BlockViaduct.COLOR)) {
+						colorProp = BlockViaduct.COLOR;
+					} else if (isCurrentFacade && currentState.hasProperty(BlockViaductFacade.COLOR)) {
+						colorProp = BlockViaductFacade.COLOR;
+					} else {
+						continue;
+					}
 
-			        if (currentState.getValue(colorProp) == clickedColor)
-			            continue;
+					if (currentState.getValue(colorProp) == clickedColor)
+						continue;
 
-			        level.setBlock(currentPos, currentState.setValue(colorProp, clickedColor), 3);
-			        colored++;
+					level.setBlock(currentPos, currentState.setValue(colorProp, clickedColor), 3);
+					colored++;
 
-			        for (Direction dir : Direction.values()) {
-			            BlockPos neighbor = currentPos.relative(dir);
-			            if (visited.contains(neighbor))
-			                continue;
+					for (Direction dir : Direction.values()) {
+						BlockPos neighbor = currentPos.relative(dir);
+						if (visited.contains(neighbor))
+							continue;
 
-			            BlockState neighborState = level.getBlockState(neighbor);
-			            Block neighborBlock = neighborState.getBlock();
-			            boolean isNeighborViaduct = neighborBlock instanceof BlockViaduct;
-			            boolean isNeighborFacade = neighborBlock instanceof BlockViaductFacade;
+						BlockState neighborState = level.getBlockState(neighbor);
+						Block neighborBlock = neighborState.getBlock();
+						boolean isNeighborViaduct = neighborBlock instanceof BlockViaduct;
+						boolean isNeighborFacade = neighborBlock instanceof BlockViaductFacade;
 
-			            if ((isNeighborViaduct && neighborState.hasProperty(BlockViaduct.COLOR)
-			                    && neighborState.getValue(BlockViaduct.COLOR) != clickedColor)
-			                || (isNeighborFacade && neighborState.hasProperty(BlockViaductFacade.COLOR)
-			                    && neighborState.getValue(BlockViaductFacade.COLOR) != clickedColor)) {
+						if ((isNeighborViaduct && neighborState.hasProperty(BlockViaduct.COLOR)
+								&& neighborState.getValue(BlockViaduct.COLOR) != clickedColor)
+								|| (isNeighborFacade && neighborState.hasProperty(BlockViaductFacade.COLOR)
+										&& neighborState.getValue(BlockViaductFacade.COLOR) != clickedColor)) {
 
-			                visited.add(neighbor);
-			                queue.add(neighbor);
-			            }
-			        }
-			    }
+							visited.add(neighbor);
+							queue.add(neighbor);
+						}
+					}
+				}
 
 				if (colored > 0 && !player.isCreative()) {
 					stack.shrink(colored);
@@ -335,60 +335,63 @@ public class CommonEvents {
 			IntegerProperty lightProp = null;
 
 			if (isViaduct && state.hasProperty(BlockViaduct.LIGHT_LEVEL)) {
-			    lightProp = BlockViaduct.LIGHT_LEVEL;
+				lightProp = BlockViaduct.LIGHT_LEVEL;
 			} else if (isFacade && state.hasProperty(BlockViaductFacade.LIGHT_LEVEL)) {
-			    lightProp = BlockViaductFacade.LIGHT_LEVEL;
+				lightProp = BlockViaductFacade.LIGHT_LEVEL;
 			} else if (state.hasProperty(BlockViaduct.LIGHT_LEVEL)) {
-			    lightProp = BlockViaduct.LIGHT_LEVEL;
+				lightProp = BlockViaduct.LIGHT_LEVEL;
 			} else {
-			    return;
+				return;
 			}
 
 			int currentLevel = state.getValue(lightProp);
 
 			if (player.isShiftKeyDown()) {
-			    if (currentLevel < 15) {
-			        int toConsume = 1;
-			        BlockState newState = state.setValue(lightProp, currentLevel + toConsume);
-			        level.setBlock(pos, newState, 3);
-			        if (!player.isCreative()) stack.shrink(toConsume);
-			        player.displayClientMessage(Component.translatable("viaduct.light_level.increased", currentLevel + toConsume), true);
-			        event.setCancellationResult(InteractionResult.SUCCESS);
-			    } else {
-			        player.displayClientMessage(Component.translatable("viaduct.light_level.maximum"), true);
-			        event.setCancellationResult(InteractionResult.FAIL);
-			    }
+				if (currentLevel < 15) {
+					int toConsume = 1;
+					BlockState newState = state.setValue(lightProp, currentLevel + toConsume);
+					level.setBlock(pos, newState, 3);
+					if (!player.isCreative())
+						stack.shrink(toConsume);
+					player.displayClientMessage(
+							Component.translatable("viaduct.light_level.increased", currentLevel + toConsume), true);
+					event.setCancellationResult(InteractionResult.SUCCESS);
+				} else {
+					player.displayClientMessage(Component.translatable("viaduct.light_level.maximum"), true);
+					event.setCancellationResult(InteractionResult.FAIL);
+				}
 			} else {
-			    if (currentLevel < 15) {
-			        int maxIncrease = 15 - currentLevel;
-			        int toConsume = Math.min(stack.getCount(), maxIncrease);
-			        int newLevel = currentLevel + toConsume;
-			        BlockState newState = state.setValue(lightProp, newLevel);
-			        level.setBlock(pos, newState, 3);
-			        if (!player.isCreative()) stack.shrink(toConsume);
-			        player.displayClientMessage(Component.translatable("viaduct.light_level.increased", newLevel), true);
-			        event.setCancellationResult(InteractionResult.SUCCESS);
-			    } else {
-			        player.displayClientMessage(Component.translatable("viaduct.light_level.maximum"), true);
-			        event.setCancellationResult(InteractionResult.FAIL);
-			    }
+				if (currentLevel < 15) {
+					int maxIncrease = 15 - currentLevel;
+					int toConsume = Math.min(stack.getCount(), maxIncrease);
+					int newLevel = currentLevel + toConsume;
+					BlockState newState = state.setValue(lightProp, newLevel);
+					level.setBlock(pos, newState, 3);
+					if (!player.isCreative())
+						stack.shrink(toConsume);
+					player.displayClientMessage(Component.translatable("viaduct.light_level.increased", newLevel),
+							true);
+					event.setCancellationResult(InteractionResult.SUCCESS);
+				} else {
+					player.displayClientMessage(Component.translatable("viaduct.light_level.maximum"), true);
+					event.setCancellationResult(InteractionResult.FAIL);
+				}
 			}
 
 			event.setCanceled(true);
 			player.playSound(SoundEvents.BRUSH_SAND_COMPLETED, 1f, 2f);
 			return;
 
+		}
+		if (stack.getItem() == Items.BRUSH
+				&& (state.getBlock() instanceof BlockViaduct || state.getBlock() instanceof BlockViaductFacade)) {
+
+			brushingPlayers.put(player.getUUID(), pos);
+			event.setCanceled(true);
+			player.playSound(SoundEvents.BRUSH_SAND, 1f, 1f);
+			event.setCancellationResult(InteractionResult.SUCCESS);
 
 		}
-		if (stack.getItem() == Items.BRUSH &&
-				(state.getBlock() instanceof BlockViaduct || state.getBlock() instanceof BlockViaductFacade)) {
-
-				brushingPlayers.put(player.getUUID(), pos);
-				event.setCanceled(true);
-				player.playSound(SoundEvents.BRUSH_SAND, 1f, 1f);
-				event.setCancellationResult(InteractionResult.SUCCESS);
-
-				}
 
 		if (state.getBlock() instanceof BlockViaductSpeed && player.isShiftKeyDown()) {
 			BlockEntity be = level.getBlockEntity(pos);
@@ -417,52 +420,37 @@ public class CommonEvents {
 			}
 		}
 	}
-	
+
 	@SubscribeEvent
 	public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
-		Player joiningPlayer = event.getEntity();
-		MinecraftServer server = joiningPlayer.getServer();
-		if (!(joiningPlayer instanceof ServerPlayer serverJoiningPlayer) || server == null)
+		if (!(event.getEntity() instanceof ServerPlayer player))
 			return;
+		ServerLevel level = player.serverLevel();
+		ViaductTravelWorldData data = ViaductTravelWorldData.get(level);
 
-		if (ViaductTravel.activeTravels.containsKey(joiningPlayer.getUUID())) {
-			server.execute(() -> {
-				joiningPlayer.setInvulnerable(true);
-				joiningPlayer.setSwimming(false);
-				joiningPlayer.noPhysics = true;
-				joiningPlayer.setNoGravity(true);
-				joiningPlayer.setDeltaMovement(Vec3.ZERO);
-
-				ViaductTravel.resume(joiningPlayer);
-
-				for (ServerPlayer other : server.getPlayerList().getPlayers()) {
-					if (!other.getUUID().equals(joiningPlayer.getUUID())) {
-						NetworkHandler.sendTravelStateToAll(other, false);
-					}
-				}
-			});
+		if (data.hasTravel(player.getUUID())) {
+			CompoundTag tag = data.getTravel(player.getUUID());
+			ViaductTravel.resumeFromTag(player, tag);
+			data.removeTravel(player.getUUID());
 		}
-
-		server.execute(() -> {
-			for (ServerPlayer other : server.getPlayerList().getPlayers()) {
-				if (!other.getUUID().equals(joiningPlayer.getUUID()) && ViaductTravel.isTravelActive(other)) {
-					NetworkHandler.sendTravelStateToAll(serverJoiningPlayer, false);
-				}
-			}
-		});
 	}
 
 	@SubscribeEvent
 	public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-		Player player = event.getEntity();
-		UUID id = player.getUUID();
+		if (!(event.getEntity() instanceof ServerPlayer player))
+			return;
+		if (!ViaductTravel.isTravelActive(player))
+			return;
 
-		if (ViaductTravel.activeTravels.containsKey(id)) {
-			player.setInvulnerable(false);
-			player.setNoGravity(false);
-			player.noPhysics = false;
+		ServerLevel level = player.serverLevel();
+		ViaductTravelWorldData data = ViaductTravelWorldData.get(level);
 
-		}
+		CompoundTag travelTag = ViaductTravel.saveToTag(player);
+		data.setTravel(player.getUUID(), travelTag);
+
+		player.setInvulnerable(false);
+		player.setNoGravity(false);
+		player.noPhysics = false;
 	}
 
 	@SubscribeEvent
@@ -550,12 +538,14 @@ public class CommonEvents {
 			ItemStack stack = entityItem.getItem().copy();
 			event.setCanceled(true);
 			entityItem.remove(Entity.RemovalReason.DISCARDED);
-		    player.level().playSound(null,player.blockPosition(),SoundEvents.ITEM_PICKUP,SoundSource.PLAYERS,0.5f,1.0f);
+			player.level().playSound(null, player.blockPosition(), SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.5f,
+					1.0f);
 
 			if (!serverPlayer.getInventory().add(stack)) {
 				serverPlayer.drop(stack, false);
 			}
-			serverPlayer.displayClientMessage(Component.translatable("viaduct.travel.drop_denied").withStyle(ChatFormatting.RED, ChatFormatting.BOLD), true);
+			serverPlayer.displayClientMessage(Component.translatable("viaduct.travel.drop_denied")
+					.withStyle(ChatFormatting.RED, ChatFormatting.BOLD), true);
 		}
 	}
 }

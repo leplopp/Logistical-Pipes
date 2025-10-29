@@ -1,6 +1,7 @@
 package plopp.pipecraft.logic;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -10,6 +11,10 @@ import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.LongTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Pose;
@@ -416,6 +421,118 @@ public class ViaductTravel {
         return null;
     }
     
+    public static CompoundTag saveToTag(Player player) {
+        CompoundTag tag = new CompoundTag();
+        TravelData data = activeTravels.get(player.getUUID());
+        if (data == null) return tag;
+
+        tag.putInt("TicksPerChunk", data.ticksPerChunk);
+        tag.putInt("DefaultTicksPerChunk", data.defaultTicksPerChunk);
+        tag.putInt("ProgressIndex", data.progressIndex);
+        tag.putDouble("ChunkProgress", data.chunkProgress);
+        tag.putInt("TickCounter", data.tickCounter);
+        tag.putBoolean("HasTeleporterPhase", data.hasTeleporterPhase);
+
+        if (data.phase != null)
+            tag.putString("Phase", data.phase.name());
+
+        if (data.startPos != null)
+            tag.putLong("StartPos", data.startPos.asLong());
+        if (data.targetPos != null)
+            tag.putLong("TargetPos", data.targetPos.asLong());
+        if (data.finalTargetPos != null)
+            tag.putLong("FinalTargetPos", data.finalTargetPos.asLong());
+        if (data.targetTeleporterPos != null)
+            tag.put("TargetTeleporterPos", data.targetTeleporterPos.save());
+
+        tag.putDouble("LockedX", data.lockedX);
+        tag.putDouble("LockedY", data.lockedY);
+        tag.putDouble("LockedZ", data.lockedZ);
+
+        ListTag pathList = new ListTag();
+        for (BlockPos pos : data.path) {
+            pathList.add(LongTag.valueOf(pos.asLong()));
+        }
+        tag.put("Path", pathList);
+
+        if (data.nextPath != null) {
+            ListTag nextPathList = new ListTag();
+            for (BlockPos pos : data.nextPath) {
+                nextPathList.add(LongTag.valueOf(pos.asLong()));
+            }
+            tag.put("NextPath", nextPathList);
+        }
+
+        if (!data.cameFrom.isEmpty()) {
+            ListTag cameFromList = new ListTag();
+            for (Map.Entry<DimBlockPos, DimBlockPos> entry : data.cameFrom.entrySet()) {
+                CompoundTag cf = new CompoundTag();
+                cf.put("From", entry.getKey().save());
+                cf.put("To", entry.getValue().save());
+                cameFromList.add(cf);
+            }
+            tag.put("CameFrom", cameFromList);
+        }
+
+        return tag;
+    }
+
+    public static TravelData loadFromTag(Level level, CompoundTag tag) {
+        BlockPos start = tag.contains("StartPos") ? BlockPos.of(tag.getLong("StartPos")) : BlockPos.ZERO;
+        BlockPos target = tag.contains("TargetPos") ? BlockPos.of(tag.getLong("TargetPos")) : BlockPos.ZERO;
+
+        int ticksPerChunk = tag.getInt("TicksPerChunk");
+        TravelData data = new TravelData(level, start, target, ticksPerChunk, false);
+
+        data.progressIndex = tag.getInt("ProgressIndex");
+        data.chunkProgress = tag.getDouble("ChunkProgress");
+        data.tickCounter = tag.getInt("TickCounter");
+        data.hasTeleporterPhase = tag.getBoolean("HasTeleporterPhase");
+        data.lockedX = tag.getDouble("LockedX");
+        data.lockedY = tag.getDouble("LockedY");
+        data.lockedZ = tag.getDouble("LockedZ");
+
+        if (tag.contains("Phase"))
+            data.phase = TravelData.TravelPhase.valueOf(tag.getString("Phase"));
+        if (tag.contains("FinalTargetPos"))
+            data.finalTargetPos = BlockPos.of(tag.getLong("FinalTargetPos"));
+        if (tag.contains("TargetTeleporterPos"))
+            data.targetTeleporterPos = DimBlockPos.load(tag.getCompound("TargetTeleporterPos"));
+
+        ListTag pathList = tag.getList("Path", Tag.TAG_LONG);
+        for (Tag entry : pathList) {
+            data.path.add(BlockPos.of(((LongTag) entry).getAsLong()));
+        }
+
+        if (tag.contains("NextPath")) {
+            ListTag nextList = tag.getList("NextPath", Tag.TAG_LONG);
+            List<BlockPos> np = new ArrayList<>();
+            for (Tag entry : nextList) {
+                np.add(BlockPos.of(((LongTag) entry).getAsLong()));
+            }
+            data.nextPath = np;
+        }
+
+        if (tag.contains("CameFrom")) {
+            ListTag cfList = tag.getList("CameFrom", Tag.TAG_COMPOUND);
+            for (Tag t : cfList) {
+                CompoundTag cf = (CompoundTag) t;
+                DimBlockPos from = DimBlockPos.load(cf.getCompound("From"));
+                DimBlockPos to = DimBlockPos.load(cf.getCompound("To"));
+                data.cameFrom.put(from, to);
+            }
+        }
+
+        return data;
+    }
+    
+    public static void resumeFromTag(ServerPlayer player, CompoundTag tag) {
+        TravelData travel = loadFromTag(player.level(), tag);
+        activeTravels.put(player.getUUID(), travel);
+        NetworkHandler.sendTravelStateToAll(player, true);
+        resume(player);
+    }
+    
     public static void resume(Player player) {
         UUID id = player.getUUID();
         TravelData data = activeTravels.get(id);
@@ -426,8 +543,17 @@ public class ViaductTravel {
         player.noPhysics = true;
         player.setNoGravity(true);
         player.setDeltaMovement(Vec3.ZERO);
-    }
+        player.setPose(Pose.SWIMMING);
 
+        travelYawMap.put(id, player.getYRot());
+        travelPitchMap.put(id, player.getXRot());
+        verticalDirMap.put(id, VerticalDirection.NONE);
+
+        if (data.path != null && !data.path.isEmpty() && data.progressIndex < data.path.size()) {
+            Vec3 pos = vecFromBlockPos(data.path.get(data.progressIndex));
+            player.teleportTo(pos.x, pos.y, pos.z);
+        }
+    }
   
     public static void stop(Player player, boolean includeTeleport) {
         UUID id = player.getUUID();

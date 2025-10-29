@@ -45,12 +45,12 @@ public class PipeCraftIndex
         	MapInspector.inspectTravelMaps();
         });
     }
+    
     private void addCreative(BuildCreativeModeTabContentsEvent event){}
     
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event){}
 }
-
 
 /*known bugs: 
  * 
@@ -64,8 +64,8 @@ public class PipeCraftIndex
 
 /*ideen
  * 
- *  viaduct											<- Pre Release				/ hitbox vollenden /sounds hinzufügen
- *  viaduct Linker									<- Pre Release				/ hitbox vollenden /sounds hinzufügen
+ *  viaduct											<- Pre Release				/ hitbox vollenden
+ *  viaduct Linker									<- Pre Release				/ hitbox vollenden
  *  viaduct player detector 					    <- Released						
  *  viaduct Speed controller						<- Released						
  *  viaduct Teleporter								<- Pre Alpha 				/

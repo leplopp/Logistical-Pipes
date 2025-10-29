@@ -16,7 +16,10 @@ import plopp.pipecraft.logic.ViaductTravel.VerticalDirection;
 public class TravelPlayerModel<T extends AbstractClientPlayer> extends PlayerModel<T> {
 	
     private UUID playerUUID;
+    
+	@SuppressWarnings("unused")
 	private final boolean slim;
+	
     public final ModelPart leftSleeve, rightSleeve, leftPants, rightPants, jacket, cloak, ear;
 
     public TravelPlayerModel(ModelPart root, boolean slim) {
@@ -89,11 +92,9 @@ public class TravelPlayerModel<T extends AbstractClientPlayer> extends PlayerMod
         this.rightArm.xRot = (float)Math.toRadians(270);
         this.leftArm.xRot = (float)Math.toRadians(270);
         this.rightArm.yRot = 0f; this.leftArm.yRot = 0f;
-        this.rightArm.zRot = (float)Math.toRadians(-10);
-        this.leftArm.zRot = (float)Math.toRadians(10);
         this.rightArm.x = -5f; this.leftArm.x = 5f;
-        this.rightArm.z = 0f; this.leftArm.z = 0f;
-
+        this.rightArm.y = 0f; this.leftArm.y = 0f;
+        
         this.rightLeg.xRot = (float)Math.toRadians(90);
         this.leftLeg.xRot = (float)Math.toRadians(90);
         this.rightLeg.y = 0f; this.leftLeg.y = 0f;

@@ -31,7 +31,7 @@ public class PipeTravelWorldEvents {
             PipeTravel.activeItems.add(item);
         }
 
-        data.getItems().clear();
+		data.getItems().clear();
     }
 
     @SubscribeEvent

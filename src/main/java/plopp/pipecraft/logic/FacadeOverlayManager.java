@@ -8,7 +8,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.DyeColor;
 import net.neoforged.api.distmarker.OnlyIn;
-import plopp.pipecraft.Blocks.Facade.FacadeOverlayRenderer;
+import plopp.pipecraft.Render.FacadeOverlayRenderer;
 
 @OnlyIn(Dist.CLIENT)
 public class FacadeOverlayManager {
