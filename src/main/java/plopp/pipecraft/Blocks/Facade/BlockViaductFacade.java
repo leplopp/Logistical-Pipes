@@ -18,19 +18,21 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import plopp.pipecraft.logic.ViaductTravel;
+import plopp.pipecraft.model.ViaductBlockBox;
 
 public class BlockViaductFacade extends Block implements EntityBlock {
 
@@ -74,18 +76,34 @@ public class BlockViaductFacade extends Block implements EntityBlock {
 		}
 		return InteractionResult.PASS;
 	}
-
+	   @Override
+	    public RenderShape getRenderShape(BlockState state) {
+	        return RenderShape.MODEL;
+	    }
 	@Override
 	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
 		builder.add(CONNECTED_NORTH, CONNECTED_SOUTH, CONNECTED_EAST, CONNECTED_WEST, CONNECTED_UP, CONNECTED_DOWN,
 				LIGHT_LEVEL, COLOR, TRANSPARENT);
 	}
+	  @SuppressWarnings({ "unchecked", "rawtypes" })
+	public static BlockState copyBlockProperties(BlockState source, BlockState target) {
+	        for (Property<?> prop : target.getProperties()) {
+	            if (source.hasProperty(prop)) {
+	                target = target.setValue((Property) prop, source.getValue(prop));
+	            }
+	        }
+	        return target;
+	    }
 
-	@Override
-	public BlockState getStateForPlacement(BlockPlaceContext context) {
-		return this.defaultBlockState();
-	}
-
+	 @Override
+	    public BlockState getStateForPlacement(BlockPlaceContext ctx) {
+	        BlockState state = this.defaultBlockState();
+	        BlockEntity be = ctx.getLevel().getBlockEntity(ctx.getClickedPos());
+	        if (be instanceof BlockFacadeTileEntity facade) {
+	            state = copyBlockProperties(facade.getOriginalBlockState(), state);
+	        }
+	        return state;
+	    }
 	@Override
 	public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
 		if (!level.isClientSide) {
@@ -177,43 +195,15 @@ public class BlockViaductFacade extends Block implements EntityBlock {
 	            return Shapes.empty();
 	        }
 	    }
-
-	    boolean north = state.getValue(CONNECTED_NORTH);
-	    boolean south = state.getValue(CONNECTED_SOUTH);
-	    boolean east = state.getValue(CONNECTED_EAST);
-	    boolean west = state.getValue(CONNECTED_WEST);
-	    boolean up = state.getValue(CONNECTED_UP);
-	    boolean down = state.getValue(CONNECTED_DOWN);
-
-	    // --- Basiszylinder in der Mitte ---
-	    VoxelShape center = box(4, 0, 4, 12, 16, 12);
-
-	    // --- Arme mit 45° Schräge ---
-	    VoxelShape northArm = Shapes.join(box(4, 0, 0, 12, 16, 8), box(2, 0, 6, 14, 16, 12), BooleanOp.ONLY_FIRST);
-	    VoxelShape southArm = Shapes.join(box(4, 0, 8, 12, 16, 16), box(2, 0, 4, 14, 16, 10), BooleanOp.ONLY_FIRST);
-	    VoxelShape westArm  = Shapes.join(box(0, 0, 4, 8, 16, 12), box(6, 0, 2, 12, 16, 14), BooleanOp.ONLY_FIRST);
-	    VoxelShape eastArm  = Shapes.join(box(8, 0, 4, 16, 16, 12), box(4, 0, 2, 10, 16, 14), BooleanOp.ONLY_FIRST);
-	    VoxelShape upArm    = Shapes.join(box(4, 8, 4, 12, 16, 12), box(2, 4, 2, 14, 10, 14), BooleanOp.ONLY_FIRST);
-	    VoxelShape downArm  = Shapes.join(box(4, 0, 4, 12, 8, 12), box(2, 6, 2, 14, 12, 14), BooleanOp.ONLY_FIRST);
-
-	    // --- Originales Plus ---
-	    VoxelShape plus = center;
-	    if (north) plus = Shapes.or(plus, northArm);
-	    if (south) plus = Shapes.or(plus, southArm);
-	    if (west)  plus = Shapes.or(plus, westArm);
-	    if (east)  plus = Shapes.or(plus, eastArm);
-	    if (up)    plus = Shapes.or(plus, upArm);
-	    if (down)  plus = Shapes.or(plus, downArm);
-
-	    // --- Horizontale „Slab“-Hitbox (mittig, halbe Höhe) ---
-	    VoxelShape horizontalSlab = box(4, 6, 4, 12, 10, 12); // Y 6-10 = mittig
-	    plus = Shapes.or(plus, horizontalSlab);
-
-	    // --- Vertikale „Slab“-Hitbox (mittig, vertikal) ---
-	    VoxelShape verticalSlab = box(6, 0, 6, 10, 16, 10); // X/Z 6-10, volle Höhe
-	    plus = Shapes.or(plus, verticalSlab);
-
-	    return plus;
+		  return ViaductBlockBox.getShape(
+			        state,
+			        CONNECTED_NORTH,
+			        CONNECTED_SOUTH,
+			        CONNECTED_EAST,
+			        CONNECTED_WEST,
+			        CONNECTED_UP,
+			        CONNECTED_DOWN
+			    );
 	}
 	
 	@Override
@@ -225,4 +215,36 @@ public class BlockViaductFacade extends Block implements EntityBlock {
 	public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
 		return new BlockFacadeTileEntity(pos, state);
 	}
+
+	/*@Override
+	protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player,
+	                                      InteractionHand hand, BlockHitResult hitResult) {
+
+	    if (level.isClientSide) return ItemInteractionResult.SUCCESS;
+
+	    // Prüfen, ob Block in Config steht
+	    ResourceLocation blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+	    if (!Config.getFacadableBlocks().contains(blockId)) {
+	        return ItemInteractionResult.SUCCESS;
+	    }
+
+	    // Prüfen, ob Facade gesetzt werden darf (Hitbox)
+	    BlockState facadeState = BlockRegister.VIADUCTFACADE.get().defaultBlockState();
+	    if (!BlockFacadeTileEntity.canApplyFacade(state, facadeState)) {
+	        return ItemInteractionResult.FAIL;
+	    }
+
+	    // Setze die Facade über dem Originalblock
+	    level.setBlock(pos, facadeState, 3);
+	    BlockEntity be = level.getBlockEntity(pos);
+	    if (be instanceof BlockFacadeTileEntity facadeTE) {
+	        facadeTE.setOriginalBlockState(state);
+	    }
+
+	    if (!player.isCreative()) {
+	        stack.shrink(1);
+	    }
+
+	    return ItemInteractionResult.CONSUME;
+	}*/
 }

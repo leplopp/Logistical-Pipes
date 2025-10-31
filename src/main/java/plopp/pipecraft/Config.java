@@ -1,7 +1,12 @@
 package plopp.pipecraft;
 
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.neoforge.common.ModConfigSpec.BooleanValue;
+import net.neoforged.neoforge.common.ModConfigSpec.ConfigValue;
 import plopp.pipecraft.logic.SpeedLevel;
 
 public class Config {
@@ -15,7 +20,8 @@ public class Config {
 	private static final BooleanValue ENABLE_VIADUCT_FACADE;
 	private static final BooleanValue ENABLE_BLOCKPIPE;
 	private static final BooleanValue ENABLE_BLOCKPIPE_EXTRACT;
-
+	public static final ConfigValue<List<? extends String>> FACADABLE_BLOCKS;
+	
 	static {
 
 		BUILDER.push("Viaduct Booster");
@@ -65,6 +71,13 @@ public class Config {
 
 		BUILDER.pop();	
 
+		  BUILDER.push("Experimental Content");
+		    FACADABLE_BLOCKS = BUILDER.comment("List of blocks that can accept a Viaduct Facade")
+		        .defineList("facadableBlocks", List.of(
+		            "mekanism:basic_logistical_transporter"
+		        ), o -> o instanceof String);
+		    BUILDER.pop();
+		
 		SPEC = BUILDER.build();
 
 	}
@@ -95,6 +108,18 @@ public class Config {
 
 	public static boolean isBlockPipeExtractEnabled() {
 	    return ENABLE_BLOCKPIPE_EXTRACT.get();
+	}
+	
+	public static Set<ResourceLocation> getFacadableBlocks() {
+	    return FACADABLE_BLOCKS.get().stream()
+	        .map(s -> {
+	            String str = (String) s;
+	            String[] parts = str.split(":", 2); 
+	            String namespace = parts.length > 1 ? parts[0] : "minecraft"; 
+	            String path = parts.length > 1 ? parts[1] : parts[0];
+	            return ResourceLocation.fromNamespaceAndPath(namespace, path);
+	        })
+	        .collect(Collectors.toSet());
 	}
 
 	public static boolean isSpeedLevelAllowed(SpeedLevel level) {

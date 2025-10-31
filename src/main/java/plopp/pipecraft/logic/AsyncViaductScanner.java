@@ -78,27 +78,24 @@ public class AsyncViaductScanner {
 
             BlockState currentState = currentLevel.getBlockState(current.pos);
             BlockEntity currentBe = currentLevel.getBlockEntity(current.pos);
-           // PipeCraftIndex.LOGGER.info("Scan current position: {} mit BlockEntity: {}", current, currentBe);
 
             if (currentBe instanceof BlockEntityViaductTeleporter teleporter) {
-               // PipeCraftIndex.LOGGER.info("Scanne Teleporter an Position {}", current);
-
                 ItemStack goalIcon = teleporter.getTargetDisplayedItem();
                 if (!goalIcon.isEmpty()) {
+                    String goalKey = BlockEntityViaductTeleporter.generateItemId(goalIcon);
 
                     for (ServerLevel level : server.getAllLevels()) {
                         ResourceKey<Level> dim = level.dimension();
 
                         for (Map.Entry<BlockPos, TeleporterEntryRecord> entry : ViaductTeleporterManager.getAll().entrySet()) {
                             BlockPos possibleTargetPos = entry.getKey();
-
                             DimBlockPos dimPos = new DimBlockPos(dim, possibleTargetPos);
                             if (visited.contains(dimPos)) continue;
 
                             DataEntryRecord startEntry = entry.getValue().start();
+                            String startKey = BlockEntityViaductTeleporter.generateItemId(startEntry.icon());
 
-                            if (ItemStack.isSameItem(startEntry.icon(), goalIcon)) {
-
+                            if (startKey.equals(goalKey)) {
                                 ServerLevel targetLevel = server.getLevel(dim);
                                 if (targetLevel == null) continue;
 
@@ -114,16 +111,17 @@ public class AsyncViaductScanner {
                                         || neighborBe instanceof BlockEntityViaductLinker
                                         || ViaductBlockRegistry.isViaduct(neighborState)) {
                                         toVisit.add(neighbor);
+                                        cameFrom.put(neighbor, current);
                                     }
                                 }
 
                                 visited.add(dimPos);
-                                break; 
+                                break;
                             }
                         }
                     }
                 }
-                continue; 
+                continue;
             }
 
             if (!ViaductBlockRegistry.isViaduct(currentState)) {

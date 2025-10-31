@@ -13,7 +13,7 @@ import plopp.pipecraft.ClientConfig;
 import plopp.pipecraft.PipeCraftIndex;
 import plopp.pipecraft.Network.travel.ClientTravelDataManager;
 
-@EventBusSubscriber(modid = PipeCraftIndex.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
+@EventBusSubscriber(modid = PipeCraftIndex.MODID, value = Dist.CLIENT)
 public class ViaductTravelSoundHandler {
 	private static final Map<UUID, ViaductLoopSound> loopMap = new HashMap<>();
 	

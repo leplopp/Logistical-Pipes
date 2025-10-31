@@ -218,15 +218,13 @@ public class BlockViaductLinker extends Block implements EntityBlock, Connectabl
 
 		if (block instanceof BlockViaduct || block instanceof BlockViaductLinker) {
 			return true;
-		}
-
-		if (block instanceof BlockViaductDetector || block instanceof BlockViaductSpeed) {
+			
+		} else if (block instanceof BlockViaductDetector || block instanceof BlockViaductSpeed) {
 			Direction detectorFacing = state.getValue(BlockStateProperties.FACING);
 
 			return detectorFacing == toDirection || detectorFacing == toDirection.getOpposite();
 		}
-
-		if (block instanceof BlockViaductTeleporter) {
+		else if (block instanceof BlockViaductTeleporter) {
 
 			Direction teleFacing = state.getValue(BlockViaductTeleporter.FACING);
 			return teleFacing == toDirection.getOpposite();

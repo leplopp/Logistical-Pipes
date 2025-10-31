@@ -26,7 +26,7 @@ import plopp.pipecraft.Network.NetworkHandler;
 import plopp.pipecraft.Network.speeder.SpeedChangePacket;
 import plopp.pipecraft.logic.ViaductTravel;
 
-@EventBusSubscriber(modid = PipeCraftIndex.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
+@EventBusSubscriber(modid = PipeCraftIndex.MODID, value = Dist.CLIENT)
 public class ClientRuntimeEvents {
 
 	private static int lostSightTicks = 0;

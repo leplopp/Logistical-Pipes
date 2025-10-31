@@ -28,7 +28,7 @@ import plopp.pipecraft.Network.travel.TravelStatePacket;
 import plopp.pipecraft.logic.TravelData;
 import plopp.pipecraft.logic.ViaductTravel;
 
-@EventBusSubscriber(modid = PipeCraftIndex.MODID, bus = EventBusSubscriber.Bus.MOD, value = {Dist.CLIENT,Dist.DEDICATED_SERVER })
+@EventBusSubscriber(modid = PipeCraftIndex.MODID, value = {Dist.CLIENT,Dist.DEDICATED_SERVER })
 public class NetworkHandler {
 
 	@SubscribeEvent

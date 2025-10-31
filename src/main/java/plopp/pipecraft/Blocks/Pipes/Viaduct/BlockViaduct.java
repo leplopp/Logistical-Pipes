@@ -223,7 +223,6 @@ public class BlockViaduct extends Block implements Connectable {
 				}
 			}
 		}
-
 		  return ViaductBlockBox.getShape(
 			        state,
 			        CONNECTED_NORTH,

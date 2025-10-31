@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.client.resources.PlayerSkin;
@@ -11,10 +12,13 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import plopp.pipecraft.PipeCraftIndex;
+import plopp.pipecraft.Blocks.BlockEntityRegister;
+import plopp.pipecraft.Render.FacadeTileEntityRenderer;
 import plopp.pipecraft.gui.MenuTypeRegister;
 import plopp.pipecraft.gui.pipes.PipeExtractScreen;
 import plopp.pipecraft.gui.teleporter.ViaductTeleporterScreen;
@@ -23,7 +27,7 @@ import plopp.pipecraft.gui.viaductlinker.ViaductLinkerScreen;
 import plopp.pipecraft.model.TravelPlayerModel;
 import plopp.pipecraft.model.obj.ViaductModelLoader;
 
-@EventBusSubscriber(modid = PipeCraftIndex.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = PipeCraftIndex.MODID, value = Dist.CLIENT)
 public class ClientEvent {
 	
     @SubscribeEvent
@@ -33,7 +37,17 @@ public class ClientEvent {
     	event.register(MenuTypeRegister.VIADUCT_TELEPORTER.get(), ViaductTeleporterScreen::new);
     	event.register(MenuTypeRegister.EXTRACT_PIPE.get(), PipeExtractScreen::new);
     }
-
+    
+    @SubscribeEvent
+    public static void clientSetup(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> {
+            BlockEntityRenderers.register(
+                BlockEntityRegister.VIADUCT_FACADE.get(),
+                FacadeTileEntityRenderer::new
+            );
+        });
+    }
+    
     @SubscribeEvent
     public static void onAddLayers(EntityRenderersEvent.AddLayers event) {
         for (PlayerSkin.Model skin : event.getSkins()) {

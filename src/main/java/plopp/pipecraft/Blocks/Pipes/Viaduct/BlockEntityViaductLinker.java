@@ -53,15 +53,7 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
     public List<LinkedTargetEntry> getLinkedTargets() {
         return linkedTargets;
     }
-    
-    @Override
-    public void onLoad() {
-        super.onLoad();
-        if (!level.isClientSide) {
-            ViaductLinkerManager.addOrUpdateLinker(worldPosition, getCustomName(), getDisplayedItem());
-        }
-    }
-    
+
     @Override
     public void setRemoved() {
         super.setRemoved();
@@ -224,7 +216,15 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
     public ClientboundBlockEntityDataPacket getUpdatePacket() {
         return ClientboundBlockEntityDataPacket.create(this);
     }
-
+    
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (!level.isClientSide) {
+            ViaductLinkerManager.addOrUpdateLinker(worldPosition, getCustomName(), getDisplayedItem());
+        }
+    }
+    
     public boolean isAsyncScanInProgress() {
         return asyncScanInProgress;
     }

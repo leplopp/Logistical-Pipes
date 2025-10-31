@@ -10,9 +10,11 @@ import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -47,7 +49,10 @@ import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import plopp.pipecraft.Config;
 import plopp.pipecraft.PipeCraftIndex;
+import plopp.pipecraft.Blocks.BlockRegister;
+import plopp.pipecraft.Blocks.Facade.BlockFacadeTileEntity;
 import plopp.pipecraft.Blocks.Facade.BlockViaductFacade;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductSpeed;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
@@ -55,6 +60,7 @@ import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductDetector;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
 import plopp.pipecraft.Network.data.ViaductTravelWorldData;
+import plopp.pipecraft.logic.FacadeOverlayManager;
 import plopp.pipecraft.logic.ViaductTravel;
 import plopp.pipecraft.logic.pipe.PipeTravel;
 import plopp.pipecraft.util.ViaductCommand;
@@ -383,6 +389,7 @@ public class CommonEvents {
 			return;
 
 		}
+		
 		if (stack.getItem() == Items.BRUSH
 				&& (state.getBlock() instanceof BlockViaduct || state.getBlock() instanceof BlockViaductFacade)) {
 
@@ -419,6 +426,37 @@ public class CommonEvents {
 				event.setCancellationResult(InteractionResult.SUCCESS);
 			}
 		}
+
+		if (stack.getItem() != BlockRegister.VIADUCTFACADE.get().asItem()) {
+		    return; 
+		}
+
+		BlockState original = level.getBlockState(pos);
+		ResourceLocation blockId = BuiltInRegistries.BLOCK.getKey(original.getBlock());
+		if (!Config.getFacadableBlocks().contains(blockId)) {
+		    return; 
+		}
+
+		BlockState facadeState = BlockRegister.VIADUCTFACADE.get().defaultBlockState();
+		if (!BlockFacadeTileEntity.canApplyFacade(original, facadeState)) {
+		    event.setCancellationResult(InteractionResult.FAIL);
+		    event.setCanceled(true);
+		    return;
+		}
+
+		if (!level.isClientSide) {
+		    DyeColor color = DyeColor.WHITE;
+		    boolean transparent = true;
+		    FacadeOverlayManager.addFacade(pos, color, transparent);
+		}
+
+		if (!player.isCreative()) {
+		    stack.shrink(1);
+		}
+
+		event.setCancellationResult(InteractionResult.sidedSuccess(level.isClientSide));
+		event.setCanceled(true);
+		
 	}
 
 	@SubscribeEvent

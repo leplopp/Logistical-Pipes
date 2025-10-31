@@ -39,7 +39,7 @@ public class PipeCraftIndex
         NeoForge.EVENT_BUS.addListener(DebugTravelCommand::register);
     }
 
-
+   
     private void onCommonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
         	MapInspector.inspectTravelMaps();
