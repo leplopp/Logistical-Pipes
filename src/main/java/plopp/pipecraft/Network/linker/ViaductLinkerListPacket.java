@@ -2,7 +2,6 @@ package plopp.pipecraft.Network.linker;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;

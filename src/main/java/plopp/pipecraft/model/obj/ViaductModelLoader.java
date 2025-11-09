@@ -3,11 +3,9 @@ package plopp.pipecraft.model.obj;
 import java.util.EnumMap;
 import java.util.Locale;
 import java.util.Map;
-
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.DyeColor;

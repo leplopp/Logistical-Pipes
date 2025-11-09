@@ -15,7 +15,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
-import plopp.pipecraft.logic.ViaductTravel;
+import plopp.pipecraft.logic.Travel.ViaductTravel;
 
 @Mixin(LocalPlayer.class)
 public abstract class MixinDisablePlayerInput extends AbstractClientPlayer {

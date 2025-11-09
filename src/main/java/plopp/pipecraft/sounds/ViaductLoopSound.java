@@ -6,8 +6,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
 import plopp.pipecraft.ClientConfig;
-import plopp.pipecraft.Network.travel.ClientTravelDataManager;
 import plopp.pipecraft.Network.travel.TravelStatePacket;
+import plopp.pipecraft.logic.Manager.ClientTravelDataManager;
 import net.minecraft.util.Mth;
 
 public class ViaductLoopSound extends AbstractTickableSoundInstance {

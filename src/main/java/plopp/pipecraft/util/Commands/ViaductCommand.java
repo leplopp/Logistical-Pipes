@@ -1,4 +1,4 @@
-package plopp.pipecraft.util;
+package plopp.pipecraft.util.Commands;
 
 import java.util.Locale;
 import com.mojang.brigadier.CommandDispatcher;
@@ -21,7 +21,7 @@ import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductDetector;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
-import plopp.pipecraft.logic.FacadeOverlayManager;
+import plopp.pipecraft.logic.Manager.FacadeOverlayManager;
 
 public class ViaductCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -68,7 +68,6 @@ public class ViaductCommand {
         Block blockAtPos = state.getBlock();
 
         if (block instanceof BlockViaductFacade) {
-            // Facade setzen (Render Layer)
             if (!level.isClientSide) {
                 FacadeOverlayManager.addFacade(pos, dye, false);
                // NetworkHandler.sendFacadeColorUpdateToTracking(level, pos, new FacadeColorUpdatePacket(pos, dye));

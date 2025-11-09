@@ -1,6 +1,7 @@
 {
 	"loader": "pipecraft:viaduct_model",
   "model": "logisticpipes:models/block/viaduct/detector/viaduct_detector.obj",
+  "render_type" : "translucent",
   "textures": {
 	"particle": "logisticpipes:block/viaduct_particle",
 	"white": "logisticpipes:block/viaduct_white",

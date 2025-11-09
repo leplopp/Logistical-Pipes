@@ -46,6 +46,7 @@ public class ViaductLinkerScreen extends AbstractContainerScreen<ViaductLinkerMe
             return this == DISTANCE_ASCENDING ? DISTANCE_DESCENDING : DISTANCE_ASCENDING;
         }
     }
+    
     @Override
     public void onClose() {
         super.onClose();

@@ -27,7 +27,7 @@ public class Config {
 		BUILDER.push("Viaduct Booster");
 		BUILDER.comment("");
 		BUILDER.comment("Default main speed is 32 = 32 Ticks per chunk, please use faster time than 6 cearfully.\n"
-				+ "on Servers or Client without C2ME (to speed up chunk loadung) its better to set this to ~10");
+				+ "on Servers or Client without C2ME (to speed up chunk loadung)");
 		BUILDER.comment("");
 		SPEED_VIADUCT_MIN = BUILDER
 
@@ -53,17 +53,25 @@ public class Config {
 		
 		BUILDER.push("Experimental Content");
 		BUILDER.comment("");
+		BUILDER.comment("Status = BETA");
+		BUILDER.comment("");
 		ENABLE_VIADUCT_TELEPORTER = BUILDER
 		    .comment("Enable the Viaduct Teleporter block in the creative tab (experimental).")
 		    .define("enableViaductTeleporter", false);
+		BUILDER.comment("");
+		BUILDER.comment("Status = ALPHA");
 		BUILDER.comment("");
 		ENABLE_VIADUCT_FACADE = BUILDER
 		    .comment("Enable the Viaduct Facade block in the creative tab (experimental).")
 		    .define("enableViaductFacade", false);
 		BUILDER.comment("");
+		BUILDER.comment("Status = BETA");
+		BUILDER.comment("");
 		ENABLE_BLOCKPIPE = BUILDER
 		    .comment("Enable the Block Pipe in the creative tab (experimental).")
 		    .define("enableBlockPipe", false);
+		BUILDER.comment("");
+		BUILDER.comment("Status = PRE ALPHA");
 		BUILDER.comment("");
 		ENABLE_BLOCKPIPE_EXTRACT = BUILDER
 		    .comment("Enable the Pipe Extractor block in the creative tab (experimental).")
@@ -71,11 +79,42 @@ public class Config {
 
 		BUILDER.pop();	
 
-		  BUILDER.push("Experimental Content");
-		    FACADABLE_BLOCKS = BUILDER.comment("List of blocks that can accept a Viaduct Facade")
-		        .defineList("facadableBlocks", List.of(
-		            "mekanism:basic_logistical_transporter"
-		        ), o -> o instanceof String);
+		BUILDER.push("Allowed Facades");
+		BUILDER.comment("");
+		FACADABLE_BLOCKS = BUILDER.comment("List of blocks that can accept a Viaduct Facade")
+			    .defineList(
+			        "facadableBlocks",
+			        List.of(
+		            "mekanism:basic_logistical_transporter",
+		            "mekanism:advanced_logistical_transporter",
+		            "mekanism:elite_logistical_transporter",
+		            "mekanism:ultimate_logistical_transporter",
+		            "mekanism:restrictive_transporter",
+		            "mekanism:diversion_transporter",
+		            "mekanism:ultimate_logistical_transporter",
+		            "mekanism:basic_mechanical_transporter",
+		            "mekanism:advanced_mechanical_transporter",
+		            "mekanism:elite_mechanical_transporter",
+		            "mekanism:ultimate_mechanical_transporter",
+		            "mekanism:basic_universal_cable",
+		            "mekanism:advanced_universal_cable",
+		            "mekanism:elite_universal_cable",
+		            "mekanism:ultimate_universal_cable",
+		            "mekanism:basic_pressurized_tube",
+		            "mekanism:advanced_pressurized_tube",
+		            "mekanism:elite_pressurized_tube",
+		            "mekanism:ultimate_pressurized_tube",
+		            "mekanism:basic_thermodynamic_conductor",
+		            "mekanism:advanced_thermodynamic_conductor",
+		            "mekanism:elite_thermodynamic_conductor",
+		            "mekanism:ultimate_thermodynamic_conductor",
+		            "mekanism:logistical_sorter",
+		            "logisticpipes:pipe",
+		            "logisticpipes:pipe_extractor"
+			        		  ),
+			        () -> "MODID:BLOCK",
+			        o -> o instanceof String
+			    );
 		    BUILDER.pop();
 		
 		SPEC = BUILDER.build();

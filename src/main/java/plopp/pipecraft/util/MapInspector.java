@@ -1,6 +1,6 @@
 package plopp.pipecraft.util;
 
-import plopp.pipecraft.logic.ViaductTravel;
+import plopp.pipecraft.logic.Travel.ViaductTravel;
 import plopp.pipecraft.util.MapInspector;
 
 

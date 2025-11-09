@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.ItemOverrides;
@@ -16,8 +17,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.ChunkRenderTypeSet;
@@ -28,6 +31,7 @@ import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaduct;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductDetector;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.Item.DyedViaductItem;
 
 public class DynamicColorWrappedModel implements BakedModel {
 
@@ -82,6 +86,7 @@ public class DynamicColorWrappedModel implements BakedModel {
         fallback.applyTransform(type, poseStack, leftHanded); 
         return this; 
     }
+    
     @Override
     public ModelData getModelData(BlockAndTintGetter level, BlockPos pos, BlockState state, ModelData data) {
         if (state != null) {
@@ -125,5 +130,20 @@ public class DynamicColorWrappedModel implements BakedModel {
     @Override public boolean isGui3d() { return fallback.isGui3d(); }
     @Override public boolean usesBlockLight() { return fallback.usesBlockLight(); }
     @Override public boolean isCustomRenderer() { return fallback.isCustomRenderer(); }
-    @Override public ItemOverrides getOverrides() { return fallback.getOverrides(); }
+    @Override
+    public ItemOverrides getOverrides() {
+        return new ItemOverrides() {
+            @Override
+            public BakedModel resolve(BakedModel model, ItemStack stack, @Nullable ClientLevel level, @Nullable LivingEntity entity, int seed) {
+                if (!(stack.getItem() instanceof DyedViaductItem)) return model;
+
+                DyeColor color = DyedViaductItem.getColor(stack);
+                if (color == null) return model;
+
+                // Direkt das passende Modell aus der Map zurückgeben
+                BakedModel coloredModel = colorModels.get(color);
+                return coloredModel != null ? coloredModel : fallback;
+            }
+        };
+    }
 }

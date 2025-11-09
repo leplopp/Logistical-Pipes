@@ -1,5 +1,7 @@
 package plopp.pipecraft.Blocks.Pipes.Viaduct;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -35,9 +37,10 @@ import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import plopp.pipecraft.Blocks.BlockRegister;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.Item.DyedViaductItem;
 import plopp.pipecraft.logic.Connectable;
 import plopp.pipecraft.logic.SpeedLevel;
-import plopp.pipecraft.logic.ViaductTravel;
+import plopp.pipecraft.logic.Travel.ViaductTravel;
 
 public class BlockViaductSpeed  extends Block implements EntityBlock, Connectable{
 	
@@ -153,7 +156,17 @@ public class BlockViaductSpeed  extends Block implements EntityBlock, Connectabl
 	        level.playSound(player, pos, SoundEvents.METAL_BREAK, SoundSource.BLOCKS, 1.0f, 1.0f);
 			return state;
 	    }
-	   
+
+		@Override
+		public void playerDestroy(Level world, Player player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack tool) {
+		    ItemStack stack = new ItemStack(this.asItem());
+
+		    if (state.hasProperty(BlockViaductSpeed.COLOR)) {
+		        DyedViaductItem.setColor(stack, state.getValue(BlockViaductSpeed.COLOR));
+		    }
+		    popResource(world, pos, stack); 
+		}
+		
 	    @Override
 	    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
 	        builder.add(FACING, SPEED, COLOR, TRANSPARENT);

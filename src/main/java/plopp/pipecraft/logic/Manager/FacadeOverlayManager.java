@@ -1,4 +1,4 @@
-package plopp.pipecraft.logic;
+package plopp.pipecraft.logic.Manager;
 
 import java.util.Collection;
 import java.util.HashMap;

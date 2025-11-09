@@ -24,7 +24,7 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import plopp.pipecraft.Blocks.BlockRegister;
 import plopp.pipecraft.Blocks.Facade.BlockViaductFacade;
-import plopp.pipecraft.logic.FacadeOverlayManager;
+import plopp.pipecraft.logic.Manager.FacadeOverlayManager;
 import plopp.pipecraft.model.obj.DynamicColorWrappedModel;
 
 @EventBusSubscriber(value = Dist.CLIENT)

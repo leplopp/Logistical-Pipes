@@ -32,10 +32,11 @@ import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import plopp.pipecraft.Blocks.BlockEntityRegister;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.Item.DyedViaductItem;
 import plopp.pipecraft.gui.ViaductGuiProvider;
 import plopp.pipecraft.logic.Connectable;
-import plopp.pipecraft.logic.ViaductLinkerManager;
-import plopp.pipecraft.logic.ViaductTravel;
+import plopp.pipecraft.logic.Manager.ViaductLinkerManager;
+import plopp.pipecraft.logic.Travel.ViaductTravel;
 import plopp.pipecraft.model.ViaductBlockBox;
 
 public class BlockViaductLinker extends Block implements EntityBlock, Connectable {
@@ -173,7 +174,17 @@ public class BlockViaductLinker extends Block implements EntityBlock, Connectabl
 		}
 		super.onRemove(oldState, level, pos, newState, isMoving);
 	}
+	
+	@Override
+	public void playerDestroy(Level world, Player player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack tool) {
+	    ItemStack stack = new ItemStack(this.asItem());
 
+	    if (state.hasProperty(BlockViaductLinker.COLOR)) {
+	        DyedViaductItem.setColor(stack, state.getValue(BlockViaductLinker.COLOR));
+	    }
+	    popResource(world, pos, stack); 
+	}
+	
 	public void updateConnections(Level level, BlockPos pos) {
 		BlockState current = level.getBlockState(pos);
 		if (!(current.getBlock() instanceof BlockViaductLinker))

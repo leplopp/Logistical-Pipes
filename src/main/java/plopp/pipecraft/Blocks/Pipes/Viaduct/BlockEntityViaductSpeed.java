@@ -18,7 +18,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import plopp.pipecraft.Blocks.BlockEntityRegister;
 import plopp.pipecraft.logic.SpeedLevel;
-import plopp.pipecraft.logic.SpeedManager;
+import plopp.pipecraft.logic.Manager.SpeedManager;
 
 public class BlockEntityViaductSpeed  extends  BlockEntity{
 	  private static final Map<Item, Set<BlockEntityViaductSpeed>> REGISTRY = new ConcurrentHashMap<>();

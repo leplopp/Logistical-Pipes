@@ -5,7 +5,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import plopp.pipecraft.PipeCraftIndex;
-import plopp.pipecraft.logic.ViaductLinkerManager;
+import plopp.pipecraft.logic.Manager.ViaductLinkerManager;
 
 @EventBusSubscriber(modid = PipeCraftIndex.MODID)
 public class ViaductLinkerWorldEvents {

@@ -8,10 +8,10 @@ import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
-import plopp.pipecraft.logic.ViaductTravel;
+import plopp.pipecraft.logic.Travel.ViaductTravel;
 
 @Mixin(LivingEntity.class)
-public abstract class MixinPlayerDimensions {
+public abstract class MixinPlayerDimensions  {
 
     @Inject(method = "getDimensions", at = @At("HEAD"), cancellable = true)
     private void onGetDimensions(Pose pose, CallbackInfoReturnable<EntityDimensions> cir) {

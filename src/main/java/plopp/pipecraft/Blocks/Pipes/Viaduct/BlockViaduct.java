@@ -1,5 +1,7 @@
 package plopp.pipecraft.Blocks.Pipes.Viaduct;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -17,6 +19,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -28,8 +31,9 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.Item.DyedViaductItem;
 import plopp.pipecraft.logic.Connectable;
-import plopp.pipecraft.logic.ViaductTravel;
+import plopp.pipecraft.logic.Travel.ViaductTravel;
 import plopp.pipecraft.model.ViaductBlockBox;
 
 public class BlockViaduct extends Block implements Connectable {
@@ -64,7 +68,7 @@ public class BlockViaduct extends Block implements Connectable {
 		default -> throw new IllegalArgumentException("Invalid direction for connection: " + direction);
 		};
 	}
-
+	
 	@Override
 	public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
 			BlockHitResult hit) {
@@ -125,6 +129,16 @@ public class BlockViaduct extends Block implements Connectable {
 		super.onRemove(state, level, pos, newState, isMoving);
 	}
 
+	@Override
+	public void playerDestroy(Level world, Player player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack tool) {
+	    ItemStack stack = new ItemStack(this.asItem());
+
+	    if (state.hasProperty(BlockViaduct.COLOR)) {
+	        DyedViaductItem.setColor(stack, state.getValue(BlockViaduct.COLOR));
+	    }
+	    popResource(world, pos, stack); 
+	}
+	
 	public void updateConnections(Level level, BlockPos pos) {
 		BlockState current = level.getBlockState(pos);
 		if (!(current.getBlock() instanceof BlockViaduct))

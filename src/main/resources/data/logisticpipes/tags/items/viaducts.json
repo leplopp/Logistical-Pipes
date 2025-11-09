@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "logisticpipes:viaduct",
+    "logisticpipes:viaduct_detector",
+    "logisticpipes:viaduct_speed",
+    "logisticpipes:viaduct_linker"
+  ]
+}

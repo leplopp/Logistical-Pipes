@@ -1,16 +1,3 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    " R ",
-    "RVR",
-    " R "
-  ],
-  "key": {
-    "R": { "item": "minecraft:redstone" },
-    "V": { "item": "logisticpipes:viaduct" }
-  },
-  "result": {
-    "id": "logisticpipes:viaduct_detector",
-    "count": 1
-  }
+  "type": "logisticpipes:colored_viadcut_detector"
 }

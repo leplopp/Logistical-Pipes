@@ -3,7 +3,6 @@ package plopp.pipecraft.Blocks.Pipes.Viaduct;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -26,20 +25,24 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import plopp.pipecraft.Network.data.ViaductTeleporterWorldData;
+import plopp.pipecraft.Network.teleporter.TeleporterEntryRecord;
 import plopp.pipecraft.Network.teleporter.ViaductTeleporterIdRegistry;
-import plopp.pipecraft.Network.teleporter.ViaductTeleporterManager;
 import plopp.pipecraft.logic.Connectable;
-import plopp.pipecraft.logic.ViaductTravel;
+import plopp.pipecraft.logic.DimBlockPos;
+import plopp.pipecraft.logic.Manager.ViaductTeleporterManager;
+import plopp.pipecraft.logic.Travel.TravelData;
+import plopp.pipecraft.logic.Travel.TravelSaveState;
+import plopp.pipecraft.logic.Travel.TravelStop;
+import plopp.pipecraft.logic.Travel.ViaductTravel;
 
 public class BlockViaductTeleporter extends Block implements EntityBlock, Connectable {
-
 	public static final EnumProperty<Direction> FACING = BlockStateProperties.FACING;
 
 	public BlockViaductTeleporter(Properties properties) {
@@ -122,72 +125,113 @@ public class BlockViaductTeleporter extends Block implements EntityBlock, Connec
 
 	@Override
 	public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
-		if (placer instanceof ServerPlayer serverPlayer && level instanceof ServerLevel serverLevel) {
-			BlockEntity blockEntity = level.getBlockEntity(pos);
-			if (blockEntity instanceof BlockEntityViaductTeleporter teleporter) {
-				UUID ownerUUID = serverPlayer.getUUID();
-				teleporter.setOwnerUUID(ownerUUID);
+	    if (placer instanceof ServerPlayer serverPlayer && level instanceof ServerLevel serverLevel) {
+	        BlockEntity blockEntity = level.getBlockEntity(pos);
+	        if (blockEntity instanceof BlockEntityViaductTeleporter teleporter) {
+	            UUID ownerUUID = serverPlayer.getUUID();
+	            teleporter.setOwnerUUID(ownerUUID);
 
-				ViaductTeleporterManager.updateEntry(pos, teleporter.getStartEntry(), teleporter.getGoalEntry(),
-						ownerUUID);
-				ViaductTeleporterWorldData.get(serverLevel).setTeleporters(ViaductTeleporterManager.getAll());
-			}
-		}
+	            DimBlockPos dimPos = new DimBlockPos(serverLevel.dimension(), pos);
+	            TeleporterEntryRecord entry = new TeleporterEntryRecord(
+	                dimPos,
+	                teleporter.getStartEntry(),
+	                teleporter.getGoalEntry(),
+	                ownerUUID
+	            );
+
+	            ViaductTeleporterManager.setTeleport(serverLevel, dimPos, entry);
+	        }
+	    }
 	}
 
 	@Override
 	public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-		if (!state.is(newState.getBlock())) {
-			BlockEntity blockEntity = level.getBlockEntity(pos);
-			if (blockEntity instanceof BlockEntityViaductTeleporter teleporter
-					&& level instanceof ServerLevel serverLevel) {
-				String generatedId = BlockEntityViaductTeleporter.generateItemId(teleporter.getDisplayedItem());
-				if (!generatedId.isEmpty()) {
-					ViaductTeleporterIdRegistry.unregisterTeleporter(generatedId);
-				}
-				ViaductTeleporterManager.removeEntry(serverLevel, pos);
-			}
-			super.onRemove(state, level, pos, newState, isMoving);
+	    if (!state.is(newState.getBlock())) {
+	        BlockEntity blockEntity = level.getBlockEntity(pos);
+	        if (blockEntity instanceof BlockEntityViaductTeleporter teleporter
+	                && level instanceof ServerLevel serverLevel) {
 
-		}
+	            String targetId = teleporter.getTargetId();
+	            if (!targetId.isEmpty()) {
+	                ViaductTeleporterIdRegistry.unregisterTeleporter(targetId);
+	            }
+
+	            DimBlockPos dimPos = new DimBlockPos(serverLevel.dimension(), pos);
+	            ViaductTeleporterManager.removeTeleport(serverLevel, dimPos);
+	        }
+	        super.onRemove(state, level, pos, newState, isMoving);
+	    }
 	}
+/*
+	@Override
+	public void playerDestroy(Level world, Player player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack tool) {
+	    ItemStack stack = new ItemStack(this.asItem());
 
+	    if (state.hasProperty(BlockViaductTeleporter.COLOR)) {
+	        DyedViaductItem.setColor(stack, state.getValue(BlockViaductTeleporter.COLOR));
+	    }
+	    popResource(world, pos, stack); 
+	}*/
+	
 	@Override
 	public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
-		if (context instanceof EntityCollisionContext entityContext) {
-			Entity entity = entityContext.getEntity();
-			if (entity instanceof Player player) {
-				if (ViaductTravel.isTravelActive(player)) {
-					return Shapes.empty();
-				}
-			}
-		}
+	    if (context instanceof EntityCollisionContext entityContext) {
+	        Entity entity = entityContext.getEntity();
+	        if (entity instanceof Player player) {
+	            if (ViaductTravel.isTravelActive(player)) {
+	                return Shapes.empty();
+	            }
+	        }
+	    }
 
-		Direction facing = state.getValue(FACING);
+	    Direction facing = state.getValue(FACING);
+	    VoxelShape finalShape;
 
-		VoxelShape northArm = box(4, 0, 0, 12, 16, 16);
-		VoxelShape westArm = box(0, 4, 0, 16, 12, 16);
-		VoxelShape defaultShape = Shapes.or(northArm, westArm);
+	    switch (facing) {
+	        case DOWN -> {
+	            VoxelShape upArm = box(4, 12, 4, 12, 16, 12);
+	            VoxelShape northArm = box(4, 0, 0, 12, 12, 16);
+	            VoxelShape westArm = box(0, 0, 4, 16, 12, 12);
+	            finalShape = Shapes.or(northArm, westArm, upArm);
+	        }
+	        case UP -> {
+	            VoxelShape downArm = box(4, 0, 4, 12, 4, 12);
+	            VoxelShape northArm = box(4, 4, 0, 12, 16, 16);
+	            VoxelShape westArm = box(0, 4, 4, 16, 16, 12);
+	            finalShape = Shapes.or(northArm, westArm, downArm);
+	        }
+	        case NORTH -> {
+	            VoxelShape northArm = box(0, 4, 0, 16, 12, 12);
+	            VoxelShape westArm = box(4, 0, 0, 12, 16, 12);
+	            VoxelShape southArm = box(4, 4, 12, 12, 12, 16);
+	            finalShape = Shapes.or(northArm, westArm, southArm);
+	        }
+	        case SOUTH -> {
+	            VoxelShape northArm = box(4, 4, 0, 12, 12, 4);
+	            VoxelShape westArm = box(4, 0, 4, 12, 16, 16);
+	            VoxelShape southArm = box(0, 4, 4, 16, 12, 16);
+	            finalShape = Shapes.or(northArm, westArm, southArm);
+	        }
+	        case EAST -> {
+	            VoxelShape northArm = box(4, 4, 0, 16, 12, 16);
+	            VoxelShape westArm = box(0, 4, 4, 4, 12, 12);
+	            VoxelShape southArm = box(4, 0, 4, 16, 16, 12);
+	            finalShape = Shapes.or(northArm, westArm, southArm);
+	        }
+	        case WEST -> {
+	            VoxelShape eastArm = box(12, 4, 4, 16, 12, 12);
+	            VoxelShape westArm = box(0, 4, 0, 12, 12, 16);
+	            VoxelShape southArm = box(0, 0, 4, 12, 16, 12);
+	            finalShape = Shapes.or(eastArm, westArm, southArm);
+	        }
+	        default -> {
+	            VoxelShape northArm = box(4, 0, 0, 12, 16, 16);
+	            VoxelShape westArm = box(0, 4, 0, 16, 12, 16);
+	            finalShape = Shapes.or(northArm, westArm);
+	        }
+	    }
 
-		return rotateShape(defaultShape, facing);
-	}
-
-	private static VoxelShape rotateShape(VoxelShape shape, Direction direction) {
-		VoxelShape[] buffer = new VoxelShape[] { shape, Shapes.empty() };
-
-		for (AABB box : shape.toAabbs()) {
-			AABB rotated = switch (direction) {
-			case NORTH -> new AABB(1 - box.maxX, box.minY, 1 - box.maxZ, 1 - box.minX, box.maxY, 1 - box.minZ);
-			case EAST -> new AABB(1 - box.maxZ, box.minY, box.minX, 1 - box.minZ, box.maxY, box.maxX);
-			case WEST -> new AABB(box.minZ, box.minY, 1 - box.maxX, box.maxZ, box.maxY, 1 - box.minX);
-			case UP -> new AABB(box.minX, box.minZ, 1 - box.maxY, box.maxX, box.maxZ, 1 - box.minY);
-			case DOWN -> new AABB(box.minX, 1 - box.maxZ, box.minY, box.maxX, 1 - box.minZ, box.maxY);
-			default -> box;
-			};
-			buffer[1] = Shapes.or(buffer[1], Shapes.create(rotated));
-		}
-
-		return buffer[1];
+	    return finalShape;
 	}
 	
 	@Override
@@ -197,29 +241,12 @@ public class BlockViaductTeleporter extends Block implements EntityBlock, Connec
 	    if (level.isClientSide()) return;
 	    if (!(entity instanceof ServerPlayer player)) return;
 	    if (!player.isShiftKeyDown()) return;
-	    
+
 	    System.out.println("[Teleporter] Spieler erkannt: " + player.getName().getString());
 
 	    BlockEntity be = level.getBlockEntity(pos);
 	    if (!(be instanceof BlockEntityViaductTeleporter teleporter)) {
 	        System.out.println("[Teleporter] -> Abbruch: Kein BlockEntityViaductTeleporter gefunden");
-	        return;
-	    }
-
-	    BlockPos targetPos = teleporter.getTargetPosition();
-	    System.out.println("[Teleporter] Zielposition: " + targetPos);
-
-	    if (targetPos == null || targetPos.equals(BlockPos.ZERO)) {
-	        System.out.println("[Teleporter] -> Abbruch: Zielposition ist null oder ZERO");
-	        return;
-	    }
-
-	    ResourceKey<Level> targetDim = teleporter.getTargetDimension();
-	    System.out.println("[Teleporter] Zieldimension: " + targetDim.location());
-
-	    ServerLevel targetLevel = player.server.getLevel(teleporter.getTargetDimension());
-	    if (targetLevel == null) {
-	        System.out.println("[Teleporter] -> Abbruch: Ziel-Dimension nicht gefunden auf Server");
 	        return;
 	    }
 
@@ -231,27 +258,96 @@ public class BlockViaductTeleporter extends Block implements EntityBlock, Connec
 	    player.getPersistentData().putBoolean("pipecraft_teleporting", true);
 	    System.out.println("[Teleporter] Teleport-Flag gesetzt, beginne Teleport...");
 
-	    player.teleportTo(
-	        targetLevel,
-	        targetPos.getX() + 0.5,
-	        targetPos.getY() + 1.0,
-	        targetPos.getZ() + 0.5,
-	        player.getYRot(),
-	        player.getXRot()
-	    );
-
-	    System.out.println("[Teleporter] Spieler teleportiert nach " + targetDim.location() + " @ " + targetPos);
+	    teleportPlayer(player, teleporter);
 
 	    level.playSound(null, pos, SoundEvents.ENDERMAN_TELEPORT, SoundSource.BLOCKS, 1.0f, 1.0f);
-	    targetLevel.playSound(null, targetPos, SoundEvents.ENDERMAN_TELEPORT, SoundSource.BLOCKS, 1.0f, 1.0f);
-
 	    level.getServer().execute(() -> {
-	        try {
-	            Thread.sleep(100);
-	        } catch (InterruptedException ignored) {}
 	        player.getPersistentData().putBoolean("pipecraft_teleporting", false);
 	        System.out.println("[Teleporter] Teleport-Flag zurückgesetzt für Spieler " + player.getName().getString());
 	    });
+	}
+	
+	public void trigger(Level level, BlockPos linkerPos) {
+	    if (level.isClientSide()) return;
+
+	    for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
+	        TravelData data = ViaductTravel.getTravelData(player);
+	        if (data == null) continue;
+
+	        if (!data.path.contains(new DimBlockPos(level.dimension(), linkerPos))) continue;
+
+	        TravelStop.pauseAndHold(player);
+	        data.allowTeleportWhilePaused = true; 
+
+	        BlockEntity be = level.getBlockEntity(linkerPos);
+	        if (be instanceof BlockEntityViaductTeleporter teleporter) {
+	            teleportPlayer(player, teleporter);
+	        } 
+	    }
+	}
+
+	private void teleportPlayer(ServerPlayer player, BlockEntityViaductTeleporter startTeleporter) {
+	    TravelData data = ViaductTravel.getTravelData(player);
+	    if (data == null) return;
+	    DimBlockPos targetDimPos = new DimBlockPos(
+	        startTeleporter.getTargetDimension(),
+	        startTeleporter.getTargetPosition()
+	    );
+
+	    if (targetDimPos.getPos() == null || targetDimPos.getPos().equals(BlockPos.ZERO)) {
+	        return;
+	    }
+
+	    ServerLevel targetLevel = player.server.getLevel(targetDimPos.getDimension());
+	    if (targetLevel == null) {
+	        return;
+	    }
+
+	    Vec3 teleportPos = new Vec3(
+	        targetDimPos.getPos().getX() + 0.5,
+	        targetDimPos.getPos().getY() + 1.0,
+	        targetDimPos.getPos().getZ() + 0.5
+	    );
+
+	    targetLevel.getChunk(targetDimPos.getPos());
+
+	    TravelStop.pauseAndHold(player);
+
+	    if (player.level() != targetLevel) {
+
+	        DimensionTransition transition = new DimensionTransition(
+	            targetLevel,
+	            teleportPos,
+	            Vec3.ZERO,
+	            player.getYRot(),
+	            player.getXRot(),
+	            false,
+	            entity -> {
+	                if (entity instanceof ServerPlayer sp) {
+	                    sp.teleportTo(teleportPos.x, teleportPos.y, teleportPos.z);
+
+	                    TravelData d = ViaductTravel.getTravelData(sp);
+	                    if (d != null) d.allowTeleportWhilePaused = false;
+	                }
+	            }
+	        );
+	        player.changeDimension(transition);
+	    } else {
+
+	        player.connection.teleport(
+	            teleportPos.x,
+	            teleportPos.y,
+	            teleportPos.z,
+	            player.getYRot(),
+	            player.getXRot()
+	        );
+
+	        TravelData d = ViaductTravel.getTravelData(player);
+	        if (d != null) d.allowTeleportWhilePaused = false;
+	    }
+
+	    TravelSaveState.resume(player);
+	    data.triggeredTeleporters.clear();
 	}
 	
 	@Override

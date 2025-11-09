@@ -2,7 +2,6 @@ package plopp.pipecraft.Blocks.Pipes.Viaduct;
 
 import java.lang.reflect.Method;
 import java.util.UUID;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Registry;
@@ -26,10 +25,12 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import plopp.pipecraft.PipeCraftIndex;
 import plopp.pipecraft.Blocks.BlockEntityRegister;
-import plopp.pipecraft.Network.data.DataEntryRecord;
+import plopp.pipecraft.Network.data.DataEntryRecordTeleport;
+import plopp.pipecraft.Network.data.ViaductTeleporterWorldData;
 import plopp.pipecraft.Network.teleporter.TeleporterEntryRecord;
 import plopp.pipecraft.Network.teleporter.ViaductTeleporterIdRegistry;
 import plopp.pipecraft.gui.teleporter.ViaductTeleporterMenu;
+import plopp.pipecraft.logic.DimBlockPos;
 
 public class BlockEntityViaductTeleporter extends BlockEntity implements MenuProvider {
 
@@ -131,51 +132,44 @@ public class BlockEntityViaductTeleporter extends BlockEntity implements MenuPro
 		return displayedItem != null ? displayedItem : ItemStack.EMPTY;
 	}
 
-	@Override
-	public void setRemoved() {
-	    if (!this.targetId.isEmpty()) {
-	        ViaductTeleporterIdRegistry.unregisterTeleporter(this.targetId);
-	        System.out.println("[Teleporter] Entfernt aus Registry: " + this.targetId);
-	    }
-	    super.setRemoved();
-	}
-	
 	public ItemStack getTargetDisplayedItem() {
 		return targetDisplayedItem != null ? targetDisplayedItem : ItemStack.EMPTY;
 	}
 
 	public void setTargetDisplayedItem(ItemStack stack) {
-	    this.targetDisplayedItem = stack.copy();
-	    setChanged();
+		this.targetDisplayedItem = stack.copy();
+		setChanged();
 
-	    if (level instanceof ServerLevel serverLevel) {
-	        serverLevel.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+		if (level instanceof ServerLevel serverLevel) {
+			serverLevel.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
 
-	        // --- Ziel-Teleporter suchen ---
-	        String targetKey = BlockEntityViaductTeleporter.generateItemId(stack);
-	        BlockPos foundPos = ViaductTeleporterIdRegistry.getPositionForId(targetKey);
-	        if (foundPos != null) {
-	            this.targetPosition = foundPos;
-	            this.targetDimension = serverLevel.dimension(); // falls Dimension in Registry: ersetzen
-	            PipeCraftIndex.LOGGER.info("[Teleporter] Ziel für '{}' gefunden: {}", targetKey, foundPos);
-	        } else {
-	            this.targetPosition = BlockPos.ZERO;
-	            PipeCraftIndex.LOGGER.warn("[Teleporter] Kein Ziel-Teleporter für '{}' gefunden!", targetKey);
-	        }
-	    }
+			String targetKey = BlockEntityViaductTeleporter.generateItemId(stack);
+			DimBlockPos foundTarget = ViaductTeleporterIdRegistry.getDimPosForId(targetKey);
+			if (foundTarget != null) {
+				this.targetPosition = foundTarget.getPos();
+				this.targetDimension = foundTarget.getDimension();
+				PipeCraftIndex.LOGGER.info("[Teleporter] Ziel für '{}' gefunden: {}", targetKey, foundTarget);
+			} else {
+				this.targetPosition = BlockPos.ZERO;
+				this.targetDimension = Level.OVERWORLD;
+				PipeCraftIndex.LOGGER.warn("[Teleporter] Kein Ziel-Teleporter für '{}' gefunden!", targetKey);
+			}
+		}
 	}
 
 	public static String generateItemId(ItemStack stack) {
-	    if (stack.isEmpty()) return "";
-	    String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-	    int damage = stack.getDamageValue();
-	    CompoundTag tag = null;
-	    try {
-	        Method method = ItemStack.class.getDeclaredMethod("getTag");
-	        tag = (CompoundTag) method.invoke(stack);
-	    } catch (Exception ignored) {}
-	    String tagString = (tag != null) ? tag.toString() : "";
-	    return itemId + "#" + damage + "#" + tagString;
+		if (stack.isEmpty())
+			return "";
+		String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+		int damage = stack.getDamageValue();
+		CompoundTag tag = null;
+		try {
+			Method method = ItemStack.class.getDeclaredMethod("getTag");
+			tag = (CompoundTag) method.invoke(stack);
+		} catch (Exception ignored) {
+		}
+		String tagString = (tag != null) ? tag.toString() : "";
+		return itemId + "#" + damage + "#" + tagString;
 	}
 
 	public void setDisplayedItem(ItemStack stack) {
@@ -184,17 +178,13 @@ public class BlockEntityViaductTeleporter extends BlockEntity implements MenuPro
 	        return;
 	    }
 
-	    String newId = generateItemId(stack);
-
-	    // ✅ bereits bekanntes Item? Kein erneutes Registrieren
-	    if (newId.equals(this.targetId)) {
-	        this.displayedItem = stack.copy();
-	        return;
-	    }
-
-	    // ✅ erst alte ID deregistrieren (z. B. beim Austausch)
 	    if (!this.targetId.isEmpty()) {
 	        ViaductTeleporterIdRegistry.unregisterTeleporter(this.targetId);
+
+	        if (level instanceof ServerLevel serverLevel) {
+	            ViaductTeleporterWorldData worldData = ViaductTeleporterWorldData.get(serverLevel);
+	            worldData.removeEntry(new DimBlockPos(level.dimension(), worldPosition));
+	        }
 	    }
 
 	    if (!stack.isEmpty()) {
@@ -205,20 +195,18 @@ public class BlockEntityViaductTeleporter extends BlockEntity implements MenuPro
 	            return;
 	        }
 
-	        // ✅ korrektes Registrieren
-	        TeleporterEntryRecord record = new TeleporterEntryRecord(worldPosition, getStartEntry(), getGoalEntry(), ownerUUID);
+	        TeleporterEntryRecord record = new TeleporterEntryRecord(
+	            new DimBlockPos(level.dimension(), worldPosition),
+	            getStartEntry(),
+	            getGoalEntry(),
+	            ownerUUID
+	        );
 	        ViaductTeleporterIdRegistry.registerTeleporter(newId1, record);
+	        
 	        this.targetId = newId1;
-	        PipeCraftIndex.LOGGER.info("[Teleporter] Registriert '{}' @ {}", newId1, worldPosition);
-
-	        // ✅ direkt nach Ziel suchen
-	        TeleporterEntryRecord targetRecord = ViaductTeleporterIdRegistry.getRecordById(newId1);
-	        if (targetRecord != null) {
-	            this.targetPosition = targetRecord.pos();
-	            PipeCraftIndex.LOGGER.info("[Teleporter] Ziel für '{}' gefunden: {}", newId1, targetPosition);
-	        } else {
-	            this.targetPosition = BlockPos.ZERO;
-	            PipeCraftIndex.LOGGER.warn("[Teleporter] Kein Ziel-Teleporter für '{}' gefunden!", newId1);
+	        if (level instanceof ServerLevel serverLevel) {
+	            ViaductTeleporterWorldData worldData = ViaductTeleporterWorldData.get(serverLevel);
+	            worldData.setEntry(new DimBlockPos(level.dimension(), worldPosition), record); 
 	        }
 	    }
 
@@ -233,6 +221,18 @@ public class BlockEntityViaductTeleporter extends BlockEntity implements MenuPro
 	@Override
 	public Component getDisplayName() {
 		return Component.translatable("screen.pipecraft.viaduct_teleporter");
+	}
+
+	public DimBlockPos getTarget() {
+	    if (targetPosition == BlockPos.ZERO && !targetDisplayedItem.isEmpty()) {
+	        String targetKey = generateItemId(targetDisplayedItem);
+	        DimBlockPos foundTarget = ViaductTeleporterIdRegistry.getDimPosForId(targetKey);
+	        if (foundTarget != null) {
+	            this.targetPosition = foundTarget.getPos();
+	            this.targetDimension = foundTarget.getDimension();
+	        }
+	    }
+	    return new DimBlockPos(targetDimension, targetPosition);
 	}
 
 	@Override
@@ -337,12 +337,13 @@ public class BlockEntityViaductTeleporter extends BlockEntity implements MenuPro
 		}
 	}
 
-	public DataEntryRecord getStartEntry() {
-		return new DataEntryRecord(getBlockPos(), startName, displayedItem);
+	public DataEntryRecordTeleport getStartEntry() {
+		return new DataEntryRecordTeleport(new DimBlockPos(level.dimension(), worldPosition), startName, displayedItem);
 	}
 
-	public DataEntryRecord getGoalEntry() {
-		return new DataEntryRecord(getBlockPos(), targetName, targetDisplayedItem);
+	public DataEntryRecordTeleport getGoalEntry() {
+		return new DataEntryRecordTeleport(new DimBlockPos(level.dimension(), worldPosition), targetName,
+				targetDisplayedItem);
 	}
 
 	public UUID getOwnerUUID() {

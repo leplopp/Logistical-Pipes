@@ -1,10 +1,11 @@
-package plopp.pipecraft.logic;
+package plopp.pipecraft.logic.Manager;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import plopp.pipecraft.Config;
+import plopp.pipecraft.logic.SpeedLevel;
 
 public class SpeedManager {
 

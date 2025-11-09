@@ -1,13 +1,6 @@
 package plopp.pipecraft.Blocks;
 
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
-import net.minecraft.ChatFormatting;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.Item;
-import java.util.List;
 import com.google.common.base.Supplier;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
@@ -15,6 +8,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.registries.DeferredBlock;
+import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import plopp.pipecraft.PipeConfig;
 import plopp.pipecraft.PipeCraftIndex;
@@ -26,6 +20,7 @@ import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductDetector;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductTeleporter;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.Item.DyedViaductItem;
 
 public class BlockRegister {
 	
@@ -35,10 +30,14 @@ public class BlockRegister {
     public static final DeferredBlock<Block> VIADUCTLINKER = registerBlock("viaduct_linker",
             () -> new BlockViaductLinker(BlockBehaviour.Properties.of()
                     .strength(0.5f).explosionResistance(1.0f).sound(SoundType.GLASS)));
+    public static final DeferredItem<DyedViaductItem> DYED_VIADUCT_CONNECTOR  =
+    	    ITEMS.register("viaduct_linker", () -> new DyedViaductItem(VIADUCTLINKER.get(), VIADUCTLINKER.getRegisteredName(), new Item.Properties()));
 
     public static final DeferredBlock<Block> VIADUCT = registerBlock("viaduct",
             () -> new BlockViaduct(BlockBehaviour.Properties.of()
             		.strength(0.5f).explosionResistance(1.0f).sound(SoundType.GLASS)));
+    public static final DeferredItem<DyedViaductItem> DYED_VIADUCT =
+    	    ITEMS.register("viaduct", () -> new DyedViaductItem(VIADUCT.get(), VIADUCT.getRegisteredName(), new Item.Properties()));
     
     public static final DeferredBlock<Block> VIADUCTFACADE = registerBlock("viaduct_facade",
             () -> new BlockViaductFacade(BlockBehaviour.Properties.of()
@@ -47,10 +46,14 @@ public class BlockRegister {
     public static final DeferredBlock<Block> VIADUCTDETECTOR = registerBlock("viaduct_detector",
             () -> new BlockViaductDetector(BlockBehaviour.Properties.of()
             		.strength(1f).explosionResistance(1.0f).sound(SoundType.GLASS)));
+    public static final DeferredItem<DyedViaductItem> DYED_VIADUCT_DETECTOR =
+    	    ITEMS.register("viaduct_detector", () -> new DyedViaductItem(VIADUCTDETECTOR.get(), VIADUCTDETECTOR.getRegisteredName(), new Item.Properties()));
     
     public static final DeferredBlock<Block> VIADUCTSPEED = registerBlock("viaduct_speed",
             () -> new BlockViaductSpeed(BlockBehaviour.Properties.of()
             		.strength(1f).explosionResistance(1.5f).sound(SoundType.GLASS)));
+    public static final DeferredItem<DyedViaductItem> DYED_VIADUCT_SPEED =
+    	    ITEMS.register("viaduct_speed", () -> new DyedViaductItem(VIADUCTSPEED.get(), VIADUCTSPEED.getRegisteredName(), new Item.Properties()));
     
     public static final DeferredBlock<Block> VIADUCTTELEPORTER = registerBlock("viaduct_teleporter",
             () -> new BlockViaductTeleporter(BlockBehaviour.Properties.of()
@@ -71,22 +74,12 @@ public class BlockRegister {
     }
 
     private static <B extends Block> void registerBlockItem(String name, DeferredBlock<B> block) {
-        if (name.startsWith("viaduct") || name.startsWith("pipe") ) {
-            ITEMS.register(name, () -> new BlockItem(block.get(), new Item.Properties()) {
-                @Override
-                public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-                    if (Screen.hasShiftDown()) {
-                        tooltip.add(Component.translatable("tooltip." + name + ".desc").withStyle(ChatFormatting.AQUA));
-                        tooltip.add(Component.translatable("tooltip." + name + ".usage").withStyle(ChatFormatting.WHITE));
-                    } else {
-                        tooltip.add(Component.translatable("tooltip.hold_shift").withStyle(ChatFormatting.YELLOW));
-                    }
-                }
-            });
+    	 if (name.equals("viaduct") || name.equals("viaduct_linker") || name.equals("viaduct_speed") || name.equals("viaduct_detector")) return;
+        if (name.startsWith("viaduct") || name.startsWith("pipe")) {
+            ITEMS.register(name, () -> new DyedViaductItem(block.get(), name, new Item.Properties()));
         } else {
             ITEMS.registerSimpleBlockItem(name, block, new Item.Properties());
         }
-  
     }
     
 	 public static void register(IEventBus bus) {

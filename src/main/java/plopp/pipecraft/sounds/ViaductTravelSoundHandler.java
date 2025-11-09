@@ -11,7 +11,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import plopp.pipecraft.ClientConfig;
 import plopp.pipecraft.PipeCraftIndex;
-import plopp.pipecraft.Network.travel.ClientTravelDataManager;
+import plopp.pipecraft.logic.Manager.ClientTravelDataManager;
 
 @EventBusSubscriber(modid = PipeCraftIndex.MODID, value = Dist.CLIENT)
 public class ViaductTravelSoundHandler {

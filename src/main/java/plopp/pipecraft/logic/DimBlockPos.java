@@ -1,7 +1,6 @@
 package plopp.pipecraft.logic;
 
 import java.util.Objects;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;

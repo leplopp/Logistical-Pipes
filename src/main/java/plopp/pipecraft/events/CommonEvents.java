@@ -38,6 +38,7 @@ import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
@@ -60,10 +61,13 @@ import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductDetector;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductLinker;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
 import plopp.pipecraft.Network.data.ViaductTravelWorldData;
-import plopp.pipecraft.logic.FacadeOverlayManager;
-import plopp.pipecraft.logic.ViaductTravel;
+import plopp.pipecraft.logic.Manager.FacadeOverlayManager;
+import plopp.pipecraft.logic.Travel.TravelSaveState;
+import plopp.pipecraft.logic.Travel.TravelStop;
+import plopp.pipecraft.logic.Travel.ViaductTravel;
 import plopp.pipecraft.logic.pipe.PipeTravel;
-import plopp.pipecraft.util.ViaductCommand;
+import plopp.pipecraft.util.Commands.DebugTravelCommand;
+import plopp.pipecraft.util.Commands.ViaductTravelCommand;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -89,25 +93,26 @@ public class CommonEvents {
 
 	@SubscribeEvent
 	public static void onRegisterCommands(RegisterCommandsEvent event) {
-		ViaductCommand.register(event.getDispatcher());
+		//ViaductCommand.register(event.getDispatcher());
+        ViaductTravelCommand.register(event);
+        NeoForge.EVENT_BUS.addListener(DebugTravelCommand::register);
 	}
 
 	@SubscribeEvent
 	public static void onPlayerTick(PlayerTickEvent.Post event) {
-		Player player = event.getEntity();
-		if (!(player instanceof ServerPlayer serverPlayer))
-			return;
+	    Player player = event.getEntity();
+	    if (!(player instanceof ServerPlayer serverPlayer))
+	        return;
 
-		if (serverPlayer.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
-			if (ViaductTravel.isTravelActive(player)) {
-				ViaductTravel.stop(player, false);
+	    if (serverPlayer.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
+	        if (ViaductTravel.isTravelActive(serverPlayer)) {
+	            TravelStop.stop(serverPlayer, false);
+	        }
+	        return;
+	    }
 
-			}
-			return;
-		}
-
-		ViaductTravel.tick(player);
-
+	    ViaductTravel.tick(serverPlayer);
+		  
 		UUID uuid = serverPlayer.getUUID();
 		if (!brushingPlayers.containsKey(uuid))
 			return;
@@ -157,7 +162,6 @@ public class CommonEvents {
 
 		serverPlayer.displayClientMessage(Component.translatable("viaduct.lightlevel.brush"), true);
 		brushingPlayers.remove(uuid);
-
 	}
 
 	@SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
@@ -468,7 +472,7 @@ public class CommonEvents {
 
 		if (data.hasTravel(player.getUUID())) {
 			CompoundTag tag = data.getTravel(player.getUUID());
-			ViaductTravel.resumeFromTag(player, tag);
+			TravelSaveState.resumeFromTag(player, tag);
 			data.removeTravel(player.getUUID());
 		}
 	}
@@ -483,7 +487,7 @@ public class CommonEvents {
 		ServerLevel level = player.serverLevel();
 		ViaductTravelWorldData data = ViaductTravelWorldData.get(level);
 
-		CompoundTag travelTag = ViaductTravel.saveToTag(player);
+		CompoundTag travelTag = TravelSaveState.saveToTag(player);
 		data.setTravel(player.getUUID(), travelTag);
 
 		player.setInvulnerable(false);
@@ -528,7 +532,7 @@ public class CommonEvents {
 		Player player = event.getEntity();
 
 		if (event.getNewGameMode() == GameType.SPECTATOR) {
-			ViaductTravel.stop(player, false);
+			TravelStop.stop(player, false);
 		}
 	}
 

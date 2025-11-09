@@ -11,7 +11,7 @@ import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import plopp.pipecraft.PipeCraftIndex;
 import plopp.pipecraft.Network.NetworkHandler;
-import plopp.pipecraft.logic.ViaductTravel;
+import plopp.pipecraft.logic.Travel.TravelStart;
 
 public record PacketTravelStart(BlockPos startPos, BlockPos targetPos) implements CustomPacketPayload {
 	public static final CustomPacketPayload.Type<PacketTravelStart> TYPE = new CustomPacketPayload.Type<>(
@@ -34,7 +34,7 @@ public record PacketTravelStart(BlockPos startPos, BlockPos targetPos) implement
 			return;
 
 		serverPlayer.level().getServer().execute(() -> {
-			ViaductTravel.start(serverPlayer, packet.startPos(), packet.targetPos(), 32);
+			TravelStart.start(serverPlayer, packet.startPos(), packet.targetPos(), 32);
 			NetworkHandler.sendTravelStateToAll(serverPlayer, false);
 			serverPlayer.displayClientMessage(Component.translatable("viaduct.travel.start"), true);
 		});

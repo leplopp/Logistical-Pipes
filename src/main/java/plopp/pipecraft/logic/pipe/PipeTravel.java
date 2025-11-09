@@ -26,28 +26,35 @@ public class PipeTravel {
 	public static final List<TravellingItem> activeItems = new ArrayList<>();
 
 	public static void tick(Level level) {
-	    if (activeItems.isEmpty()) return;
+	    if (level == null || activeItems.isEmpty()) return;
 
 	    List<TravellingItem> toRemove = new ArrayList<>();
 	    boolean isServer = level instanceof ServerLevel;
 	    ServerLevel serverLevel = isServer ? (ServerLevel) level : null;
 
 	    for (TravellingItem item : List.copyOf(activeItems)) {
+	        if (item == null) continue;
+	        if (item.level == null) { 
+	            toRemove.add(item);
+	            continue;
+	        }
+
 	        if (isServer) {
 	            item.tick(serverLevel);
-
 	            if (item.isFinished()) {
 	                toRemove.add(item);
-
 	                TravellingItemRemovePacket removePkt = new TravellingItemRemovePacket(item.id);
-	                for (ServerPlayer p : serverLevel.players()) {NetworkHandler.sendToClient(p, removePkt);
-                    }
-	                continue; 
+	                for (ServerPlayer p : serverLevel.players()) {
+	                    NetworkHandler.sendToClient(p, removePkt);
+	                }
+	                continue;
 	            }
-	            
+
 	            if (!serverLevel.getServer().isDedicatedServer()) continue;
-	                TravellingItemSyncPacket pkt = new TravellingItemSyncPacket(item);
-	                for (ServerPlayer p : serverLevel.players()) {NetworkHandler.sendToClient(p, pkt);     
+
+	            TravellingItemSyncPacket pkt = new TravellingItemSyncPacket(item);
+	            for (ServerPlayer p : serverLevel.players()) {
+	                NetworkHandler.sendToClient(p, pkt);
 	            }
 	        } else {
 	            item.clientTick(level);
@@ -61,7 +68,6 @@ public class PipeTravel {
 	    }
 	}
 
-	
     public static void insertItem(ItemStack stack, BlockPos startContainer, Direction side, ServerLevel level, PipeConfig config) {
         TravellingItem item = new TravellingItem(stack, startContainer, side, config, level);
         item.fromContainer = true; 

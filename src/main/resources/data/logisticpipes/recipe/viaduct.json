@@ -1,16 +1,3 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "IGI",
-    "GIG",
-    "IGI"
-  ],
-  "key": {
-    "I": { "item": "minecraft:iron_ingot" },
-    "G": { "tag": "c:glass_panes" }
-  },
-  "result": {
-    "id": "logisticpipes:viaduct",
-    "count": 4
-  }
+  "type": "logisticpipes:dyed_viaduct"
 }

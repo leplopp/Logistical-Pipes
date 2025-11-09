@@ -3,6 +3,7 @@ package plopp.pipecraft.gui.teleporter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
@@ -13,10 +14,12 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductTeleporter;
-import plopp.pipecraft.Network.data.DataEntryRecord;
+import plopp.pipecraft.Network.data.DataEntryRecordTeleport;
 import plopp.pipecraft.Network.teleporter.PacketUpdateTeleporterToggle;
-import plopp.pipecraft.Network.teleporter.ViaductTeleporterManager;
+import plopp.pipecraft.Network.teleporter.TeleporterEntryRecord;
 import plopp.pipecraft.gui.MenuTypeRegister;
+import plopp.pipecraft.logic.DimBlockPos;
+import plopp.pipecraft.logic.Manager.ViaductTeleporterManager;
 
 public class ViaductTeleporterMenu extends AbstractContainerMenu {
 
@@ -58,7 +61,6 @@ public class ViaductTeleporterMenu extends AbstractContainerMenu {
         this.addSlot(new PhantomSlot(39, 47, true));
         this.addSlot(new PhantomSlot(121, 47, false));
 
-        // Inventar Slots
         int startX = 8;
         int startY = 84;
         for (int row = 0; row < 3; row++) {
@@ -159,19 +161,15 @@ public class ViaductTeleporterMenu extends AbstractContainerMenu {
             saveChanges(); 
         }
 
-        if (player instanceof ServerPlayer) {
-            DataEntryRecord start = new DataEntryRecord(
-                blockPos,
-                this.startName,
-                this.startDisplayedItem
-            );
-            DataEntryRecord goal = new DataEntryRecord(
-                blockPos,
-                this.targetName,
-                this.targetDisplayedItem
-            );
+        if (player instanceof ServerPlayer serverPlayer && player.level() instanceof ServerLevel serverLevel) {
+            DimBlockPos dimPos = new DimBlockPos(serverLevel.dimension(), blockPos);
 
-            ViaductTeleporterManager.updateEntry(blockPos, start, goal, player.getUUID());
+            DataEntryRecordTeleport start = new DataEntryRecordTeleport(dimPos, this.startName, this.startDisplayedItem);
+            DataEntryRecordTeleport goal = new DataEntryRecordTeleport(dimPos, this.targetName, this.targetDisplayedItem);
+
+            TeleporterEntryRecord entry = new TeleporterEntryRecord(dimPos, start, goal, serverPlayer.getUUID());
+
+            ViaductTeleporterManager.setTeleport(serverLevel, dimPos, entry);
         }
     }
 

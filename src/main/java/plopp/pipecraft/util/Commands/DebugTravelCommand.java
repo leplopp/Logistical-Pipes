@@ -1,10 +1,10 @@
-package plopp.pipecraft.util;
+package plopp.pipecraft.util.Commands;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;
-
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import plopp.pipecraft.util.MapInspector;
 
 public class DebugTravelCommand {
 	

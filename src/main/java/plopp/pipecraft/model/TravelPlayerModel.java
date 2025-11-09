@@ -8,10 +8,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.player.AbstractClientPlayer;
-import plopp.pipecraft.Network.travel.ClientTravelDataManager;
 import plopp.pipecraft.Network.travel.TravelStatePacket;
-import plopp.pipecraft.logic.ViaductTravel;
-import plopp.pipecraft.logic.ViaductTravel.VerticalDirection;
+import plopp.pipecraft.logic.Manager.ClientTravelDataManager;
+import plopp.pipecraft.logic.Travel.ViaductTravel;
+import plopp.pipecraft.logic.Travel.ViaductTravel.VerticalDirection;
 
 public class TravelPlayerModel<T extends AbstractClientPlayer> extends PlayerModel<T> {
 	

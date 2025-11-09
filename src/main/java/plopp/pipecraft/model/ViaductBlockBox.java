@@ -29,7 +29,12 @@ public class ViaductBlockBox {
 
 		boolean noConnections = !(north || south || east || west || up || down);
 
-		boolean ConnectionCross = (north && south && east && west && up && down);
+		boolean onlyUp = down && !(north || south || east || west || up);
+		boolean onlyDown = up && !(north || south || east || west || down);
+		boolean onlyNorth = north && !(south || east || west || up || down);
+		boolean onlySouth = south && !(north || east || west || up || down);
+		boolean onlyEast = east && !(north || south || west || up || down);
+		boolean onlyWest = west && !(north || south || east || up || down);
 
 		boolean ConnectionsUpDown = (up && down) && !(north || south || east || west);
 		boolean ConnectionsWestEast = (east && west) && !(north || south || up || down);
@@ -48,12 +53,7 @@ public class ViaductBlockBox {
 		boolean ConnectionsSouthEast = (south && east) && !(down || north || west || up);
 		boolean ConnectionsSouthWest = (south && west) && !(east || down || north || up);
 
-		boolean onlyUp = down && !(north || south || east || west || up);
-		boolean onlyDown = up && !(north || south || east || west || down);
-		boolean onlyNorth = north && !(south || east || west || up || down);
-		boolean onlySouth = south && !(north || east || west || up || down);
-		boolean onlyEast = east && !(north || south || west || up || down);
-		boolean onlyWest = west && !(north || south || east || up || down);
+		boolean ConnectionCross = (north && south && east && west && up && down);
 
 		if (noConnections) {
 			return defaultShape;

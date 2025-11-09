@@ -1,9 +1,10 @@
-package plopp.pipecraft.Network.travel;
+package plopp.pipecraft.logic.Manager;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import plopp.pipecraft.logic.ViaductTravel;
+import plopp.pipecraft.Network.travel.TravelStatePacket;
+import plopp.pipecraft.logic.Travel.ViaductTravel;
 
 public class ClientTravelDataManager {
 

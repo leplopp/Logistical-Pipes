@@ -3,6 +3,7 @@ package plopp.pipecraft.logic;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -20,10 +21,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import plopp.pipecraft.Blocks.ViaductBlockRegistry;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductLinker;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductTeleporter;
-import plopp.pipecraft.Network.data.DataEntryRecord;
+import plopp.pipecraft.Network.data.DataEntryRecordTeleport;
 import plopp.pipecraft.Network.linker.LinkedTargetEntry;
 import plopp.pipecraft.Network.teleporter.TeleporterEntryRecord;
-import plopp.pipecraft.Network.teleporter.ViaductTeleporterManager;
+import plopp.pipecraft.logic.Manager.ViaductTeleporterManager;
 
 public class AsyncViaductScanner {
 	
@@ -33,9 +34,11 @@ public class AsyncViaductScanner {
     private final Set<DimBlockPos> visited = new HashSet<>();
     private final Queue<DimBlockPos> toVisit = new ArrayDeque<>();
     private final List<LinkedTargetEntry> foundLinkers = new ArrayList<>();
-    private final Map<DimBlockPos, DimBlockPos> cameFrom;
+    public final Map<DimBlockPos, DimBlockPos> cameFrom;
     private final int maxStepsPerTick;
-
+    public final Map<DimBlockPos, Boolean> pathContainsTeleporters = new HashMap<>();
+    public volatile boolean aborted;
+    
     public AsyncViaductScanner(Level startLevel, BlockPos startPos, int maxStepsPerTick, Map<DimBlockPos, DimBlockPos> cameFrom) {
         this.server = startLevel.getServer();
         this.startDimension = startLevel.dimension();
@@ -67,8 +70,9 @@ public class AsyncViaductScanner {
 
     public boolean tick() {
         int steps = 0;
-
+        if (aborted) return true;
         while (!toVisit.isEmpty() && steps < maxStepsPerTick) {
+            if (aborted) return true;
             DimBlockPos current = toVisit.poll();
 
             if (!visited.add(current)) continue;
@@ -80,43 +84,50 @@ public class AsyncViaductScanner {
             BlockEntity currentBe = currentLevel.getBlockEntity(current.pos);
 
             if (currentBe instanceof BlockEntityViaductTeleporter teleporter) {
+                pathContainsTeleporters.put(current, true);
+
+                DimBlockPos targetDimPos = new DimBlockPos(current.dimension, current.pos);
+                pathContainsTeleporters.put(targetDimPos, true);
+        	    
                 ItemStack goalIcon = teleporter.getTargetDisplayedItem();
                 if (!goalIcon.isEmpty()) {
                     String goalKey = BlockEntityViaductTeleporter.generateItemId(goalIcon);
-
+                    
+                    outerLevelLoop:
                     for (ServerLevel level : server.getAllLevels()) {
-                        ResourceKey<Level> dim = level.dimension();
+                        @SuppressWarnings("unused")
+						ResourceKey<Level> dim = level.dimension();
 
-                        for (Map.Entry<BlockPos, TeleporterEntryRecord> entry : ViaductTeleporterManager.getAll().entrySet()) {
-                            BlockPos possibleTargetPos = entry.getKey();
-                            DimBlockPos dimPos = new DimBlockPos(dim, possibleTargetPos);
+                        for (Map.Entry<DimBlockPos, TeleporterEntryRecord> entry : ViaductTeleporterManager.getAll().entrySet()) {
+                            DimBlockPos dimPos = entry.getKey();
                             if (visited.contains(dimPos)) continue;
 
-                            DataEntryRecord startEntry = entry.getValue().start();
+                            DataEntryRecordTeleport startEntry = entry.getValue().start();
                             String startKey = BlockEntityViaductTeleporter.generateItemId(startEntry.icon());
 
                             if (startKey.equals(goalKey)) {
-                                ServerLevel targetLevel = server.getLevel(dim);
+                                visited.add(dimPos);
+                                ServerLevel targetLevel = server.getLevel(dimPos.getDimension());
                                 if (targetLevel == null) continue;
 
                                 for (Direction dir : Direction.values()) {
-                                    BlockPos neighborPos = possibleTargetPos.relative(dir);
-                                    DimBlockPos neighbor = new DimBlockPos(dim, neighborPos);
+                                    BlockPos neighborPos = dimPos.getPos().relative(dir);
+                                    DimBlockPos neighbor = new DimBlockPos(dimPos.getDimension(), neighborPos);
                                     if (visited.contains(neighbor)) continue;
 
                                     BlockEntity neighborBe = targetLevel.getBlockEntity(neighborPos);
                                     BlockState neighborState = targetLevel.getBlockState(neighborPos);
-
                                     if (neighborBe instanceof BlockEntityViaductTeleporter
-                                        || neighborBe instanceof BlockEntityViaductLinker
-                                        || ViaductBlockRegistry.isViaduct(neighborState)) {
-                                        toVisit.add(neighbor);
-                                        cameFrom.put(neighbor, current);
-                                    }
-                                }
+                                    	    || neighborBe instanceof BlockEntityViaductLinker
+                                    	    || ViaductBlockRegistry.isViaduct(neighborState)) {
 
-                                visited.add(dimPos);
-                                break;
+                                    	    if (!visited.contains(neighbor) && !toVisit.contains(neighbor)) {
+                                    	        toVisit.add(neighbor);
+                                    	        cameFrom.put(neighbor, current);
+                                    	    }
+                                    	}
+                                }           
+                                break outerLevelLoop; 
                             }
                         }
                     }
@@ -150,6 +161,7 @@ public class AsyncViaductScanner {
                     }
                 } else if (ViaductBlockRegistry.isViaduct(neighborState)) {
                     if (ViaductBlockRegistry.areViaductBlocksConnected(currentServerLevel, current.pos, neighborPos)) {
+                    	if (visited.contains(neighbor) || toVisit.contains(neighbor)) continue;
                         toVisit.add(neighbor);
                         cameFrom.put(neighbor, current); 
                     }
@@ -161,40 +173,55 @@ public class AsyncViaductScanner {
 
         return toVisit.isEmpty();
     }
+    
+    public boolean hasTeleporterOnPath(List<DimBlockPos> path) {
+        for (DimBlockPos dimPos : path) {
+            ServerLevel level = server.getLevel(dimPos.getDimension());
+            if (level == null) continue;
 
+            BlockEntity be = level.getBlockEntity(dimPos.getPos());
+            if (be instanceof BlockEntityViaductTeleporter) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     public List<LinkedTargetEntry> getFoundLinkers() {
         return foundLinkers;
     }
     
-    public List<BlockPos> constructPath(DimBlockPos end) {
-        List<BlockPos> path = new ArrayList<>();
+    public DimBlockPos getDimPosFor(LinkedTargetEntry entry) {
+        for (DimBlockPos visitedPos : visited) {
+            if (visitedPos.pos.equals(entry.getPos())) {
+                return visitedPos;
+            }
+        }
+        return new DimBlockPos(startDimension, entry.getPos()); 
+    }
+    
+    public List<DimBlockPos> constructDimPath(DimBlockPos end) {
+        List<DimBlockPos> path = new ArrayList<>();
         DimBlockPos current = end;
+
         while (current != null) {
-            path.add(current.pos);
+            path.add(current);
             current = cameFrom.get(current);
         }
+
         Collections.reverse(path);
         return path;
     }
     
-    public List<BlockPos> getResult() {
+    public DimBlockPos getTargetDimPos() {
         if (foundLinkers.isEmpty()) return null;
 
-        LinkedTargetEntry best = foundLinkers.get(0); 
-        DimBlockPos target = new DimBlockPos(startDimension, best.getPos());
-        
-        return constructPath(target);
-    }
-    public DimBlockPos findFirstTeleporterInPath(List<BlockPos> path) {
-        ServerLevel level = server.getLevel(startDimension);
-        if (level == null) return null;
-
-        for (BlockPos pos : path) {
-            BlockEntity be = level.getBlockEntity(pos);
-            if (be instanceof BlockEntityViaductTeleporter) {
-                return new DimBlockPos(startDimension, pos);
+        LinkedTargetEntry best = foundLinkers.get(0);
+        for (DimBlockPos visitedPos : visited) {
+            if (visitedPos.pos.equals(best.getPos())) {
+                return visitedPos;
             }
         }
-        return null;
+        return new DimBlockPos(startDimension, best.getPos());
     }
 }

@@ -37,9 +37,11 @@ public record PacketCancelScan(BlockPos pos) implements CustomPacketPayload {
             Level level = serverPlayer.level();
             BlockEntity be = level.getBlockEntity(packet.pos());
             if (be instanceof BlockEntityViaductLinker linker && linker.asyncScanner != null) {
+                linker.asyncScanner.aborted = true;
                 linker.asyncScanner = null;
+                linker.scannedPaths.clear();
                 linker.setAsyncScanInProgress(false);
-                System.out.println("[Server] Scan abgebrochen für Linker bei: " + packet.pos());
+               // System.out.println("[Server] Scan abgebrochen für Linker bei: " + packet.pos());
             }
         });
     }

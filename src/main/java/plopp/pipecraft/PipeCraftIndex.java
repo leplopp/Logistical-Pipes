@@ -13,9 +13,10 @@ import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import plopp.pipecraft.Blocks.BlockEntityRegister;
 import plopp.pipecraft.Blocks.BlockRegister;
+import plopp.pipecraft.Blocks.Pipes.Viaduct.Item.ModDataComponents;
+import plopp.pipecraft.Recipes.ModRecipes;
 import plopp.pipecraft.gui.MenuTypeRegister;
 import plopp.pipecraft.sounds.SoundRegister;
-import plopp.pipecraft.util.DebugTravelCommand;
 import plopp.pipecraft.util.MapInspector;
 
 @Mod(PipeCraftIndex.MODID)
@@ -36,7 +37,8 @@ public class PipeCraftIndex
         MenuTypeRegister.MENUS.register(modEventBus);
         SoundRegister.SOUND_EVENTS.register(modEventBus);
         modEventBus.addListener(this::onCommonSetup);
-        NeoForge.EVENT_BUS.addListener(DebugTravelCommand::register);
+        ModDataComponents.register(modEventBus);
+        ModRecipes.RECIPES.register(modEventBus);
     }
 
    
@@ -44,6 +46,7 @@ public class PipeCraftIndex
         event.enqueueWork(() -> {
         	MapInspector.inspectTravelMaps();
         });
+        
     }
     
     private void addCreative(BuildCreativeModeTabContentsEvent event){}
@@ -58,7 +61,6 @@ public class PipeCraftIndex
  * sound plopp multiplayer
  * 
  * 
- * 
  */
 
 
@@ -68,7 +70,7 @@ public class PipeCraftIndex
  *  viaduct Linker									<- Pre Release				/ hitbox vollenden
  *  viaduct player detector 					    <- Released						
  *  viaduct Speed controller						<- Released						
- *  viaduct Teleporter								<- Pre Alpha 				/
+ *  viaduct Teleporter								<- Beta 				/
  *   	
  *  viaduct facade for all pipes & cables			<- Pre Alpha 
  *   

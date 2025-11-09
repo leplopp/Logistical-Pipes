@@ -2,14 +2,17 @@ package plopp.pipecraft.Network.travel;
 
 import java.util.UUID;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import plopp.pipecraft.PipeCraftIndex;
-import plopp.pipecraft.logic.ViaductTravel;
-import plopp.pipecraft.logic.ViaductTravel.VerticalDirection;
+import plopp.pipecraft.logic.Manager.ClientTravelDataManager;
+import plopp.pipecraft.logic.Travel.ViaductTravel;
+import plopp.pipecraft.logic.Travel.ViaductTravel.VerticalDirection;
 
 public class TravelStatePacket implements CustomPacketPayload {
 	
@@ -78,11 +81,17 @@ this.defaultTicksPerChunk = defaultTicksPerChunk;
     public static void handle(TravelStatePacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             UUID uuid = packet.getPlayerUUID();
-
             ClientTravelDataManager.updatePlayerTravelData(packet);
 
             if (packet.shouldResetModel()) {
                 ViaductTravel.markResetModel(uuid);
+            }
+
+            if (packet.isActive()) {
+                LocalPlayer local = Minecraft.getInstance().player;
+                if (local != null && local.getUUID().equals(uuid)) {
+                    local.refreshDimensions();
+                }
             }
         });
     }

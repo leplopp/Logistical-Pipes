@@ -25,8 +25,8 @@ import plopp.pipecraft.Network.teleporter.PacketUpdateTeleporterToggle;
 import plopp.pipecraft.Network.travel.PacketTravelStart;
 import plopp.pipecraft.Network.travel.PacketTravelStop;
 import plopp.pipecraft.Network.travel.TravelStatePacket;
-import plopp.pipecraft.logic.TravelData;
-import plopp.pipecraft.logic.ViaductTravel;
+import plopp.pipecraft.logic.Travel.TravelData;
+import plopp.pipecraft.logic.Travel.ViaductTravel;
 
 @EventBusSubscriber(modid = PipeCraftIndex.MODID, value = {Dist.CLIENT,Dist.DEDICATED_SERVER })
 public class NetworkHandler {

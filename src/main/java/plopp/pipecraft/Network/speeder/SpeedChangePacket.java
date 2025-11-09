@@ -17,7 +17,7 @@ import plopp.pipecraft.PipeCraftIndex;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockEntityViaductSpeed;
 import plopp.pipecraft.Blocks.Pipes.Viaduct.BlockViaductSpeed;
 import plopp.pipecraft.logic.SpeedLevel;
-import plopp.pipecraft.logic.SpeedManager;
+import plopp.pipecraft.logic.Manager.SpeedManager;
 
 public class SpeedChangePacket implements CustomPacketPayload {
 	  public static final CustomPacketPayload.Type<SpeedChangePacket> TYPE =

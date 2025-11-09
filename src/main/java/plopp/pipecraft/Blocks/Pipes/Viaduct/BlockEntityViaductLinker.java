@@ -32,7 +32,7 @@ import plopp.pipecraft.Network.linker.LinkedTargetEntry;
 import plopp.pipecraft.gui.viaductlinker.ViaductLinkerMenu;
 import plopp.pipecraft.logic.AsyncViaductScanner;
 import plopp.pipecraft.logic.DimBlockPos;
-import plopp.pipecraft.logic.ViaductLinkerManager;
+import plopp.pipecraft.logic.Manager.ViaductLinkerManager;
 
 public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvider, IBlockEntityExtension  {
 	
@@ -43,8 +43,9 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
 	private List<BlockPos> sortedTargetPositions = new ArrayList<>();
 	private CompoundTag customPersistentData = new CompoundTag();
 	public AsyncViaductScanner asyncScanner = null;
-	private List<LinkedTargetEntry> cachedLinkedTargets = Collections.emptyList();
-	public final Map<BlockPos, List<BlockPos>> scannedPaths = new HashMap<>();
+	public List<LinkedTargetEntry> cachedLinkedTargets = Collections.emptyList();
+	public final Map<DimBlockPos, List<DimBlockPos>> scannedPaths = new HashMap<>();
+	public Map<DimBlockPos, Boolean> pathsWithTeleporters = new HashMap<>();
 	
     public BlockEntityViaductLinker(BlockPos pos, BlockState state) {
         super(BlockEntityRegister.VIADUCT_LINKER.get(), pos, state);
@@ -253,11 +254,11 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
         return cachedLinkedTargets;
     }
     
-    public Map<BlockPos, List<BlockPos>> getScannedPaths() {
+    public Map<DimBlockPos, List<DimBlockPos>> getScannedPaths() {
         return scannedPaths;
     }
 
-    public List<BlockPos> getPathTo(BlockPos target) {
+    public List<DimBlockPos> getPathTo(BlockPos target) {
         return scannedPaths.getOrDefault(target, Collections.emptyList());
     }
     
@@ -268,29 +269,33 @@ public class BlockEntityViaductLinker extends  BlockEntity implements MenuProvid
     public static void serverTick(Level level, BlockPos pos, BlockState state, BlockEntityViaductLinker be) {
         if (be.asyncScanner != null) {
             boolean done = be.asyncScanner.tick();
-
+ 
             List<LinkedTargetEntry> partial = be.asyncScanner.getFoundLinkers();
 
             if (!be.cachedLinkedTargets.equals(partial)) {
                 be.cachedLinkedTargets = List.copyOf(partial);
 
                 if (level instanceof ServerLevel serverLevel) {
-                    ViaductLinkerManager.updateOpenLinker(serverLevel);
+                    ViaductLinkerManager.updateOpenLinker(serverLevel, be);
                 }
             }
 
             List<LinkedTargetEntry> allTargets = be.asyncScanner.getFoundLinkers();
-            for (LinkedTargetEntry entry : allTargets) {
-                DimBlockPos dimPos = new DimBlockPos(level.dimension(), entry.getPos());
-                List<BlockPos> fullPath = be.asyncScanner.constructPath(dimPos);
-                if (fullPath != null && !fullPath.isEmpty()) {
-                    be.scannedPaths.put(entry.getPos(), fullPath);
-                }
-            }
 
+            for (LinkedTargetEntry entry : allTargets) {
+            	DimBlockPos target = be.asyncScanner.getDimPosFor(entry);
+            	List<DimBlockPos> fullDimPath = be.asyncScanner.constructDimPath(target);
+            	if (fullDimPath != null && !fullDimPath.isEmpty()) {
+            	    be.scannedPaths.put(target, fullDimPath);
+
+            	    boolean containsTeleporter = be.asyncScanner.hasTeleporterOnPath(fullDimPath);
+            	    be.pathsWithTeleporters.put(target, containsTeleporter);
+            	}
+            }
             if (done) {
                 be.setAsyncScanInProgress(false);
                 be.asyncScanner = null;
+                be.pathsWithTeleporters.clear();
             }
         }
     }
